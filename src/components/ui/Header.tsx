@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 interface NavLink {
     label: string;
@@ -80,23 +81,9 @@ export default function Header({
                         href="/"
                         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
-                        {/* Logo Icon */}
-                        <div className={cn(
-                            "w-9 h-9 rounded-lg flex items-center justify-center transition-colors",
-                            isTransparent ? "bg-white" : "bg-[#4CAF50]"
-                        )}>
-                            <svg
-                                className={cn("w-5 h-5", isTransparent ? "text-[#4CAF50]" : "text-white")}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                            </svg>
+                        {/* Logo Icon — dark pill so white logo is always visible */}
+                        <div className="bg-[#0D1B2A] rounded-xl p-1.5">
+                            <BrandLogo size={38} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
                         </div>
                         <span className={cn(
                             "text-lg font-semibold transition-colors",
@@ -105,6 +92,7 @@ export default function Header({
                             {brandText}
                         </span>
                     </Link>
+
 
                     {/* Desktop Navigation - Centered */}
                     <nav className="hidden lg:flex items-center justify-center flex-1 gap-6 mx-8">

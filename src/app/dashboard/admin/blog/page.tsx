@@ -113,7 +113,7 @@ export default function BlogAdminPage() {
                                                 </td>
                                                 <td className="px-6 py-4 text-right border border-[#e5e7eb]">
                                                     <div className="flex items-center justify-end gap-2">
-                                                        <Link href={`/dashboard/admin/blog/edit/${post.id}`}>
+                                                        <Link href={`/dashboard/admin/blog/edit?id=${post.id}`}>
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"

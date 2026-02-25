@@ -1,5 +1,6 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
+import InstructorCard from "@/components/ui/InstructorCard";
 
 export default function InstructorsPage() {
     const navLinks = [
@@ -34,36 +35,51 @@ export default function InstructorsPage() {
 
     const instructors = [
         {
-            name: "Full Name",
-            role: "Sales & Marketing Mentor",
-            description: "A professional trainer with hands-on experience in sales execution, communication skills, and ethical business practices.",
+            name: "Golam Kibria",
+            role: "Senior Instructor (Academic)",
+            photo: "/images/instructors/golam-kibria.jpeg",
+            description: "Golam Kibria holds a B.A. (Hons) and an M.A. in English from a reputed public university. Later, he earned an MBA in Marketing from IBA, DU, achieving a CGPA of 3.64 out of 4. He began his career as a teacher at a Cantt. Public School & College and later transitioned into roles such as Merchandiser and Radio Jockey. Currently, he has been serving as a Senior Assistant Vice President (SAVP) at a Private Commercial Islamic Bank for almost 18 years. Golam Kibria is an experienced trainer and instructor, having conducted sessions at the bank's training center. Most recently, he had the opportunity to train a series of participants under a World Bank Project. His lucid and engaging storytelling, combined with his ability to explain complex concepts in a simple manner, has made him increasingly sought after for training sessions.",
+            email: "kibria@assunnahfoundation.org",
         },
         {
-            name: "Full Name",
-            role: "Field Sales & Communication Instructor",
-            description: "A professional trainer with hands-on experience in sales execution, communication skills, and ethical business practices.",
+            name: "Mohammad Abu Zabar Rezvhe",
+            role: "Senior Instructor (Academic)",
+            photo: "/images/instructors/abu-zabar-rezvhe.jpg",
+            description: "Mr. Mohammad Abu Zabar Rezvhe is a seasoned sales professional with over 18 years of experience in sales, marketing, and business development across FMCG, Telecommunications, and Retail sectors. He has successfully led high-performing sales teams, developed impactful training programs, and driven strategic market growth. As a sales trainer, Mr. Rezvhe has designed and delivered structured training programs, equipping individuals with essential sales techniques, negotiation skills, and customer engagement strategies. He has played a pivotal role in new market expansion, including spearheading the Bangladesh market entry strategy for Atlas Axillia. His leadership has resulted in record-breaking sales growth, improved team performance, and optimized business operations for companies like Grameenphone, PRAN-RFL, Godrej, and Hemas Holdings PLC. Mr. Rezvhe is committed to transforming \"The Art of Sales and Marketing\" into a leading employment-focused training program, producing industry-ready sales professionals.",
+            email: "rezvhe@gmail.com",
         },
         {
-            name: "Full Name",
-            role: "Digital Marketing & Tools Mentor",
-            description: "A professional trainer with hands-on experience in sales execution, communication skills, and ethical business practices.",
+            name: "Shaibal Shariar",
+            role: "Senior Instructor (Academic)",
+            photo: "/images/instructors/shaibal-shariar.jpg",
+            description: "CEO & Co-Founder of Prokrity Store, Quantic Dynamics Ltd, Amcare Agro, and Dr. Kit Healthcare. He holds a BBA from IUB, a PGDHRM from the United Kingdom, and ACBA from IBA, DU. With a decade of experience in top management roles, he is a seasoned expert in Business Process Development. His strategic insights and innovative approach have helped organizations optimize efficiency, streamline operations, and achieve sustainable growth. Over the years, he has played a pivotal role in shaping the operational frameworks of more than 40 organizations, including the ICT Ministry Bangladesh Government, 03 international companies, 05 multinational corporations, and 11 local banks. His expertise spans multiple industries, enabling businesses to navigate complex challenges and drive long-term success. Passionate about transformation and innovation, he continues to mentor and guide enterprises toward excellence.",
+            email: "shibalshariar@gmail.com",
         },
         {
-            name: "Full Name",
-            role: "Professional Development & Ethics Mentor",
-            description: "A professional trainer with hands-on experience in sales execution, communication skills, and ethical business practices.",
+            name: "Md. Nesar Uddin",
+            role: "Instructor (Academic)",
+            photo: "/images/instructors/nesar-uddin.jpg",
+            description: "Bio will be updated soon.",
+            email: "mnumaruf@gmail.com",
         },
         {
-            name: "Full Name",
-            role: "Sales & Marketing Mentor",
-            description: "A professional trainer with hands-on experience in sales execution, communication skills, and ethical business practices.",
+            name: "M M Naim Amran",
+            role: "Instructor (Academic)",
+            photo: "/images/instructors/naim-amran.jpg",
+            description: "Bio will be updated soon.",
+            email: "Nayeem2007@gmail.com",
         },
         {
-            name: "Full Name",
-            role: "Field Sales & Communication Instructor",
-            description: "A professional trainer with hands-on experience in sales execution, communication skills, and ethical business practices.",
+            name: "Abul Hayat",
+            role: "Administrative",
+            photo: "/images/instructors/abul-hayat.jpg",
+            description: "Bio will be updated soon.",
+            email: "abul.hayat@skill.assunnahfoundation.org",
         },
     ];
+
+
+
 
     const approachPoints = [
         {
@@ -102,73 +118,21 @@ export default function InstructorsPage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {instructors.map((instructor, index) => (
-                                <div
+                                <InstructorCard
                                     key={index}
-                                    className="bg-white rounded-2xl p-6 border border-[#e5e7eb] shadow-sm hover:shadow-md transition-shadow duration-200"
-                                >
-                                    {/* Profile Photo Placeholder */}
-                                    <div className="w-20 h-20 rounded-full bg-[#f0fdf4] border-2 border-[#dcfce7] mx-auto mb-4 flex items-center justify-center">
-                                        <svg
-                                            className="w-10 h-10 text-[#059669]"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                                            <circle cx="12" cy="7" r="4" />
-                                        </svg>
-                                    </div>
-                                    <div className="text-center">
-                                        <h3 className="text-lg font-semibold text-[#1f2937] mb-1">
-                                            {instructor.name}
-                                        </h3>
-                                        <p className="text-sm font-medium text-[#059669] mb-3">
-                                            {instructor.role}
-                                        </p>
-                                        <p className="text-sm text-[#6b7280] leading-relaxed">
-                                            {instructor.description}
-                                        </p>
-                                    </div>
-                                </div>
+                                    index={index}
+                                    name={instructor.name}
+                                    role={instructor.role}
+                                    description={instructor.description}
+                                    email={instructor.email}
+                                    image={instructor.photo}
+                                />
                             ))}
                         </div>
+
                     </div>
                 </section>
 
-                {/* 4. Teaching & Mentorship Approach */}
-                <section className="w-full bg-[#f9fafb] py-16 md:py-20">
-                    <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                        <div className="text-center max-w-2xl mx-auto mb-12">
-                            <h2 className="text-2xl md:text-3xl font-bold text-[#1f2937] mb-4">
-                                Our Teaching Approach
-                            </h2>
-                            <p className="text-[#6b7280] leading-relaxed">
-                                Instructors and mentors follow a hands-on, responsibility-driven approach to learning:
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {approachPoints.map((point, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-white rounded-2xl p-6 border border-[#e5e7eb] shadow-sm"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-[#f0fdf4] flex items-center justify-center mb-4">
-                                        <div className="w-3 h-3 rounded-full bg-[#059669]"></div>
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-[#1f2937] mb-2">
-                                        {point.title}
-                                    </h3>
-                                    <p className="text-sm text-[#6b7280] leading-relaxed">
-                                        {point.description}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
 
 
             </main>

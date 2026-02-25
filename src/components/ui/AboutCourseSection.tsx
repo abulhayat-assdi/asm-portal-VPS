@@ -32,25 +32,19 @@ export default function AboutCourseSection() {
                         <div className="space-y-6 text-lg text-gray-600 leading-relaxed font-medium">
                             <Reveal delay={100}>
                                 <p>
-                                    The Art of Sales & Marketing is a 90-day professional training program designed to
-                                    prepare aspiring individuals for real-world careers in sales, marketing, and ethical entrepreneurship.
+                                    The Art of Sales &amp; Marketing is a 90-day professional training program designed to empower aspiring individuals with practical sales techniques, modern marketing strategies, and essential soft skills.
                                 </p>
                             </Reveal>
 
                             <Reveal delay={200}>
                                 <p>
-                                    This course treats sales as a responsibility and a trust, and marketing as truthful
-                                    communication—not manipulation. It combines practical fieldwork, modern digital tools,
-                                    and strong character development to help learners grow into confident, capable, and
-                                    ethical professionals.
+                                    We treat sales as an &ldquo;Amanah&rdquo; (trust) and marketing as truthful communication—never manipulation. It combines practical fieldwork, digital expertise, and strong ethical values to build confident, market-ready professionals.
                                 </p>
                             </Reveal>
 
                             <Reveal delay={300}>
                                 <p>
-                                    Through real-life projects, on-field experiences, and technology-driven learning,
-                                    participants are trained to perform effectively in today's competitive business
-                                    environment while earning with dignity, integrity, and purpose.
+                                    Delivered through real-life projects, in-person experiences, and technology-driven learning, this course bridges the gap between theory and employment—enabling you to succeed in business and earn halal rizq with dignity.
                                 </p>
                             </Reveal>
                         </div>
@@ -68,10 +62,10 @@ export default function AboutCourseSection() {
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-gray-900 mb-1">
-                                        90-Day Professional Training
+                                        90-Day Residential Training
                                     </h3>
                                     <p className="text-sm text-gray-600 leading-relaxed">
-                                        Designed to prepare you specifically for real-world careers.
+                                        An immersive, in-person training program designed to build real-world skills and strong character.
                                     </p>
                                 </div>
                             </div>
@@ -87,10 +81,10 @@ export default function AboutCourseSection() {
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-gray-900 mb-1">
-                                        Practical & Digital
+                                        Practical &amp; Digital Mastery
                                     </h3>
                                     <p className="text-sm text-gray-600 leading-relaxed">
-                                        Combines fieldwork, real projects, and modern digital tools.
+                                        Learn through street-selling, real projects, AI tools, and Meta Ads—not just bookish theory.
                                     </p>
                                 </div>
                             </div>
@@ -106,10 +100,10 @@ export default function AboutCourseSection() {
                                 </div>
                                 <div>
                                     <h3 className="text-base font-bold text-gray-900 mb-1">
-                                        Ethical Foundation
+                                        Islamic Ethical Foundation
                                     </h3>
                                     <p className="text-sm text-gray-600 leading-relaxed">
-                                        Treats sales as a responsibility and marketing as truth.
+                                        Grounded in core values like Amanah, Ikhlas, and Adl to ensure business success with absolute integrity.
                                     </p>
                                 </div>
                             </div>

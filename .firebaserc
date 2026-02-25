@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "asm-internal-portal"
-  }
+  },
+  "targets": {
+    "asm-internal-portal": {
+      "hosting": {
+        "app": [
+          "asm-internal-portal-v2"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

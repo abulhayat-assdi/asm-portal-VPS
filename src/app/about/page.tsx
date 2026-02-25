@@ -2,8 +2,6 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import AboutCourseSection from "@/components/ui/AboutCourseSection";
 import WhyThisCourseSection from "@/components/ui/WhyThisCourseSection";
-import LearningPhilosophySection from "@/components/ui/LearningPhilosophySection";
-import EthicsSection from "@/components/ui/EthicsSection";
 import AboutCTASection from "@/components/ui/AboutCTASection";
 
 export default function AboutPage() {
@@ -51,12 +49,6 @@ export default function AboutPage() {
 
                 {/* 2. Why This Course Exists */}
                 <WhyThisCourseSection />
-
-                {/* 3. Learning Philosophy */}
-                <LearningPhilosophySection />
-
-                {/* 4. Ethics & Responsibility */}
-                <EthicsSection />
 
                 {/* 5. Call To Action */}
                 <AboutCTASection />

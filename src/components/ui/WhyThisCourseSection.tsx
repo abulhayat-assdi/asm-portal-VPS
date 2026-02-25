@@ -5,8 +5,8 @@ import Reveal from "./Reveal";
 
 const whyReasons = [
     {
-        title: "Bridging Skill Gaps",
-        description: "Many learners complete education without practical selling, communication, or market-ready skills. This course exists to bridge the gap between learning and real employment or business.",
+        title: "Bridging the Skill Gap",
+        description: "We bridge the gap between traditional education and real-world employment. We replace bookish theory with practical, on-field training to create truly market-ready professionals.",
         icon: (
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
@@ -14,8 +14,8 @@ const whyReasons = [
         )
     },
     {
-        title: "Reframing Sales & Marketing",
-        description: "Sales is often misunderstood as pressure or deception. This program redefines sales as service and trust, and marketing as honest value communication.",
+        title: "Redefining Sales & Marketing",
+        description: "People are tired of deception. We reframe sales as an 'Amanah' (trust) and marketing as truthful communication—replacing forced tricks with genuine value creation.",
         icon: (
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -23,8 +23,8 @@ const whyReasons = [
         )
     },
     {
-        title: "Preparing Responsible Earners",
-        description: "The course is designed for those who want to earn through skill—not shortcuts—while maintaining ethical standards in professional and business life.",
+        title: "Building Self-Reliant Youth",
+        description: "We eliminate the fear of selling to empower you to take full responsibility for your life. Build the confidence to earn halal sustenance without relying on haram shortcuts.",
         icon: (
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 5.523-4.477 10-10 10S1 17.523 1 12 5.477 2 11 2s10 4.477 10 10z" />
@@ -32,8 +32,8 @@ const whyReasons = [
         )
     },
     {
-        title: "Responding to Real Market Needs",
-        description: "Businesses today need people who can communicate clearly, sell responsibly, and build long-term relationships. This course directly addresses that demand.",
+        title: "Meeting Real Market Demand",
+        description: "SMEs and businesses urgently need professionals who can sell ethically. We produce graduates who build long-term trust, solve customer problems, and drive business growth.",
         icon: (
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
@@ -41,6 +41,7 @@ const whyReasons = [
         )
     },
 ];
+
 
 export default function WhyThisCourseSection() {
     return (

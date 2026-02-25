@@ -24,33 +24,36 @@ export default function HomePage() {
 
 
     const learningOutcomes = [
-        "Build a strong foundation in sales and marketing principles",
-        "Communicate ideas, value, and solutions with confidence",
-        "Understand customer behavior and decision-making processes",
-        "Apply ethical thinking in professional and business contexts",
-        "Develop a structured approach to career and skill growth",
+        "Confidently pitch and sell products face-to-face and online with absolute honesty.",
+        "Master AI tools, Canva, and Meta Ads responsibly to drive business growth.",
+        "Communicate persuasively and handle objections while respecting customer choices.",
+        "Design and execute high-converting digital marketing campaigns without deception.",
+        "Build a professional CV, portfolio, and a personal brand rooted in integrity.",
+        "Apply Islamic ethics (Amanah, Adl, Ikhlas) in daily business decisions and workplace behavior.",
+        "Gain proficiency in MS Office Applications to manage business data and professional communications.",
+        "Develop highly engaging landing pages and content marketing strategies that deliver real value.",
     ];
 
     const audiences = [
         {
             icon: defaultAudienceIcons.students,
             title: "Students",
-            description: "Ideal for learners who want to build strong foundations before entering professional life.",
+            description: "Bridge the gap between education and employment. Overcome fear and build real-world confidence.",
         },
         {
             icon: defaultAudienceIcons.jobSeekers,
             title: "Job Seekers",
-            description: "For individuals preparing for careers that require communication, persuasion, and market understanding.",
+            description: "Impress in job interviews with confident communication and secure a dignified career in a competitive market.",
         },
         {
             icon: defaultAudienceIcons.entrepreneurs,
             title: "Entrepreneurs",
-            description: "For those who want to sell ideas, products, or services with confidence and structure.",
+            description: "Grow your business by mastering offline and online sales, and build long-term trust with real customers.",
         },
         {
             icon: defaultAudienceIcons.ethicalLearners,
-            title: "Ethical & Purpose-Driven Learners",
-            description: "For people who value responsibility, integrity, and ethical practice in business and communication.",
+            title: "Ethical Learners",
+            description: "Earn halal rizq with dignity by treating sales as a trust (amanah) without manipulation or haram shortcuts.",
         },
     ];
 
@@ -87,7 +90,7 @@ export default function HomePage() {
             <main className="min-h-screen bg-white">
                 <HeroSection
                     heading="The Art of Sales & Marketing"
-                    subheading="A comprehensive training program combining practical sales skills, modern marketing strategies, and ethical principles."
+                    subheading=""
                     primaryButtonText="Learn About the Course"
                     secondaryButtonText="View Modules"
                     onPrimaryClick={() => router.push('/about')}
@@ -98,13 +101,13 @@ export default function HomePage() {
 
                 <TargetAudience
                     title="Who This Course Is For"
-                    subtitle="Designed for learners who want practical skills, clarity, and professional growth in sales and marketing."
+                    subtitle="Transform into a confident, ethical professional—ready for a career or business while earning halal rizq."
                     audiences={audiences}
                 />
 
                 <LearningOutcomes
                     title="What You Will Gain"
-                    subtitle="Clear, practical outcomes that support skill development, confidence, and long-term professional growth."
+                    subtitle="Practical skills, digital expertise, and an ethical mindset to thrive in today's competitive market."
                     outcomes={learningOutcomes}
                 />
             </main>

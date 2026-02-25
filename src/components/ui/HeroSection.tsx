@@ -26,10 +26,9 @@ export default function HeroSection({
     className = "",
 }: HeroSectionProps) {
     const backgroundImages = [
-        "https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80",
-        "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80",
-        "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80",
-        "https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-4.0.3&auto=format&fit=crop&w=2074&q=80"
+        "/images/home/hero-slide-1.jpg",
+        "/images/home/hero-slide-2.jpg",
+        "/images/home/audience-bg.jpg",
     ];
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -88,12 +87,14 @@ export default function HeroSection({
                     </h1>
                 </Reveal>
 
-                {/* Subheading */}
+                {/* Tagline */}
                 <Reveal delay={600}>
-                    <p className="text-lg md:text-xl text-gray-200 leading-relaxed max-w-3xl mb-10 mx-auto">
-                        {subheading}
+                    <p className="text-xl md:text-2xl font-semibold text-white tracking-wide mb-10">
+                        Sell with Skill. Market with Ethics. Win in Real Life.
                     </p>
                 </Reveal>
+
+
 
                 {/* CTA Buttons */}
                 <Reveal delay={800}>

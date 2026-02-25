@@ -1,32 +1,161 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper function to check if user is admin
+
+    /* =====================================================
+       🔐 HELPER FUNCTIONS (GLOBAL)
+    ====================================================== */
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
-      return request.auth != null && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Users collection: Users can read/write their own profile
+    /* =====================================================
+       🔐 INTERNAL PORTAL COLLECTIONS
+       (Login required)
+    ====================================================== */
+
+    // Teachers Directory
+    match /teachers/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Users (Auth profiles & roles)
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAuth();
+      allow write: if isAdmin() || request.auth.uid == userId;
     }
 
-    // Posts collection:
-    // - Public read access
-    // - Admin write access
+    // Classes
+    match /classes/{classId} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAdmin() ||
+        (isAuth() && resource.data.teacherUid == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    // Class Routines
+    match /class_routines/{routineId} {
+      allow read, write: if isAuth();
+    }
+
+    // Resources Library
+    match /resources/{resourceId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Notices
+    match /notices/{noticeId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Policies
+    match /policies/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Meeting Minutes
+    match /meeting_minutes/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    /* =====================================================
+       📩 FEEDBACK SYSTEM
+       (Public submit + Admin approval)
+    ====================================================== */
+
+    match /feedback/{feedbackId} {
+      // Public can submit feedback
+      allow create: if true;
+
+      // Admin can read everything
+      // Public can read only APPROVED feedback
+      allow read: if isAdmin() || resource.data.status == 'APPROVED';
+
+      // Only admin can approve / delete
+      allow update, delete: if isAdmin();
+    }
+
+    /* =====================================================
+       🌐 PUBLIC WEBSITE COLLECTIONS
+       (No login required for read)
+    ====================================================== */
+
+    // Blog Posts
+    match /blog_posts/{postId} {
+      allow read: if resource.data.status == "published";
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Posts (Legacy blog collection)
     match /posts/{postId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
-    // Explicitly fallback for other collections to allow authenticated users
-    // This prevents breaking other features like feedback/contact if they rely on auth
-    // Note: You should lock this down further as you define more collections
+
+    // Instructors (Public view)
+    match /instructors/{docId} {
+      allow read: if resource.data.active == true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Course Modules
+    match /course_modules/{docId} {
+      allow read: if resource.data.active == true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Success Stories: Video Testimonials
+    match /successVideos/{videoId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Success Stories: Written Reviews
+    match /successReviews/{reviewId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* =====================================================
+       📩 CONTACT FORM (PUBLIC)
+    ====================================================== */
+
+    match /contact_inquiries/{docId} {
+      // Public can submit contact form
+      allow create: if true;
+
+      // Only admin can read & manage
+      allow read, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    /* =====================================================
+       🛠️ SYSTEM / ACTIVITY LOGS
+    ====================================================== */
+
+    match /activity_logs/{logId} {
+      allow create: if isAuth();
+      allow read: if isAdmin();
+    }
+
+    /* =====================================================
+       🚫 DEFAULT DENY (SECURITY NET)
+    ====================================================== */
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

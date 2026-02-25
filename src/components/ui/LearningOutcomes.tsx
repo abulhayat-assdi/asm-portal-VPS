@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { useEffect, useRef, useState } from "react";
 
@@ -42,11 +44,11 @@ export default function LearningOutcomes({
                             </div>
                         </Reveal>
 
-                        {/* Outcomes Checklist - Centered Grid */}
-                        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6 max-w-6xl mx-auto text-left">
+                        {/* Outcomes Checklist - 4x2 Grid */}
+                        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6 max-w-7xl mx-auto text-left items-stretch">
                             {outcomes.map((outcome, index) => (
-                                <Reveal key={index} delay={index * 100} width="100%">
-                                    <li className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-300">
+                                <Reveal key={index} delay={index * 80} width="100%">
+                                    <li className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/50 hover:bg-gray-50 transition-colors duration-300 h-full">
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center mt-0.5 text-[#4CAF50] shadow-sm">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                                                 <path d="M5 12l5 5L20 7" strokeLinecap="round" strokeLinejoin="round" />

@@ -10,14 +10,13 @@ import Textarea from "@/components/ui/Textarea";
 import AdminRoute from "@/components/auth/AdminRoute";
 import * as blogService from "@/services/blogService";
 
-interface EditBlogPageProps {
-    params: {
-        id: string;
-    };
-}
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function EditBlogPage({ params }: EditBlogPageProps) {
+function EditBlogContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [originalPost, setOriginalPost] = useState<blogService.BlogPost | null>(null);
@@ -31,8 +30,13 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
 
     useEffect(() => {
         const loadPost = async () => {
+            if (!id) {
+                // router.push('/dashboard/admin/blog');
+                return;
+            }
+
             try {
-                const post = await blogService.getPost(params.id);
+                const post = await blogService.getPost(id);
                 if (!post) {
                     alert("Post not found");
                     router.push('/dashboard/admin/blog');
@@ -55,7 +59,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
         };
 
         loadPost();
-    }, [params.id, router]);
+    }, [id, router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -63,6 +67,8 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
     };
 
     const handleSave = async () => {
+        if (!id) return;
+
         if (!formData.title || !formData.content) {
             alert("Title and Content are required");
             return;
@@ -70,7 +76,7 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
 
         setSaving(true);
         try {
-            await blogService.updatePost(params.id, formData);
+            await blogService.updatePost(id, formData);
             router.push('/dashboard/admin/blog');
         } catch (error) {
             console.error(error);
@@ -81,11 +87,12 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
     };
 
     const handlePublish = async () => {
+        if (!id) return;
         if (!confirm("Are you sure you want to publish this post?")) return;
 
         setSaving(true);
         try {
-            await blogService.publishPost(params.id);
+            await blogService.publishPost(id);
             // Optionally update local state or redirect
             router.push('/dashboard/admin/blog');
         } catch (error) {
@@ -215,5 +222,13 @@ export default function EditBlogPage({ params }: EditBlogPageProps) {
                 </div>
             </div>
         </AdminRoute>
+    );
+}
+
+export default function EditBlogPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <EditBlogContent />
+        </Suspense>
     );
 }

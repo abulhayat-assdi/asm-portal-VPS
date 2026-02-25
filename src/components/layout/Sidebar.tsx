@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import BrandLogo from "@/components/ui/BrandLogo";
 
 const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: "🏠", adminOnly: false },
@@ -15,6 +16,7 @@ const navItems = [
     { href: "/dashboard/feedback", label: "Feedback", icon: "💬", adminOnly: false },
     { href: "/dashboard/admin", label: "Admin Panel", icon: "⚙️", adminOnly: true },
     { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", adminOnly: true },
+    { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", adminOnly: true },
 ];
 
 export default function Sidebar() {
@@ -91,26 +93,13 @@ export default function Sidebar() {
                         className="cursor-pointer group"
                         onClick={() => setIsMobileMenuOpen(false)}
                     >
-                        <div className="bg-[#059669] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm transition-all duration-300 ease-in-out group-hover:bg-[#d1fae5] group-hover:shadow-md group-hover:-translate-y-0.5">
-                            {/* Graph/Chart Icon */}
-                            <svg
-                                className="w-6 h-6 text-white group-hover:text-[#059669]"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                strokeWidth={2.5}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
-                                />
-                                <polyline points="22,12 18,8 13,13 9,9" />
-                            </svg>
+                        <div className="bg-[#0D1B2A] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm transition-all duration-300 ease-in-out group-hover:shadow-md group-hover:-translate-y-0.5">
+                            {/* New Brand Logo */}
+                            <BrandLogo size={36} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
 
                             {/* Text */}
-                            <div className="text-white font-bold text-sm leading-tight tracking-wide group-hover:text-[#1f2937]">
-                                SALES &<br />MARKETING
+                            <div className="text-white font-bold text-sm leading-tight tracking-wide">
+                                SALES <br />MARKETING
                             </div>
                         </div>
                     </Link>

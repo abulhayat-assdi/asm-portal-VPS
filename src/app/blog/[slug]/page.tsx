@@ -9,6 +9,12 @@ type Props = {
     params: Promise<{ slug: string }>;
 };
 
+export async function generateStaticParams() {
+    return blogPosts.map((post) => ({
+        slug: post.slug,
+    }));
+}
+
 export default async function BlogPostPage({ params }: Props) {
     const { slug } = await params;
 

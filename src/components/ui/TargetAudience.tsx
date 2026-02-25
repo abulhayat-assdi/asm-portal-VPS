@@ -85,7 +85,7 @@ export default function TargetAudience({
                     style={{ transform: `translateY(${scrollY * 0.05}px)` }} // Slow parallax
                 >
                     <img
-                        src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+                        src="/images/home/audience-bg.jpg"
                         alt="Professional team collaboration"
                         className="w-full h-[120%] object-cover opacity-[0.15]"
                     />
