@@ -58,7 +58,6 @@ export default function Header({
         }
     });
 
-
     return (
         <header
             className={cn(
@@ -73,7 +72,7 @@ export default function Header({
                 "max-w-7xl mx-auto px-4 lg:px-6 rounded-md md:rounded-full border border-gray-200 shadow-sm transition-colors duration-300",
                 isTransparent 
                     ? "bg-white/90 backdrop-blur-md" 
-                    : "bg-[#e5e7eb]" // Base light gray pill background
+                    : "bg-[#e5e7eb]"
             )}>
                 <div className="flex items-center justify-between h-20">
                     {/* Left - Brand */}
@@ -113,8 +112,9 @@ export default function Header({
                     </nav>
 
                     {/* Right Components */}
-                    <div className="hidden lg:flex items-center gap-2 md:gap-4">
-                        {/* Secondary CTA */}
+                    <div className="hidden lg:flex items-center gap-2 md:gap-3">
+
+                        {/* Secondary CTA - Login as Teacher */}
                         {secondaryCtaText && (
                             <button
                                 onClick={handleSecondaryClick}

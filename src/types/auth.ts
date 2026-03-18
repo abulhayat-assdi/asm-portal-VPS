@@ -8,6 +8,7 @@ export interface UserProfile {
     displayName: string;
     role: UserRole;
     teacherId?: string; // Teacher ID for verifying class schedule (e.g. "102")
+    profileImageUrl?: string; // User's avatar or profile picture
     createdAt: Date;
     lastLogin: Date;
 }

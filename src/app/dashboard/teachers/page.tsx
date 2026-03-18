@@ -8,10 +8,13 @@ import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, Teacher } fro
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function TeachersPage() {
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Admin check
+    const isAdminUser = userProfile?.role === "admin";
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -191,13 +194,15 @@ export default function TeachersPage() {
                     <Badge variant="default" size="lg">
                         {loading ? "..." : `${filteredTeachers.length} Teachers`}
                     </Badge>
-                    <button
-                        onClick={openAddModal}
-                        className="px-4 py-2 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors inline-flex items-center gap-2"
-                    >
-                        <span className="text-lg">+</span>
-                        Add Teacher
-                    </button>
+                    {isAdminUser && (
+                        <button
+                            onClick={openAddModal}
+                            className="px-4 py-2 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors inline-flex items-center gap-2"
+                        >
+                            <span className="text-lg">+</span>
+                            Add Teacher
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -228,14 +233,24 @@ export default function TeachersPage() {
                 </div>
             ) : filteredTeachers.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredTeachers.map((teacher) => (
-                        <TeacherCard
-                            key={teacher.id}
-                            teacher={teacher}
-                            onEdit={openEditModal}
-                            onDelete={openDeleteModal}
-                        />
-                    ))}
+                    {filteredTeachers.map((teacher) => {
+                        // Check permissions
+                        const isOwner = userProfile?.email?.toLowerCase() === teacher.email.toLowerCase();
+                        
+                        // Edit allowed for admin OR owner
+                        // Delete allowed ONLY for admin
+                        const canEdit = isAdminUser || isOwner;
+                        const canDelete = isAdminUser;
+
+                        return (
+                            <TeacherCard
+                                key={teacher.id}
+                                teacher={teacher}
+                                onEdit={canEdit ? openEditModal : undefined}
+                                onDelete={canDelete ? openDeleteModal : undefined}
+                            />
+                        );
+                    })}
                 </div>
             ) : (
                 <div className="text-center py-12 bg-white rounded-lg shadow-sm">

@@ -126,9 +126,10 @@ export const createUserProfile = async (
  */
 export const updateLastLogin = async (uid: string): Promise<void> => {
     try {
-        await updateDoc(doc(db, "users", uid), {
+        // setDoc with merge:true safely updates even if document doesn't exist yet
+        await setDoc(doc(db, "users", uid), {
             lastLogin: serverTimestamp(),
-        });
+        }, { merge: true });
     } catch (error) {
         console.error("Error updating last login:", error);
     }

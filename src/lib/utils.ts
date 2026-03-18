@@ -17,7 +17,18 @@ export function formatDate(dateString: string): string {
  * Format date in short format (DD/MM/YYYY)
  */
 export function formatDateShort(dateString: string): string {
+    if (!dateString) return "";
+
+    // Check if already in DD/MM/YYYY or D/M/YYYY
+    const dmyMatch = dateString.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmyMatch) {
+        const [, d, m, y] = dmyMatch;
+        return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
+    }
+
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    
     const day = date.getDate().toString().padStart(2, "0");
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();

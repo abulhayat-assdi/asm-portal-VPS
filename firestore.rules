@@ -12,6 +12,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
@@ -23,13 +24,14 @@ service cloud.firestore {
     // Teachers Directory
     match /teachers/{docId} {
       allow read: if isAuth();
-      allow write: if isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isAuth() && request.auth.token.email.lower() == resource.data.email.lower());
     }
 
     // Users (Auth profiles & roles)
     match /users/{userId} {
       allow read: if isAuth();
-      allow write: if isAdmin() || request.auth.uid == userId;
+      allow write: if request.auth.uid == userId || isAdmin();
     }
 
     // Classes
@@ -63,6 +65,13 @@ service cloud.firestore {
       allow read: if isAuth();
       allow write: if isAdmin();
     }
+
+    // Batches (Dynamic Batch Mapping)
+    match /batches/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
 
     // Notices
     match /notices/{noticeId} {

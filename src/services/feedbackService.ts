@@ -29,17 +29,33 @@ export interface Feedback {
 const feedbackCollection = collection(db, "feedback");
 
 /**
- * Fetch all feedback ordered by creation date (newest first)
+ * Fetch feedback. Admins get all (ordered by date), Teachers get only APPROVED.
  */
-export const getFeedbackList = async (): Promise<Feedback[]> => {
+export const getFeedbackList = async (isAdmin: boolean = false): Promise<Feedback[]> => {
     try {
-        const q = query(feedbackCollection, orderBy("createdAt", "desc"));
+        let q;
+        if (isAdmin) {
+            q = query(feedbackCollection, orderBy("createdAt", "desc"));
+        } else {
+            q = query(feedbackCollection, where("status", "==", "APPROVED"));
+        }
+
         const snapshot = await getDocs(q);
 
-        return snapshot.docs.map(doc => ({
+        const feedbacks = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Feedback));
+
+        if (!isAdmin) {
+            // Sort client-side to avoid requiring a composite index in Firestore
+            return feedbacks.sort((a, b) => {
+                if (!a.createdAt || !b.createdAt) return 0;
+                return b.createdAt.toMillis() - a.createdAt.toMillis();
+            });
+        }
+
+        return feedbacks;
     } catch (error) {
         console.error("Error fetching feedback:", error);
         return [];

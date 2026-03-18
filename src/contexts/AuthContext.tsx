@@ -8,6 +8,21 @@ import * as authService from "@/services/authService";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ✅ Pre-approved admin list
+const APPROVED_ADMINS: Record<string, string> = {
+    "mohammadabulhayatt@gmail.com": "Abul Hayat",
+};
+
+// ✅ Pre-approved teacher list
+// এখানে ইমেইল → নাম ম্যাপিং। নতুন teacher যোগ করতে এই list এ add করুন।
+const APPROVED_TEACHERS: Record<string, string> = {
+    "rezvhe@gmail.com": "Mohammad Abu Zabar Rezvhe",
+    "sunil.somudro@gmail.com": "Golam Kibria",
+    "shibalshariar@gmail.com": "Shaibal Shariar",
+    "mnumaruf@gmail.com": "Md. Nesar Uddin",
+    "naim.sm207@gmail.com": "M M Naim Amran",
+};
+
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -27,7 +42,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (firebaseUser) {
                 // Fetch user profile from Firestore
-                const profile = await authService.getUserProfile(firebaseUser.uid);
+                let profile = await authService.getUserProfile(firebaseUser.uid);
+
+                // Check if the email is in any of the approved lists
+                let assignedName: string | undefined;
+                let assignedRole: "admin" | "teacher" | undefined;
+                
+                if (firebaseUser.email) {
+                    const email = firebaseUser.email.toLowerCase();
+                    if (APPROVED_ADMINS[email]) {
+                        assignedName = APPROVED_ADMINS[email];
+                        assignedRole = "admin";
+                    } else if (APPROVED_TEACHERS[email]) {
+                        assignedName = APPROVED_TEACHERS[email];
+                        assignedRole = "teacher";
+                    }
+                }
+
+                // If no profile exists OR it's a partial profile OR the role/name is incorrect
+                // we force create/update the profile to ensure proper access
+                if (assignedName && assignedRole) {
+                    if (!profile || profile.role !== assignedRole || profile.displayName !== assignedName) {
+                        await authService.createUserProfile(
+                            firebaseUser.uid,
+                            firebaseUser.email!,
+                            assignedName,
+                            assignedRole
+                        );
+                        // Re-fetch to get the newly created profile
+                        profile = await authService.getUserProfile(firebaseUser.uid);
+                    }
+                }
+
+                // Auto-assign `teacherId` and `profileImageUrl`
+                if (profile) {
+                    try {
+                        const { getAllTeachers } = await import("@/services/teacherService");
+                        const allTeachers = await getAllTeachers();
+                        
+                        const teacherMatch = allTeachers.find(t => 
+                            (profile!.email && t.email.toLowerCase() === profile!.email.toLowerCase()) || 
+                            t.name === profile!.displayName
+                        );
+
+                        if (teacherMatch) {
+                            if (!profile.teacherId && teacherMatch.teacherId && profile.role === "teacher") {
+                                const { doc, updateDoc } = await import("firebase/firestore");
+                                const { db } = await import("@/lib/firebase");
+                                
+                                await updateDoc(doc(db, "users", profile.uid), {
+                                    teacherId: teacherMatch.teacherId
+                                });
+                                
+                                profile.teacherId = teacherMatch.teacherId;
+                            }
+
+                            // Attach profile image to session
+                            if (teacherMatch.profileImageUrl) {
+                                profile.profileImageUrl = teacherMatch.profileImageUrl;
+                            }
+                        }
+
+                        // Fallback to Google photo if no teacher profile image
+                        if (!profile.profileImageUrl && firebaseUser.photoURL) {
+                            profile.profileImageUrl = firebaseUser.photoURL;
+                        }
+
+                    } catch (err) {
+                        console.error("Failed to sync teacher metadata:", err);
+                    }
+                }
+
                 setUserProfile(profile);
             } else {
                 setUserProfile(null);

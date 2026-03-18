@@ -27,19 +27,20 @@ export default function FeedbackPage() {
 
     // Fetch Feedback
     useEffect(() => {
+        // Wait until userProfile is loaded before fetching (avoids initial fetch as non-admin if admin)
+        if (userProfile === null) return;
+        
         const loadFeedback = async () => {
             setLoading(true);
-            const data = await feedbackService.getFeedbackList();
+            const data = await feedbackService.getFeedbackList(userProfile.role === "admin");
             setFeedbackList(data);
             setLoading(false);
         };
         loadFeedback();
-    }, []);
+    }, [userProfile]); // Reload if profile changes
 
-    // Filter feedback based on role
-    const visibleFeedback = isAdmin
-        ? feedbackList
-        : feedbackList.filter((f) => f.status === "APPROVED");
+    // Data is already filtered by the service based on role
+    const visibleFeedback = feedbackList;
 
     const handleApprove = async (id: string) => {
         if (!user) return;

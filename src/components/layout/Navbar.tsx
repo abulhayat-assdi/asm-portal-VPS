@@ -3,6 +3,8 @@
 import { getInitials } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 // Hijri date conversion helper
 function getHijriDate(date: Date): string {
     const hijriMonths = [
@@ -43,8 +45,18 @@ function getEnglishDateTime(date: Date): string {
     });
 }
 
+// Helper to get direct image URL from Google Drive link
+const getImageUrl = (url: string) => {
+    if (url && url.includes("drive.google.com") && url.includes("/d/")) {
+        const id = url.split("/d/")[1].split("/")[0];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+    }
+    return url;
+};
+
 export default function Navbar() {
     const [currentDateTime, setCurrentDateTime] = useState({ hijri: '', english: '' });
+    const { userProfile } = useAuth();
 
     useEffect(() => {
         const updateDateTime = () => {
@@ -63,6 +75,10 @@ export default function Navbar() {
 
         return () => clearInterval(interval);
     }, []);
+
+    // Fallbacks if userProfile is still loading
+    const displayName = userProfile?.displayName || "User";
+    const roleCapitalized = userProfile?.role ? userProfile.role.charAt(0).toUpperCase() + userProfile.role.slice(1) : "Loading...";
 
     return (
         <nav className="h-16 bg-white border-b border-[#e5e7eb] fixed top-0 left-0 lg:left-64 right-0 z-30">
@@ -93,12 +109,21 @@ export default function Navbar() {
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-medium text-[#1f2937]">
-                                Abul Hayat
+                                {displayName}
                             </p>
-                            <p className="text-xs text-[#6b7280]">Teacher</p>
+                            <p className="text-xs text-[#6b7280]">{roleCapitalized}</p>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#059669] to-[#10b981] flex items-center justify-center text-white font-bold text-sm">
-                            {getInitials("Abul Hayat")}
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#059669] to-[#10b981] flex items-center justify-center text-white font-bold text-sm overflow-hidden relative border border-gray-100">
+                            {userProfile?.profileImageUrl ? (
+                                <img
+                                    src={getImageUrl(userProfile.profileImageUrl)}
+                                    alt={displayName}
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span>{getInitials(displayName)}</span>
+                            )}
                         </div>
                     </div>
                 </div>
