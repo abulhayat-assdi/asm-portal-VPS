@@ -72,6 +72,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         // Re-fetch to get the newly created profile
                         profile = await authService.getUserProfile(firebaseUser.uid);
                     }
+                } else if (!profile && !assignedRole) {
+                    // Not an admin/teacher — must be a student whose Firestore write failed; create now
+                    await authService.createUserProfile(
+                        firebaseUser.uid,
+                        firebaseUser.email!,
+                        firebaseUser.displayName || "Student",
+                        "student"
+                    );
+                    profile = await authService.getUserProfile(firebaseUser.uid);
                 }
 
                 // Auto-assign `teacherId` and `profileImageUrl`
@@ -133,6 +142,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const registerWithEmail = async (email: string, password: string, name: string, batchName: string, roll: string) => {
+        setLoading(true);
+        try {
+            await authService.registerWithEmail(email, password, name, batchName, roll);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const refreshProfile = async () => {
+        if (user) {
+            const profile = await authService.getUserProfile(user.uid);
+            setUserProfile(profile);
+        }
+    };
+
     const loginWithGoogle = async () => {
         setLoading(true);
         try {
@@ -160,9 +185,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userProfile,
         loading,
         loginWithEmail,
+        registerWithEmail,
         loginWithGoogle,
         logout,
         sendPasswordReset,
+        refreshProfile,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

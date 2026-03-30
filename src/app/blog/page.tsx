@@ -13,7 +13,7 @@ export default async function BlogPage() {
         { label: "About", href: "/about" },
         { label: "Module", href: "/modules" },
         { label: "Instructors", href: "/instructors" },
-        { label: "Success Stories", href: "/feedback" },
+        { label: "Success Stories", href: "/success-stories" },
         { label: "Contact & Q&A", href: "/contact" },
         { label: "Blog", href: "/blog", isActive: true },
     ];
@@ -31,7 +31,7 @@ export default async function BlogPage() {
         {
             title: "Support",
             links: [
-                { label: "Success Stories", href: "/feedback" },
+                { label: "Success Stories", href: "/success-stories" },
                 { label: "Contact & Q&A", href: "/contact" },
                 { label: "Enroll / Learn More", href: "/enroll" },
             ],

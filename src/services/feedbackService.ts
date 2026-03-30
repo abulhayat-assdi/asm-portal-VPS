@@ -17,8 +17,12 @@ import { logActivity } from "./activityService";
 
 export interface Feedback {
     id: string;
+    studentName: string;
     batch: string; // Changed from batchName to match Firestore schema
+    role: string;
+    company: string;
     message: string;
+    rating: number;
     status: "APPROVED" | "PENDING"; // Uppercase as per requirement
     createdAt: Timestamp; // Using Firestore Timestamp
     submittedFrom: string;
@@ -118,11 +122,22 @@ export const deleteFeedback = async (id: string, adminUid: string) => {
 /**
  * Submit new feedback from public form (Status: PENDING)
  */
-export const submitFeedback = async (batch: string, message: string): Promise<boolean> => {
+export const submitFeedback = async (
+    studentName: string,
+    batch: string,
+    role: string,
+    company: string,
+    message: string,
+    rating: number
+): Promise<boolean> => {
     try {
         await addDoc(feedbackCollection, {
+            studentName,
             batch,
+            role,
+            company,
             message,
+            rating,
             status: "PENDING",
             createdAt: serverTimestamp(),
             submittedFrom: "PUBLIC_FORM",

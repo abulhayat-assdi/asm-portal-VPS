@@ -86,7 +86,7 @@ export default function Navbar() {
                 {/* Page Title / Breadcrumb */}
                 <div className="ml-12 lg:ml-0">
                     <h2 className="text-lg md:text-xl font-semibold text-[#1f2937]">
-                        Internal Portal
+                        {userProfile?.role === "student" ? "Student Portal" : "Internal Portal"}
                     </h2>
                 </div>
 

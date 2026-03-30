@@ -11,7 +11,7 @@ export default function ContactPage() {
         { label: "About", href: "/about" },
         { label: "Module", href: "/modules" },
         { label: "Instructors", href: "/instructors" },
-        { label: "Success Stories", href: "/feedback" },
+        { label: "Success Stories", href: "/success-stories" },
         { label: "Contact & Q&A", href: "/contact", isActive: true },
         { label: "Blog", href: "/blog" },
     ];
@@ -29,7 +29,7 @@ export default function ContactPage() {
         {
             title: "Support",
             links: [
-                { label: "Success Stories", href: "/feedback" },
+                { label: "Success Stories", href: "/success-stories" },
                 { label: "Contact & Q&A", href: "/contact" },
                 { label: "Enroll / Learn More", href: "/enroll" },
             ],

@@ -7,7 +7,7 @@ export default function ModulesPage() {
         { label: "About", href: "/about" },
         { label: "Module", href: "/modules", isActive: true },
         { label: "Instructors", href: "/instructors" },
-        { label: "Success Stories", href: "/feedback" },
+        { label: "Success Stories", href: "/success-stories" },
         { label: "Contact & Q&A", href: "/contact" },
         { label: "Blog", href: "/blog" },
     ];
@@ -25,7 +25,7 @@ export default function ModulesPage() {
         {
             title: "Support",
             links: [
-                { label: "Success Stories", href: "/feedback" },
+                { label: "Success Stories", href: "/success-stories" },
                 { label: "Contact & Q&A", href: "/contact" },
                 { label: "Enroll / Learn More", href: "/enroll" },
             ],

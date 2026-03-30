@@ -1,10 +1,12 @@
 import {
     signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
     signInWithPopup,
     GoogleAuthProvider,
     signOut,
     sendPasswordResetEmail,
     User,
+    updateProfile,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -23,6 +25,31 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
     } catch (error: any) {
         throw new Error(getAuthErrorMessage(error.code));
     }
+};
+
+/**
+ * Register with Email and Password (and map Batch & Roll immediately)
+ */
+export const registerWithEmail = async (email: string, password: string, name: string, batchName: string, roll: string): Promise<User> => {
+    // Step 1: Create Firebase Auth user — can throw auth/* codes
+    let userCredential;
+    try {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: name });
+    } catch (error: any) {
+        console.error("[Student Registration Error] code:", error.code, "| message:", error.message, "| full:", error);
+        throw new Error(getAuthErrorMessage(error.code));
+    }
+
+    // Step 2: Write Firestore profile — user is now authenticated so rules pass
+    // We pass batchName and roll to map directly during registration
+    try {
+        await createUserProfile(userCredential.user.uid, email, name, "student", undefined, batchName, roll);
+    } catch (firestoreError) {
+        console.warn("Firestore profile creation failed after registration, will retry on next load:", firestoreError);
+    }
+
+    return userCredential.user;
 };
 
 /**
@@ -84,6 +111,8 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
                 displayName: data.displayName,
                 role: data.role as UserRole,
                 teacherId: data.teacherId, // Read teacherId
+                studentBatchName: data.studentBatchName,
+                studentRoll: data.studentRoll,
                 createdAt: data.createdAt?.toDate() || new Date(),
                 lastLogin: data.lastLogin?.toDate() || new Date(),
             };
@@ -103,7 +132,9 @@ export const createUserProfile = async (
     email: string,
     displayName: string,
     role: UserRole = "teacher",
-    teacherId?: string
+    teacherId?: string,
+    studentBatchName?: string,
+    studentRoll?: string
 ): Promise<void> => {
     try {
         await setDoc(doc(db, "users", uid), {
@@ -112,9 +143,11 @@ export const createUserProfile = async (
             displayName,
             role,
             teacherId: teacherId || null, // Store teacherId
+            studentBatchName: studentBatchName || null,
+            studentRoll: studentRoll || null,
             createdAt: serverTimestamp(),
             lastLogin: serverTimestamp(),
-        });
+        }, { merge: true });
     } catch (error) {
         console.error("Error creating user profile:", error);
         throw new Error("Failed to create user profile");
@@ -136,9 +169,25 @@ export const updateLastLogin = async (uid: string): Promise<void> => {
 };
 
 /**
+ * Link Student Profile
+ */
+export const linkStudentProfile = async (uid: string, batchName: string, roll: string): Promise<void> => {
+    try {
+        await setDoc(doc(db, "users", uid), {
+            role: "student",
+            studentBatchName: batchName,
+            studentRoll: roll,
+        }, { merge: true });
+    } catch (error) {
+        console.error("Error linking student profile:", error);
+        throw new Error("Failed to link student profile.");
+    }
+};
+
+/**
  * Get user-friendly error messages
  */
-const getAuthErrorMessage = (errorCode: string): string => {
+const getAuthErrorMessage = (errorCode: string | undefined): string => {
     switch (errorCode) {
         case "auth/invalid-email":
             return "Invalid email address";
@@ -151,16 +200,28 @@ const getAuthErrorMessage = (errorCode: string): string => {
         case "auth/invalid-credential":
             return "Invalid email or password";
         case "auth/email-already-in-use":
-            return "Email already in use";
+            return "An account with this email already exists. Please log in instead.";
         case "auth/weak-password":
-            return "Password is too weak";
+            return "Password is too weak. Please use at least 6 characters.";
         case "auth/popup-closed-by-user":
             return "Sign-in popup was closed";
         case "auth/cancelled-popup-request":
             return "Sign-in cancelled";
         case "auth/network-request-failed":
             return "Network error. Please check your connection";
+        case "auth/operation-not-allowed":
+            return "Email/password registration is not enabled. Please contact the administrator.";
+        case "auth/too-many-requests":
+            return "Too many failed attempts. Please wait a few minutes and try again.";
+        case "auth/requires-recent-login":
+            return "Please log in again to complete this action.";
+        case "auth/account-exists-with-different-credential":
+            return "An account already exists with a different sign-in method.";
+        case "auth/missing-email":
+            return "Please provide an email address.";
         default:
-            return "An error occurred. Please try again";
+            return errorCode
+                ? `An error occurred (${errorCode}). Please try again.`
+                : "An error occurred. Please try again";
     }
 };

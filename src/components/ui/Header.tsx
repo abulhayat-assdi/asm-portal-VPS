@@ -114,6 +114,13 @@ export default function Header({
                     {/* Right Components */}
                     <div className="hidden lg:flex items-center gap-2 md:gap-3">
 
+                        <button
+                            onClick={() => router.push('/student-login')}
+                            className="px-5 py-2.5 text-sm font-bold/90 rounded-md bg-white text-[#059669] border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
+                        >
+                            Login as Student
+                        </button>
+
                         {/* Secondary CTA - Login as Teacher */}
                         {secondaryCtaText && (
                             <button
@@ -177,6 +184,18 @@ export default function Header({
                             ))}
                         </nav>
                         <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => {
+                                    router.push('/student-login');
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className="w-full px-6 py-3.5 bg-white text-[#059669] border border-[#059669] text-base font-bold rounded-full
+                                transition-all duration-200 ease-out
+                                hover:bg-[#f0fdf4]
+                                focus:outline-none focus:ring-2 focus:ring-[#059669] focus:ring-offset-2"
+                            >
+                                Login as Student
+                            </button>
                             <button
                                 onClick={() => {
                                     handleCtaClick();

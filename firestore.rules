@@ -68,7 +68,7 @@ service cloud.firestore {
 
     // Batches (Dynamic Batch Mapping)
     match /batches/{docId} {
-      allow read: if isAuth();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
@@ -89,6 +89,53 @@ service cloud.firestore {
     match /meeting_minutes/{docId} {
       allow read: if isAuth();
       allow write: if isAdmin();
+    }
+
+    // Student Profile Updates
+    match /student_profile_updates/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin() || isAuth(); // Students create, admins review/delete
+    }
+
+    // Public Batch Students list for registration
+    match /public_batch_students/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Exam Results
+    match /exam_results/{docId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Student Notices - any authenticated teacher/admin can write, students & all auth users can read
+    match /student_notices/{docId} {
+      allow read: if true; // Students read before login; also shown in dashboard
+      allow write: if isAuth(); // Teachers and admins can post
+    }
+
+    // Student Contact Messages - students create, admins read/manage
+    match /contact_messages/{docId} {
+      allow create: if isAuth(); // Any logged-in student can submit
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Module Resources - teachers upload for their own module, admin manages all
+    match /module_resources/{docId} {
+      allow read: if isAuth(); // Students and teachers all can read
+      allow create: if isAuth(); // Any logged-in teacher can upload
+      allow update, delete: if isAuth() && (
+        resource.data.teacherUid == request.auth.uid || isAdmin()
+      );
+    }
+
+    // Homework Submissions — Students create, all auth read, admin/system deletes
+    match /homework_submissions/{docId} {
+      allow create: if isAuth();
+      allow read: if isAuth();
+      allow update: if false; // Homework cannot be edited once submitted
+      allow delete: if isAuth(); // Allow authenticated users (admin cleanup runs client-side)
     }
 
     /* =====================================================
@@ -139,7 +186,7 @@ service cloud.firestore {
 
     // Course Modules
     match /course_modules/{docId} {
-      allow read: if resource.data.active == true;
+      allow read: if resource.data.active == true || isAuth();
       allow create, update, delete: if isAdmin();
     }
 

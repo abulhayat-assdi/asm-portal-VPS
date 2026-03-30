@@ -7,7 +7,8 @@ import {
     getDocs,
     serverTimestamp,
     query,
-    orderBy
+    orderBy,
+    where
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -112,9 +113,10 @@ const REVIEWS_COLLECTION = 'successReviews';
 
 export const getReviews = async (): Promise<WrittenReview[]> => {
     try {
+        // Fetch original admin-added reviews
         const q = query(collection(db, REVIEWS_COLLECTION), orderBy('order', 'asc'));
         const snap = await getDocs(q);
-        return snap.docs.map(d => {
+        const oldReviews = snap.docs.map(d => {
             const data = d.data();
             return {
                 id: d.id,
@@ -123,6 +125,36 @@ export const getReviews = async (): Promise<WrittenReview[]> => {
                 updatedAt: data.updatedAt?.toDate?.().toISOString(),
             } as WrittenReview;
         });
+
+        // Fetch student-submitted feedback that has been approved
+        const feedbackQ = query(collection(db, "feedback"), where("status", "==", "APPROVED"));
+        const feedbackSnap = await getDocs(feedbackQ);
+        const newReviews = feedbackSnap.docs.map(d => {
+            const data = d.data();
+            return {
+                id: d.id,
+                studentName: data.studentName || "Anonymous",
+                batch: data.batch || "",
+                role: data.role || "",
+                company: data.company || "",
+                quote: data.message || "",
+                rating: data.rating || 5,
+                order: 0, // default order for student reviews
+                createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+                updatedAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+            } as WrittenReview;
+        });
+
+        // Combine and sort
+        const combined = [...oldReviews, ...newReviews].sort((a, b) => {
+            // Sort by order first, then by date descending
+            if (a.order !== b.order) {
+                return a.order - b.order;
+            }
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+
+        return combined;
     } catch (error) {
         console.error("Error fetching reviews:", error);
         throw error;

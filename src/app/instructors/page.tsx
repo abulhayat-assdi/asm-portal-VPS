@@ -9,7 +9,7 @@ export default function InstructorsPage() {
         { label: "About", href: "/about" },
         { label: "Module", href: "/modules" },
         { label: "Instructors", href: "/instructors", isActive: true },
-        { label: "Success Stories", href: "/feedback" },
+        { label: "Success Stories", href: "/success-stories" },
         { label: "Contact & Q&A", href: "/contact" },
         { label: "Blog", href: "/blog" },
     ];
@@ -27,7 +27,7 @@ export default function InstructorsPage() {
         {
             title: "Support",
             links: [
-                { label: "Success Stories", href: "/feedback" },
+                { label: "Success Stories", href: "/success-stories" },
                 { label: "Contact & Q&A", href: "/contact" },
                 { label: "Enroll / Learn More", href: "/enroll" },
             ],

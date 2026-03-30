@@ -1,17 +1,64 @@
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 
 export interface Resource {
-    id: string; // Firestore Doc ID
+    id: string;
     title: string;
     category: "Course Module" | "Class Routine" | "Notes" | "Assignment" | "Exam / Practice";
     uploadedByUid: string;
     uploadedByName: string;
-    uploadDate: string; // Formatting to string for UI, or keep as Date object? UI expects string.
-    createdAt: any; // Firestore Timestamp
+    uploadDate: string;
+    createdAt: any;
     description?: string;
+    teacherName?: string;
+    order?: number;
     fileUrl: string;
+    storagePath?: string; // Firebase Storage path for deletion
+    fileName?: string;
 }
+
+/**
+ * Upload a file to Firebase Storage under the "resources/" path
+ */
+export const uploadResourceFile = (
+    file: File,
+    category: string,
+    onProgress?: (progress: number) => void
+): Promise<{ fileUrl: string; storagePath: string; fileName: string }> => {
+    return new Promise((resolve, reject) => {
+        const sanitized = category.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
+        const timestamp = Date.now();
+        const storagePath = `resources/${sanitized}/${timestamp}_${file.name}`;
+        const storageRef = ref(storage, storagePath);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                onProgress?.(Math.round(progress));
+            },
+            (error) => reject(error),
+            async () => {
+                const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve({ fileUrl, storagePath, fileName: file.name });
+            }
+        );
+    });
+};
+
+/**
+ * Delete a resource file from Firebase Storage
+ */
+export const deleteResourceFile = async (storagePath: string): Promise<void> => {
+    try {
+        await deleteObject(ref(storage, storagePath));
+    } catch (err) {
+        console.warn("Storage file may not exist:", err);
+    }
+};
+
 
 /**
  * Fetch all resources from Firestore
@@ -22,7 +69,7 @@ export const getAllResources = async (): Promise<Resource[]> => {
         const q = query(resourcesRef, orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
 
-        return snapshot.docs.map(doc => {
+        const mappedResources = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -31,12 +78,19 @@ export const getAllResources = async (): Promise<Resource[]> => {
                 uploadedByUid: data.uploadedByUid,
                 uploadedByName: data.uploadedByName,
                 description: data.description,
+                teacherName: data.teacherName,
+                order: data.order,
                 fileUrl: data.fileUrl,
                 createdAt: data.createdAt,
                 // Convert timestamp to readable date string for initial UI requirement
                 uploadDate: data.createdAt?.toDate ? data.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
             } as Resource;
         });
+
+        // Sort mapped resources by order, treating undefined as a high number
+        mappedResources.sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+        
+        return mappedResources;
     } catch (error) {
         console.error("Error fetching resources:", error);
         return [];

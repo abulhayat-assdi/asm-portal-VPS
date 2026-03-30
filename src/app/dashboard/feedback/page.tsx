@@ -51,7 +51,7 @@ export default function FeedbackPage() {
                 prev.map((f) => (f.id === id ? { ...f, status: "APPROVED" } : f))
             );
         } catch (error) {
-            alert("Failed to approve feedback");
+            alert("Failed to approve review");
         }
     };
 
@@ -63,7 +63,7 @@ export default function FeedbackPage() {
             setFeedbackList((prev) => prev.filter((f) => f.id !== id));
             setConfirmDeleteId(null);
         } catch (error) {
-            alert("Failed to delete feedback");
+            alert("Failed to delete review");
         } finally {
             setDeleting(false);
         }
@@ -76,10 +76,10 @@ export default function FeedbackPage() {
                 <div className="w-1 h-10 bg-[#059669] rounded-full"></div>
                 <div>
                     <h1 className="text-3xl font-bold text-[#1f2937]">
-                        Feedback & Suggestions
+                        Student Reviews
                     </h1>
                     <p className="text-[#6b7280] mt-1">
-                        View student feedback and suggestions
+                        View student reviews
                     </p>
                 </div>
             </div>
@@ -100,10 +100,10 @@ export default function FeedbackPage() {
                     </svg>
                     <div className="flex-1">
                         <p className="text-[#059669] font-semibold mb-1">
-                            Student Feedback Form Link:
+                            Student Review Form Link:
                         </p>
                         <p className="text-[#047857] text-sm mb-2">
-                            Share this link with students to collect feedback
+                            Share this link with students to collect reviews
                         </p>
                         <div className="flex items-center gap-2">
                             <input
@@ -127,17 +127,16 @@ export default function FeedbackPage() {
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-[#1f2937]">
-                        {isAdmin ? "All Feedback" : "Approved Feedback"}
+                        {isAdmin ? "All Reviews" : "Approved Reviews"}
                     </h2>
                     <span className="text-sm text-[#6b7280]">
-                        {visibleFeedback.length} feedback
-                        {visibleFeedback.length !== 1 ? "s" : ""}
+                        {visibleFeedback.length} review{visibleFeedback.length !== 1 ? "s" : ""}
                     </span>
                 </div>
 
                 {loading ? (
                     <div className="text-center py-12 text-gray-500">
-                        Loading feedback...
+                        Loading reviews...
                     </div>
                 ) : visibleFeedback.length > 0 ? (
                     <div className="space-y-4">
@@ -161,11 +160,30 @@ export default function FeedbackPage() {
 
                                         {/* Feedback Content */}
                                         <div className="flex-1">
-                                            {/* Header with Batch and Date */}
-                                            <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                                <span className="px-3 py-1 bg-[#059669] text-white text-sm font-semibold rounded-full">
-                                                    {feedback.batch}
-                                                </span>
+                                            {/* Header with Name, Role, Company */}
+                                            <div className="mb-2">
+                                                <h3 className="text-lg font-bold text-gray-900">{feedback.studentName || "Anonymous"}</h3>
+                                                {(feedback.role || feedback.company) && (
+                                                    <p className="text-sm text-gray-600">
+                                                        {feedback.role} {feedback.role && feedback.company ? "at" : ""} {feedback.company}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Header with Batch, Rating, and Date */}
+                                            <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                                {feedback.batch && (
+                                                    <span className="px-3 py-1 bg-[#059669] text-white text-sm font-semibold rounded-full">
+                                                        {feedback.batch}
+                                                    </span>
+                                                )}
+                                                <div className="flex text-yellow-400">
+                                                    {[...Array(feedback.rating || 5)].map((_, s) => (
+                                                        <svg key={s} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                        </svg>
+                                                    ))}
+                                                </div>
                                                 <span className="text-sm text-[#6b7280]">
                                                     📅 {feedback.createdAt ? formatDateShort(feedback.createdAt.toDate().toISOString()) : "N/A"}
                                                 </span>
@@ -180,9 +198,11 @@ export default function FeedbackPage() {
                                             </div>
 
                                             {/* Feedback Message */}
-                                            <p className="text-[#1f2937] leading-relaxed mb-4">
-                                                {feedback.message}
-                                            </p>
+                                            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4">
+                                                <p className="text-[#1f2937] leading-relaxed italic">
+                                                    &quot;{feedback.message}&quot;
+                                                </p>
+                                            </div>
 
                                             {/* Admin Controls */}
                                             {isAdmin && (
@@ -247,7 +267,7 @@ export default function FeedbackPage() {
                             />
                         </svg>
                         <p className="text-[#6b7280] text-lg">
-                            No feedback available yet
+                            No reviews available yet
                         </p>
                     </div>
                 )}

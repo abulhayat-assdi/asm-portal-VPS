@@ -14,8 +14,13 @@ import {
     addNotice,
     updateNotice,
     deleteNotice,
+    addStudentNotice,
+    getAllStudentNotices,
+    updateStudentNotice,
+    deleteStudentNotice,
     Class,
-    Notice
+    Notice,
+    StudentNotice
 } from "@/services/dashboardService";
 import Button from "@/components/ui/Button";
 import { serverTimestamp } from "firebase/firestore";
@@ -25,6 +30,7 @@ export default function DashboardPage() {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [classes, setClasses] = useState<Class[]>([]);
     const [notices, setNotices] = useState<Notice[]>([]);
+    const [studentNotices, setStudentNotices] = useState<StudentNotice[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Add/Edit Notice State
@@ -36,22 +42,38 @@ export default function DashboardPage() {
     const [newNoticePriority, setNewNoticePriority] = useState<"normal" | "urgent">("normal");
     const [isAddingNotice, setIsAddingNotice] = useState(false);
 
+    // Student Notice Modal State
+    const [isStudentNoticeModalOpen, setIsStudentNoticeModalOpen] = useState(false);
+    const [isEditStudentMode, setIsEditStudentMode] = useState(false);
+    const [editingStudentNoticeId, setEditingStudentNoticeId] = useState<string | null>(null);
+    const [studentNoticeTitle, setStudentNoticeTitle] = useState("");
+    const [studentNoticeDescription, setStudentNoticeDescription] = useState("");
+    const [studentNoticePriority, setStudentNoticePriority] = useState<"normal" | "urgent">("normal");
+    const [isAddingStudentNotice, setIsAddingStudentNotice] = useState(false);
+
     // Delete Notice State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [noticeToDelete, setNoticeToDelete] = useState<Notice | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Delete Student Notice State
+    const [isDeleteStudentModalOpen, setIsDeleteStudentModalOpen] = useState(false);
+    const [studentNoticeToDelete, setStudentNoticeToDelete] = useState<StudentNotice | null>(null);
+    const [isDeletingStudent, setIsDeletingStudent] = useState(false);
 
     // Fetch data from Firestore
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [classesData, noticesData] = await Promise.all([
+                const [classesData, noticesData, studentNoticesData] = await Promise.all([
                     getAllClasses(),
-                    getAllNotices()
+                    getAllNotices(),
+                    getAllStudentNotices()
                 ]);
                 setClasses(classesData);
                 setNotices(noticesData);
+                setStudentNotices(studentNoticesData);
             } catch (error) {
                 console.error("Error fetching dashboard data:", error);
             } finally {
@@ -182,6 +204,78 @@ export default function DashboardPage() {
         }
     };
 
+    // === STUDENT NOTICE HANDLERS ===
+    const handleStudentNoticeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!studentNoticeTitle.trim() || !studentNoticeDescription.trim()) return;
+        setIsAddingStudentNotice(true);
+        try {
+            if (isEditStudentMode && editingStudentNoticeId) {
+                await updateStudentNotice(editingStudentNoticeId, {
+                    title: studentNoticeTitle,
+                    description: studentNoticeDescription,
+                    priority: studentNoticePriority,
+                });
+            } else {
+                await addStudentNotice({
+                    title: studentNoticeTitle,
+                    description: studentNoticeDescription,
+                    priority: studentNoticePriority,
+                    date: new Date().toISOString().split('T')[0],
+                    createdBy: userProfile?.uid,
+                    createdByName: userProfile?.displayName || "Unknown",
+                    createdAt: serverTimestamp()
+                });
+            }
+            setStudentNotices(await getAllStudentNotices());
+            resetStudentNoticeForm();
+        } catch (error) {
+            console.error("Error saving student notice:", error);
+            alert("Failed to save. Please try again.");
+        } finally {
+            setIsAddingStudentNotice(false);
+        }
+    };
+
+    const resetStudentNoticeForm = () => {
+        setIsStudentNoticeModalOpen(false);
+        setIsEditStudentMode(false);
+        setEditingStudentNoticeId(null);
+        setStudentNoticeTitle("");
+        setStudentNoticeDescription("");
+        setStudentNoticePriority("normal");
+    };
+
+    const handleEditStudentNotice = (notice: StudentNotice) => {
+        setIsEditStudentMode(true);
+        setEditingStudentNoticeId(notice.id);
+        setStudentNoticeTitle(notice.title);
+        setStudentNoticeDescription(notice.description);
+        setStudentNoticePriority(notice.priority || "normal");
+        setIsStudentNoticeModalOpen(true);
+    };
+
+    const handleDeleteStudentClick = (notice: StudentNotice) => {
+        setStudentNoticeToDelete(notice);
+        setIsDeleteStudentModalOpen(true);
+    };
+
+    const handleDeleteStudentNotice = async () => {
+        if (!studentNoticeToDelete) return;
+        setIsDeletingStudent(true);
+        try {
+            await deleteStudentNotice(studentNoticeToDelete.id);
+            setStudentNotices(await getAllStudentNotices());
+            setIsDeleteStudentModalOpen(false);
+            setStudentNoticeToDelete(null);
+        } catch (error) {
+            console.error("Error deleting student notice:", error);
+            alert("Failed to delete. Please try again.");
+        } finally {
+            setIsDeletingStudent(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Animated Hero Card */}
@@ -306,7 +400,7 @@ export default function DashboardPage() {
 
             {/* Notice Board */}
             <div>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                     <div className="flex items-center gap-4">
                         <h2 className="text-2xl font-semibold text-[#1f2937] border-l-4 border-[#22c55e] pl-3">
                             Notice Board
@@ -316,13 +410,22 @@ export default function DashboardPage() {
                         </Badge>
                     </div>
 
-                    <Button
-                        onClick={() => setIsNoticeModalOpen(true)}
-                        size="sm"
-                        className="bg-[#059669] hover:bg-[#047857] text-white"
-                    >
-                        + Add Notice
-                    </Button>
+                    <div className="flex gap-2 flex-wrap">
+                        <Button
+                            onClick={() => setIsNoticeModalOpen(true)}
+                            size="sm"
+                            className="bg-[#059669] hover:bg-[#047857] text-white"
+                        >
+                            + Add Notice
+                        </Button>
+                        <Button
+                            onClick={() => setIsStudentNoticeModalOpen(true)}
+                            size="sm"
+                            className="bg-[#1e3a5f] hover:bg-[#162e4a] text-white"
+                        >
+                            📢 Add Notice for Students
+                        </Button>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -343,6 +446,58 @@ export default function DashboardPage() {
                                 onEdit={handleEditNotice}
                                 onDelete={handleDeleteClick}
                             />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Student Notice Board */}
+            <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-semibold text-[#1f2937] border-l-4 border-[#1e3a5f] pl-3">
+                            Student Notice
+                        </h2>
+                        <Badge variant="default">
+                            {loading ? "..." : `${studentNotices.length} Notices`}
+                        </Badge>
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div className="text-center py-12">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#1e3a5f]"></div>
+                        <p className="mt-4 text-[#6b7280]">Loading student notices...</p>
+                    </div>
+                ) : studentNotices.length === 0 ? (
+                    <div className="text-center py-12 bg-white rounded-lg shadow-soft">
+                        <p className="text-[#6b7280]">No student notices yet. Click "Add Notice for Students" to post one.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {studentNotices.map((notice) => (
+                            <div key={notice.id} className={`bg-white rounded-xl p-5 shadow-sm border-l-4 ${
+                                notice.priority === 'urgent' ? 'border-red-500' : 'border-[#1e3a5f]'
+                            } hover:shadow-md transition-shadow`}>
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                        notice.priority === 'urgent' ? 'bg-red-100 text-red-600' : 'bg-blue-50 text-[#1e3a5f]'
+                                    }`}>{notice.priority === 'urgent' ? '🔴 Urgent' : '📢 Student Notice'}</span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleEditStudentNotice(notice)}
+                                            className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
+                                        >Edit</button>
+                                        <button
+                                            onClick={() => handleDeleteStudentClick(notice)}
+                                            className="text-gray-400 hover:text-red-600 transition-colors text-sm"
+                                        >Delete</button>
+                                    </div>
+                                </div>
+                                <h4 className="font-bold text-gray-900 mt-2">{notice.title}</h4>
+                                <p className="text-gray-600 text-sm mt-1 leading-relaxed">{notice.description}</p>
+                                <p className="text-xs text-gray-400 mt-3">By: {notice.createdByName} · {notice.date}</p>
+                            </div>
                         ))}
                     </div>
                 )}
@@ -467,6 +622,111 @@ export default function DashboardPage() {
                                 >
                                     {isDeleting ? "Deleting..." : "Delete"}
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Student Notice Add/Edit Modal */}
+            {isStudentNoticeModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={resetStudentNoticeForm}>
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-gray-900">
+                                {isEditStudentMode ? "Edit Student Notice" : "Add Notice for Students"}
+                            </h3>
+                            <button onClick={resetStudentNoticeForm} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
+                        </div>
+                        <form onSubmit={handleStudentNoticeSubmit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                                <input
+                                    type="text"
+                                    value={studentNoticeTitle}
+                                    onChange={(e) => setStudentNoticeTitle(e.target.value)}
+                                    placeholder="Enter notice title"
+                                    required
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a5f] focus:border-[#1e3a5f] outline-none transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                                <textarea
+                                    value={studentNoticeDescription}
+                                    onChange={(e) => setStudentNoticeDescription(e.target.value)}
+                                    placeholder="Enter notice message for students..."
+                                    required
+                                    rows={4}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a5f] focus:border-[#1e3a5f] outline-none transition-all resize-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <div className="flex gap-4">
+                                    {(['normal', 'urgent'] as const).map((priority) => (
+                                        <label key={priority} className="flex items-center cursor-pointer group">
+                                            <input
+                                                type="radio"
+                                                name="studentPriority"
+                                                value={priority}
+                                                checked={studentNoticePriority === priority}
+                                                onChange={() => setStudentNoticePriority(priority)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`
+                                                px-4 py-2 rounded-lg text-sm font-medium capitalize border transition-all
+                                                ${studentNoticePriority === priority
+                                                    ? priority === 'urgent'
+                                                        ? 'bg-red-50 border-red-200 text-red-700'
+                                                        : 'bg-blue-50 border-blue-200 text-[#1e3a5f]'
+                                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}
+                                            `}>
+                                                {priority}
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <Button type="button" variant="outline" className="w-full" onClick={resetStudentNoticeForm}>Cancel</Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isAddingStudentNotice}
+                                    className="w-full bg-[#1e3a5f] hover:bg-[#162e4a] text-white"
+                                >
+                                    {isAddingStudentNotice ? "Saving..." : (isEditStudentMode ? "Update" : "Post to Students")}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Student Notice Modal */}
+            {isDeleteStudentModalOpen && studentNoticeToDelete && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                        <div className="text-center">
+                            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                                <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Student Notice</h3>
+                            <p className="text-gray-500 mb-6">
+                                Are you sure you want to delete <strong>&quot;{studentNoticeToDelete.title}&quot;</strong>? This action cannot be undone.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setIsDeleteStudentModalOpen(false); setStudentNoticeToDelete(null); }}
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                                >Cancel</button>
+                                <button
+                                    onClick={handleDeleteStudentNotice}
+                                    disabled={isDeletingStudent}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                >{isDeletingStudent ? "Deleting..." : "Delete"}</button>
                             </div>
                         </div>
                     </div>
