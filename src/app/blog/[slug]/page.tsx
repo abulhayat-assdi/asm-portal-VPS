@@ -1,7 +1,7 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import Link from "next/link";
-import { getPostBySlug, getPosts } from "@/services/blogService";
+import { getPostBySlug, getPublishedPosts } from "@/services/blogService";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";
@@ -48,8 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export async function generateStaticParams() {
-    const allPosts = await getPosts();
-    const publishedPosts = allPosts.filter(p => p.status === 'published');
+    const publishedPosts = await getPublishedPosts();
     return publishedPosts.map((post) => ({
         slug: post.slug,
     }));

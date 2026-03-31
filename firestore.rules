@@ -86,7 +86,7 @@ service cloud.firestore {
 
     // Batches (Dynamic Batch Mapping)
     match /batches/{docId} {
-      allow read: if isAuth();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
@@ -117,7 +117,7 @@ service cloud.firestore {
 
     // Public Batch Students list for registration
     match /public_batch_students/{docId} {
-      allow read: if isAuth();
+      allow read: if true;
       allow write: if isAdmin();
     }
 

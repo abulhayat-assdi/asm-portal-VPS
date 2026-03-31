@@ -120,33 +120,9 @@ interface ChatMessage {
     parts: string;
 }
 
-// TODO: In-memory rateLimitMap will not persist across serverless instances and should be replaced with Upstash Redis or Firestore document counting for production deployment.
-const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10;
-
 export async function POST(request: NextRequest) {
     try {
-        let body;
-        try {
-            body = await request.json();
-        } catch (e) {
-            return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
-        }
-
-        const ip = request.headers.get("x-forwarded-for")?.split(',')[0] || "unknown-ip";
-        if (ip !== "unknown-ip") {
-            const now = Date.now();
-            const record = rateLimitMap.get(ip);
-            if (!record || (now - record.lastReset > RATE_LIMIT_WINDOW_MS)) {
-                rateLimitMap.set(ip, { count: 1, lastReset: now });
-            } else if (record.count >= MAX_REQUESTS_PER_WINDOW) {
-                return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-            } else {
-                record.count += 1;
-            }
-        }
-
+        const body = await request.json();
         const { message, history } = body as { message: unknown; history?: unknown };
 
         // ── Input validation ──────────────────────────────────

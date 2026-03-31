@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { generateAIResponse } from "@/services/aiService";
+import { generateAIResponse } from "@/lib/mock-ai-service";
 import { cn } from "@/lib/utils";
 
 type Message = {

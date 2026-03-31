@@ -1,29 +1,36 @@
-# ASM Internal Portal
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Welcome to the **ASM Internal Portal** – the central hub for managing student and teacher activities, resources, and communications for ASM.
+## Getting Started
 
-This repository holds the source code for the internal web application designed to streamline administration, class scheduling, homework tracking, resource sharing, and student portal access.
+First, run the development server:
 
-## Features
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-- **Admin/Staff Dashboard**: Manage batches, student profiles, teacher directories, class routines, and internal policies.
-- **Student Dashboard**: Access class schedules, view targeted notices, download learning modules, submit homework, and check results.
-- **Resource Management**: Seamlessly share PDFs, links, and Google Drive resources categorization.
-- **Interactive AI Support**: Built-in intelligent FAQ and support assistance.
-- **Blog & Success Stories**: Share achievements and educational articles within the community.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Tech Stack
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project is built using modern web technologies:
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-- **Framework:** [Next.js](https://nextjs.org/) (App Router)
-- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
-- **Backend/Database:** [Firebase](https://firebase.google.com/) (Firestore, Authentication, Storage, Hosting)
-- **Language:** TypeScript
+## Learn More
 
-## Deployment
+To learn more about Next.js, take a look at the following resources:
 
-The portal is designed to be deployed securely. The production build ensures server-side rendering (SSR) and API route support where necessary.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
----
-*This is a private/internal repository outline. Please ensure you have the correct authorized environment variables configured before running the project locally.*
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

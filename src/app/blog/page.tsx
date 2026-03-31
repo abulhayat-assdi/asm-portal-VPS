@@ -1,13 +1,12 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
-import { getPosts } from "@/services/blogService";
+import { getPublishedPosts } from "@/services/blogService";
 import BlogList from "@/components/blog/BlogList";
 
 export const revalidate = 3600; // revalidate at most every hour
 
 export default async function BlogPage() {
-    const allPosts = await getPosts();
-    const publishedPosts = allPosts.filter(p => p.status === 'published');
+    const publishedPosts = await getPublishedPosts();
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about" },

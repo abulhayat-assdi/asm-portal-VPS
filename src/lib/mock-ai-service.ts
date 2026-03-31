@@ -6,6 +6,7 @@
 
 import { getAI, getGenerativeModel, GoogleAIBackend } from "@firebase/ai";
 import app from "@/lib/firebase";
+import { and } from "firebase/firestore";
 
 // কোর্স সম্পর্কিত system prompt
 const SYSTEM_PROMPT = `You are the official AI Admission Counselor and Virtual Assistant for "The Art of Sales & Marketing", a 90-day residential training program by As-Sunnah Skill Development Institute (আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউট). 
@@ -78,14 +79,14 @@ If a user asks about the overall syllabus, give a short summary. BUT if a user a
 - Effective Communication: ভার্বাল ও নন-ভার্বাল কমিউনিকেশন, অ্যাক্টিভ লিসেনিং এবং পারসুয়েসিভ স্পিচ (Persuasive Communication)।
 - Workplace Etiquette: অফিস পলিটিক্স ম্যানেজমেন্ট, অ্যাডাপ্টেবিলিটি, এথিকস, টিমওয়ার্ক এবং কলিগদের সাথে প্রফেশনাল রিলেশনশিপ।
 
-**7. Career Planning & Branding (ক্যারিয়ার প্ল্যানিং ও পার্সোনাল ব্র্যান্ডিং):**
-- Action Plan: ৩০-৯০ দিনের ক্যারিয়ার অ্যাকশন প্ল্যান এবং SMART গোল সেটিং।
-- Job Search Strategy: লিঙ্কডইন (LinkedIn) নেটওয়ার্কিং, সেলস পিচ ইমেইল রাইটিং এবং জব মার্কেট অ্যানালাইসিস।
+**7. Career Planning & Branding (ক্যারিয়ার প্ল্যানিং ও পার্সোনাল ব্র্যান্ডিং):**
+- Action Plan: ৩০-৯০ দিনের ক্যারিয়ার অ্যাকশন প্ল্যান এবং SMART গোল সেটিং।
+- Job Search Strategy: লিঙ্কডইন (LinkedIn) নেটওয়ার্কিং, সেলস পিচ ইমেইল রাইটিং এবং জব মার্কেট অ্যানালাইসিস।
 - Resume & Interview: ATS-ফ্রেন্ডলি রেজ্যুমে (CV) ও কভার লেটার তৈরি, স্যালারি নেগোসিয়েশন এবং মক ইন্টারভিউ সিমুলেশন।
 
 **8. Da'wah & Islamic Ethics (ইসলামিক বিজনেস এথিকস ও রীতিনীতি):**
 - Business Fiqh (মুয়ামালাত): হালাল-হারাম ব্যবসার মূলনীতি, ক্রয়-বিক্রয়ের ফিকহ (মুরাবাহা, মুদারাবা, ইজারা) এবং সুদ (Riba) থেকে বাঁচার উপায়।
-- Islamic Practices: আকিদা, পবিত্রতা (ওজু/তায়াম্মুম), নামাজ, রোজা, জাকাত ও হজের প্র্যাকটিক্যাল মাসয়ালা।
+- Islamic Practices: আকিদা, পবিত্রতা (ওজু/তায়াম্মুম), নামাজ, রোজা, জাকাত ও হজের প্র্যাকটিক্যাল মাসয়ালা।
 - Character Building: ইখলাস (Ikhlas), আমানাহ (Trust), আদল (Fairness), এবং ইহসান (Excellence) এর মাধ্যমে কর্মক্ষেত্রে হালাল রিজিক উপার্জনের মানসিকতা তৈরি।
 - Quran Recitation: বিশুদ্ধ কোরআন তেলাওয়াত (তাজবীদ) এবং দৈনন্দিন আমল ও তারবিয়াহ।
 
@@ -172,7 +173,7 @@ function getModel() {
         try {
             const ai = getAI(app, { backend: new GoogleAIBackend() });
             geminiModel = getGenerativeModel(ai, {
-                model: "gemini-2.0-flash",
+                model: "gemini-2.5-flash",
                 systemInstruction: SYSTEM_PROMPT,
             });
         } catch (e) {

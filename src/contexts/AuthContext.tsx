@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, onIdTokenChanged } from "firebase/auth";
+import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AuthContextType, UserProfile } from "@/types/auth";
 import * as authService from "@/services/authService";
@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
             if (firebaseUser) {
@@ -58,27 +58,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // directory — this is safe and read-only, no role changes involved.
                 if (profile) {
                     try {
-                        const { db } = await import("@/lib/firebase");
-                        const { collection, query, where, getDocs, limit } = await import("firebase/firestore");
-                        const teachersRef = collection(db, "teachers");
+                        const { getAllTeachers } = await import("@/services/teacherService");
+                        const allTeachers = await getAllTeachers();
 
-                        let teacherMatch: any = null;
-
-                        if (profile!.email) {
-                            const qEmail = query(teachersRef, where("email", "==", profile!.email), limit(1));
-                            const snapshot = await getDocs(qEmail);
-                            if (!snapshot.empty) teacherMatch = snapshot.docs[0].data();
-                        }
-
-                        if (!teacherMatch && profile!.displayName) {
-                            const qName = query(teachersRef, where("name", "==", profile!.displayName), limit(1));
-                            const snapshot = await getDocs(qName);
-                            if (!snapshot.empty) teacherMatch = snapshot.docs[0].data();
-                        }
+                        const teacherMatch = allTeachers.find((t) =>
+                            (profile!.email && t.email.toLowerCase() === profile!.email.toLowerCase()) ||
+                            t.name === profile!.displayName
+                        );
 
                         if (teacherMatch) {
                             if (!profile.teacherId && teacherMatch.teacherId && profile.role === "teacher") {
                                 const { doc, updateDoc } = await import("firebase/firestore");
+                                const { db } = await import("@/lib/firebase");
 
                                 await updateDoc(doc(db, "users", profile.uid), {
                                     teacherId: teacherMatch.teacherId,
@@ -119,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             await authService.loginWithEmail(email, password);
             // We DO NOT set loading to false here.
-            // The onIdTokenChanged listener will handle it once the profile is fetched.
+            // The onAuthStateChanged listener will handle it once the profile is fetched.
         } catch (error) {
             setLoading(false);
             throw error;
@@ -159,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.logout();
-            // onIdTokenChanged will set profile null and loading false
+            // onAuthStateChanged will set profile null and loading false
         } catch (error) {
             setLoading(false);
             throw error;

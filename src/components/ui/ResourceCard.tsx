@@ -1,7 +1,7 @@
 import Card, { CardBody } from "./Card";
 import Badge from "./Badge";
 import Button from "./Button";
-import { Resource } from "@/services/resourceService";
+import { Resource } from "@/lib/mockData";
 import { formatDateShort } from "@/lib/utils";
 
 interface ResourceCardProps {
@@ -11,16 +11,12 @@ interface ResourceCardProps {
 export default function ResourceCard({ resource }: ResourceCardProps) {
     const getCategoryIcon = (category: string) => {
         switch (category) {
-            case "Course Module":
-                return "📚";
-            case "Class Routine":
-                return "🕒";
-            case "Notes":
+            case "PDF":
                 return "📄";
-            case "Assignment":
-                return "📝";
-            case "Exam / Practice":
-                return "✍️";
+            case "Drive":
+                return "☁️";
+            case "Link":
+                return "🔗";
             default:
                 return "📁";
         }
@@ -28,15 +24,11 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
 
     const getCategoryVariant = (category: string): "success" | "info" | "warning" => {
         switch (category) {
-            case "Course Module":
+            case "PDF":
+                return "error" as "success";
+            case "Drive":
                 return "info";
-            case "Class Routine":
-                return "warning";
-            case "Notes":
-                return "success";
-            case "Assignment":
-                return "info";
-            case "Exam / Practice":
+            case "Link":
                 return "warning";
             default:
                 return "info";
@@ -66,18 +58,16 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
 
                 <div className="space-y-2 mb-4">
                     <p className="text-xs text-gray-500 dark:text-gray-500">
-                        👤 Uploaded by: {resource.uploadedByName}
+                        👤 Uploaded by: {resource.uploadedBy}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                         📅 Date: {formatDateShort(resource.uploadDate)}
                     </p>
                 </div>
 
-                <a href={resource.fileUrl} target="_blank" rel="noopener noreferrer" className="block">
-                    <Button variant="primary" size="sm" className="w-full">
-                        View / Download
-                    </Button>
-                </a>
+                <Button variant="primary" size="sm" className="w-full">
+                    {resource.category === "Link" ? "Open Link" : "View / Download"}
+                </Button>
             </CardBody>
         </Card>
     );
