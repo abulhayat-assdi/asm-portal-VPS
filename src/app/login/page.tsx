@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function LoginPage() {
     const router = useRouter();
-    const { loginWithEmail, loginWithGoogle, sendPasswordReset } = useAuth();
-
+    const { userProfile, loading, loginWithEmail, loginWithGoogle, sendPasswordReset } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -16,6 +15,13 @@ export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [resetEmail, setResetEmail] = useState("");
+
+    // Auto-redirect if already logged in
+    useEffect(() => {
+        if (!loading && userProfile) {
+            window.location.href = "/dashboard";
+        }
+    }, [userProfile, loading]);
 
     // Email validation
     const validateEmail = (email: string) => {
@@ -48,11 +54,11 @@ export default function LoginPage() {
 
         try {
             await loginWithEmail(email, password);
-            router.push("/dashboard");
+            window.location.href = "/dashboard";
+            return;
         } catch (err: any) {
             setError(err.message || "Failed to login. Please try again.");
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Only reset on error
         }
     };
 
@@ -63,11 +69,11 @@ export default function LoginPage() {
 
         try {
             await loginWithGoogle();
-            router.push("/dashboard");
+            window.location.href = "/dashboard";
+            return;
         } catch (err: any) {
             setError(err.message || "Failed to login with Google. Please try again.");
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Only reset on error
         }
     };
 

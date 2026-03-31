@@ -1,1 +1,0 @@
-﻿src/lib/uploadImage.ts(3,30): error TS2307: Cannot find module 'browser-image-compression' or its corresponding type declarations.

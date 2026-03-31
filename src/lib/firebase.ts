@@ -23,8 +23,10 @@ export const storage = getStorage(app);
 
 // Enable auth persistence (Remember Me by default)
 // This keeps users logged in even after closing the browser
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error("Error setting auth persistence:", error);
-});
+if (typeof window !== "undefined") {
+    setPersistence(auth, browserLocalPersistence).catch((error) => {
+        console.error("Error setting auth persistence:", error);
+    });
+}
 
 export default app;

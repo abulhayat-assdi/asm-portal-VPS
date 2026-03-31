@@ -20,8 +20,8 @@ export default function StudentProtectedRoute({ children }: { children: React.Re
         }
     }, [user, userProfile, loading, router]);
 
-    // Show loading spinner while auth is resolving
-    if (loading || !user || (userProfile && userProfile.role !== "student")) {
+    // Show loading spinner while auth and profile are resolving
+    if (loading || (user && !userProfile) || !user || (userProfile && userProfile.role !== "student")) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#059669]"></div>

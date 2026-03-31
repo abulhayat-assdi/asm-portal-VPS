@@ -137,8 +137,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.loginWithEmail(email, password);
-        } finally {
+            // We DO NOT set loading to false here. 
+            // The onAuthStateChanged listener will handle it once the profile is fetched.
+        } catch (error) {
             setLoading(false);
+            throw error;
         }
     };
 
@@ -146,8 +149,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.registerWithEmail(email, password, name, batchName, roll);
-        } finally {
+            // We DO NOT set loading to false here.
+            // listener handles it.
+        } catch (error) {
             setLoading(false);
+            throw error;
         }
     };
 
@@ -162,8 +168,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.loginWithGoogle();
-        } finally {
+        } catch (error) {
             setLoading(false);
+            throw error;
         }
     };
 
@@ -171,8 +178,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.logout();
-        } finally {
+            // onAuthStateChanged will set profile null and loading false
+        } catch (error) {
             setLoading(false);
+            throw error;
         }
     };
 

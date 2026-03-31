@@ -1,6 +1,10 @@
 export const getImageUrl = (imagePath: string) => {
+    if (!imagePath) {
+        return '';
+    }
+
     // If it's already a full URL (e.g. Firebase Storage upload from dashboard), return as-is
-    if (imagePath && imagePath.startsWith('http')) {
+    if (imagePath.startsWith('http')) {
         return imagePath;
     }
 

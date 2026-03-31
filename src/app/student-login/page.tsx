@@ -99,12 +99,12 @@ export default function StudentLoginPage() {
     useEffect(() => {
         if (!loading && userProfile) {
             if (userProfile.role === "student") {
-                router.push("/student-dashboard");
+                window.location.href = "/student-dashboard";
             } else if (userProfile.role === "admin" || userProfile.role === "teacher") {
-                router.push("/dashboard");
+                window.location.href = "/dashboard";
             }
         }
-    }, [userProfile, loading, router]);
+    }, [userProfile, loading]);
 
     const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
@@ -125,14 +125,17 @@ export default function StudentLoginPage() {
                 
                 // Directly pass batch and roll so profile maps at creation
                 await registerWithEmail(email, password, name, batchName, roll);
+                window.location.href = "/student-dashboard";
+                return; // Prevent further execution and finally block from running
             } else {
                 if (!password) throw new Error("Password is required");
                 await loginWithEmail(email, password);
+                window.location.href = "/student-dashboard";
+                return; // Prevent finally block from clearing state while navigating
             }
         } catch (err: any) {
             setAuthError(err.message || "Authentication failed.");
-        } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Only reset on error
         }
     };
 

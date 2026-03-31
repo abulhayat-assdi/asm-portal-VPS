@@ -118,11 +118,10 @@ export const addReply = async (commentId: string, existingReplies: CommentReply[
         createdAt: new Date().toISOString() // Storing as string in the array is simpler since it's nested
     };
 
-    const updatedReplies = [...existingReplies, newReply];
-
+    const { arrayUnion } = await import('firebase/firestore');
     await updateDoc(commentRef, {
-        replies: updatedReplies
+        replies: arrayUnion(newReply)
     });
 
-    return updatedReplies;
+    return [...existingReplies, newReply];
 };

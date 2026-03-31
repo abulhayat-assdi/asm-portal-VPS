@@ -31,7 +31,14 @@ service cloud.firestore {
     // Users (Auth profiles & roles)
     match /users/{userId} {
       allow read: if isAuth();
-      allow write: if request.auth.uid == userId || isAdmin();
+      // Users can create their own profile but cannot give themselves 'admin' role
+      allow create: if isAdmin() || (request.auth.uid == userId && request.resource.data.role != 'admin');
+      // Users can update their profile but cannot modify the 'role' field
+      allow update: if isAdmin() || (
+        request.auth.uid == userId && 
+        (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
+      );
+      allow delete: if isAdmin() || request.auth.uid == userId;
     }
 
     // Classes
@@ -135,7 +142,8 @@ service cloud.firestore {
       allow create: if isAuth();
       allow read: if isAuth();
       allow update: if false; // Homework cannot be edited once submitted
-      allow delete: if isAuth(); // Allow authenticated users (admin cleanup runs client-side)
+      // Only owner or admin can delete
+      allow delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
     }
 
     /* =====================================================
@@ -162,7 +170,10 @@ service cloud.firestore {
 
     // Blog Comments (Public read, write, update for likes/replies)
     match /blogComments/{commentId} {
-      allow read, create, update: if true;
+      // Anyone can read and create comments
+      allow read, create: if true;
+      // Anyone can update, but ONLY the 'likes' and 'replies' fields
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'replies']);
       allow delete: if isAdmin();
     }
 
@@ -174,7 +185,8 @@ service cloud.firestore {
 
     // Posts (Legacy blog collection)
     match /posts/{postId} {
-      allow read: if true;
+      // Only published posts are public, admins can read drafts
+      allow read: if resource.data.status == 'published' || isAdmin();
       allow write: if isAdmin();
     }
 

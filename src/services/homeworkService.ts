@@ -69,10 +69,15 @@ export const submitHomework = async (
     data: Omit<HomeworkSubmission, "id" | "submittedAt">
 ): Promise<string> => {
     try {
-        const docRef = await addDoc(collection(db, HOMEWORK_COLLECTION), {
+        const payload: any = {
             ...data,
             submittedAt: Timestamp.now(),
-        });
+        };
+
+        // Remove undefined fields to prevent Firestore errors
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+        const docRef = await addDoc(collection(db, HOMEWORK_COLLECTION), payload);
         return docRef.id;
     } catch (error) {
         console.error("Error submitting homework:", error);

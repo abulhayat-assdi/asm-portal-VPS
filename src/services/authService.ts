@@ -63,8 +63,8 @@ export const loginWithGoogle = async (): Promise<User> => {
         // Check if user profile exists, if not create one
         const userProfile = await getUserProfile(user.uid);
         if (!userProfile) {
-            // Create new user profile with default role "teacher"
-            await createUserProfile(user.uid, user.email!, user.displayName || "User", "teacher");
+            // Create new user profile with default role "student"
+            await createUserProfile(user.uid, user.email!, user.displayName || "User", "student");
         } else {
             await updateLastLogin(user.uid);
         }
@@ -131,7 +131,7 @@ export const createUserProfile = async (
     uid: string,
     email: string,
     displayName: string,
-    role: UserRole = "teacher",
+    role: UserRole = "student",
     teacherId?: string,
     studentBatchName?: string,
     studentRoll?: string

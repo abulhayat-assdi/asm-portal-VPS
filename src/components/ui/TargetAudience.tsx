@@ -61,14 +61,20 @@ export default function TargetAudience({
     const sectionRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
-        // Parallax logic - disable on mobile/reduced motion
+        let ticking = false;
         const handleScroll = () => {
-            if (window.innerWidth > 640 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                setScrollY(window.scrollY);
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    if (window.innerWidth > 640 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                        setScrollY(window.scrollY);
+                    }
+                    ticking = false;
+                });
+                ticking = true;
             }
         };
 
-        window.addEventListener("scroll", handleScroll);
+        window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
