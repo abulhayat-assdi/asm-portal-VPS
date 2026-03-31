@@ -7,6 +7,7 @@ import {
     sendPasswordResetEmail,
     User,
     updateProfile,
+    deleteUser,
 } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -28,28 +29,53 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
 };
 
 /**
- * Register with Email and Password (and map Batch & Roll immediately)
+ * Register with Email and Password — Atomic Registration
+ *
+ * Strategy:
+ *   1. Create Firebase Auth user.
+ *   2. Attempt to write the Firestore profile.
+ *   3. If Firestore write fails → delete the Auth user immediately so the
+ *      account is never left in a "zombie" state (Auth exists, no profile).
+ *      The user can then re-register cleanly after fixing the issue.
  */
-export const registerWithEmail = async (email: string, password: string, name: string, batchName: string, roll: string): Promise<User> => {
-    // Step 1: Create Firebase Auth user — can throw auth/* codes
-    let userCredential;
+export const registerWithEmail = async (
+    email: string,
+    password: string,
+    name: string,
+    batchName: string,
+    roll: string
+): Promise<User> => {
+    // Step 1: Create Firebase Auth user
+    let authUser: User;
     try {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: name });
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        authUser = userCredential.user;
+        await updateProfile(authUser, { displayName: name });
     } catch (error: any) {
-        console.error("[Student Registration Error] code:", error.code, "| message:", error.message, "| full:", error);
+        console.error("[Registration] Auth user creation failed:", error.code, error.message);
         throw new Error(getAuthErrorMessage(error.code));
     }
 
-    // Step 2: Write Firestore profile — user is now authenticated so rules pass
-    // We pass batchName and roll to map directly during registration
+    // Step 2: Write Firestore profile — if this fails, clean up the Auth user
     try {
-        await createUserProfile(userCredential.user.uid, email, name, "student", undefined, batchName, roll);
-    } catch (firestoreError) {
-        console.warn("Firestore profile creation failed after registration, will retry on next load:", firestoreError);
+        await createUserProfile(authUser.uid, email, name, "student", undefined, batchName, roll);
+    } catch (firestoreError: any) {
+        console.error("[Registration] Firestore profile creation failed — rolling back Auth user:", firestoreError);
+
+        // Rollback: delete the orphaned Auth user so the student can retry cleanly
+        try {
+            await deleteUser(authUser);
+        } catch (deleteError) {
+            console.error("[Registration] Failed to delete orphaned Auth user during rollback:", deleteError);
+        }
+
+        throw new Error(
+            "Account setup failed. Your registration was not completed. Please try again. " +
+            "If this keeps happening, contact support."
+        );
     }
 
-    return userCredential.user;
+    return authUser;
 };
 
 /**
@@ -110,7 +136,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
                 email: data.email,
                 displayName: data.displayName,
                 role: data.role as UserRole,
-                teacherId: data.teacherId, // Read teacherId
+                teacherId: data.teacherId,
                 studentBatchName: data.studentBatchName,
                 studentRoll: data.studentRoll,
                 createdAt: data.createdAt?.toDate() || new Date(),
@@ -142,7 +168,7 @@ export const createUserProfile = async (
             email,
             displayName,
             role,
-            teacherId: teacherId || null, // Store teacherId
+            teacherId: teacherId || null,
             studentBatchName: studentBatchName || null,
             studentRoll: studentRoll || null,
             createdAt: serverTimestamp(),
@@ -159,7 +185,6 @@ export const createUserProfile = async (
  */
 export const updateLastLogin = async (uid: string): Promise<void> => {
     try {
-        // setDoc with merge:true safely updates even if document doesn't exist yet
         await setDoc(doc(db, "users", uid), {
             lastLogin: serverTimestamp(),
         }, { merge: true });

@@ -8,21 +8,6 @@ import * as authService from "@/services/authService";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ✅ Pre-approved admin list
-const APPROVED_ADMINS: Record<string, string> = {
-    "mohammadabulhayatt@gmail.com": "Abul Hayat",
-};
-
-// ✅ Pre-approved teacher list
-// এখানে ইমেইল → নাম ম্যাপিং। নতুন teacher যোগ করতে এই list এ add করুন।
-const APPROVED_TEACHERS: Record<string, string> = {
-    "rezvhe@gmail.com": "Mohammad Abu Zabar Rezvhe",
-    "sunil.somudro@gmail.com": "Golam Kibria",
-    "shibalshariar@gmail.com": "Shaibal Shariar",
-    "mnumaruf@gmail.com": "Md. Nesar Uddin",
-    "naim.sm207@gmail.com": "M M Naim Amran",
-};
-
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -41,68 +26,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(firebaseUser);
 
             if (firebaseUser) {
-                // Fetch user profile from Firestore
-                let profile = await authService.getUserProfile(firebaseUser.uid);
-
-                // Check if the email is in any of the approved lists
-                let assignedName: string | undefined;
-                let assignedRole: "admin" | "teacher" | undefined;
-                
-                if (firebaseUser.email) {
-                    const email = firebaseUser.email.toLowerCase();
-                    if (APPROVED_ADMINS[email]) {
-                        assignedName = APPROVED_ADMINS[email];
-                        assignedRole = "admin";
-                    } else if (APPROVED_TEACHERS[email]) {
-                        assignedName = APPROVED_TEACHERS[email];
-                        assignedRole = "teacher";
-                    }
+                // Synchronize Edge Middleware session cookie
+                try {
+                    const token = await firebaseUser.getIdToken();
+                    document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                } catch (err) {
+                    console.error("Failed to get token for session cookie", err);
                 }
 
-                // If no profile exists OR it's a partial profile OR the role/name is incorrect
-                // we force create/update the profile to ensure proper access
-                if (assignedName && assignedRole) {
-                    if (!profile || profile.role !== assignedRole || profile.displayName !== assignedName) {
+                // ✅ Fetch role exclusively from Firestore — no client-side overrides
+                let profile = await authService.getUserProfile(firebaseUser.uid);
+
+                // If a brand-new Google/Email user has no Firestore document yet,
+                // create a default student profile. Admins/teachers must be
+                // provisioned directly in Firestore (or via a Cloud Function).
+                if (!profile) {
+                    try {
                         await authService.createUserProfile(
                             firebaseUser.uid,
                             firebaseUser.email!,
-                            assignedName,
-                            assignedRole
+                            firebaseUser.displayName || "Student",
+                            "student"
                         );
-                        // Re-fetch to get the newly created profile
                         profile = await authService.getUserProfile(firebaseUser.uid);
+                    } catch (err) {
+                        console.error("Failed to create fallback student profile:", err);
                     }
-                } else if (!profile && !assignedRole) {
-                    // Not an admin/teacher — must be a student whose Firestore write failed; create now
-                    await authService.createUserProfile(
-                        firebaseUser.uid,
-                        firebaseUser.email!,
-                        firebaseUser.displayName || "Student",
-                        "student"
-                    );
-                    profile = await authService.getUserProfile(firebaseUser.uid);
                 }
 
-                // Auto-assign `teacherId` and `profileImageUrl`
+                // Auto-assign `teacherId` and `profileImageUrl` from the teachers
+                // directory — this is safe and read-only, no role changes involved.
                 if (profile) {
                     try {
-                        const { getAllTeachers } = await import("@/services/teacherService");
-                        const allTeachers = await getAllTeachers();
-                        
-                        const teacherMatch = allTeachers.find(t => 
-                            (profile!.email && t.email.toLowerCase() === profile!.email.toLowerCase()) || 
-                            t.name === profile!.displayName
-                        );
+                        const { db } = await import("@/lib/firebase");
+                        const { collection, query, where, getDocs, limit } = await import("firebase/firestore");
+                        const teachersRef = collection(db, "teachers");
+
+                        let teacherMatch: any = null;
+
+                        if (profile!.email) {
+                            const qEmail = query(teachersRef, where("email", "==", profile!.email), limit(1));
+                            const snapshot = await getDocs(qEmail);
+                            if (!snapshot.empty) teacherMatch = snapshot.docs[0].data();
+                        }
+
+                        if (!teacherMatch && profile!.displayName) {
+                            const qName = query(teachersRef, where("name", "==", profile!.displayName), limit(1));
+                            const snapshot = await getDocs(qName);
+                            if (!snapshot.empty) teacherMatch = snapshot.docs[0].data();
+                        }
 
                         if (teacherMatch) {
                             if (!profile.teacherId && teacherMatch.teacherId && profile.role === "teacher") {
                                 const { doc, updateDoc } = await import("firebase/firestore");
-                                const { db } = await import("@/lib/firebase");
-                                
+
                                 await updateDoc(doc(db, "users", profile.uid), {
-                                    teacherId: teacherMatch.teacherId
+                                    teacherId: teacherMatch.teacherId,
                                 });
-                                
+
                                 profile.teacherId = teacherMatch.teacherId;
                             }
 
@@ -116,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         if (!profile.profileImageUrl && firebaseUser.photoURL) {
                             profile.profileImageUrl = firebaseUser.photoURL;
                         }
-
                     } catch (err) {
                         console.error("Failed to sync teacher metadata:", err);
                     }
@@ -124,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 setUserProfile(profile);
             } else {
+                document.cookie = "__session=; path=/; max-age=0; SameSite=Lax";
                 setUserProfile(null);
             }
 
@@ -137,7 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(true);
         try {
             await authService.loginWithEmail(email, password);
-            // We DO NOT set loading to false here. 
+            // We DO NOT set loading to false here.
             // The onAuthStateChanged listener will handle it once the profile is fetched.
         } catch (error) {
             setLoading(false);

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "npm run build && npx -y firebase-tools deploy"
+    "deploy": "echo \"WARNING: Standard static deployment breaks SSR/API. Please Ensure Next.js integration is enabled in firebase.json.\" && firebase deploy --only hosting"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

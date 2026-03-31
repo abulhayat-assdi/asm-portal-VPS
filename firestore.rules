@@ -16,6 +16,12 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isTeacher() {
+      return isAuth() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
     /* =====================================================
        🔐 INTERNAL PORTAL COLLECTIONS
        (Login required)
@@ -38,7 +44,9 @@ service cloud.firestore {
         request.auth.uid == userId && 
         (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
       );
-      allow delete: if isAdmin() || request.auth.uid == userId;
+      // ✅ Users cannot delete their own profile — protects homework records
+      //    and activity logs from orphaning. Only admins may hard-delete.
+      allow delete: if isAdmin();
     }
 
     // Classes
@@ -52,7 +60,10 @@ service cloud.firestore {
 
     // Class Routines
     match /class_routines/{routineId} {
-      allow read, write: if isAuth();
+      // ✅ All authenticated users can view the schedule
+      allow read: if isAuth();
+      // ✅ Only admins can create, edit, or delete routines
+      allow write: if isAdmin();
     }
 
     // Class Schedules
@@ -75,7 +86,7 @@ service cloud.firestore {
 
     // Batches (Dynamic Batch Mapping)
     match /batches/{docId} {
-      allow read: if true;
+      allow read: if isAuth();
       allow write: if isAdmin();
     }
 
@@ -106,7 +117,7 @@ service cloud.firestore {
 
     // Public Batch Students list for registration
     match /public_batch_students/{docId} {
-      allow read: if true;
+      allow read: if isAuth();
       allow write: if isAdmin();
     }
 
@@ -130,10 +141,14 @@ service cloud.firestore {
 
     // Module Resources - teachers upload for their own module, admin manages all
     match /module_resources/{docId} {
-      allow read: if isAuth(); // Students and teachers all can read
-      allow create: if isAuth(); // Any logged-in teacher can upload
-      allow update, delete: if isAuth() && (
-        resource.data.teacherUid == request.auth.uid || isAdmin()
+      // ✅ All authenticated users can read resources
+      allow read: if isAuth();
+      // ✅ Only teachers/admins can create; teacher must own the resource
+      allow create: if (isTeacher() || isAdmin()) &&
+        request.resource.data.teacherUid == request.auth.uid;
+      // ✅ Owner teacher or admin can update/delete
+      allow update, delete: if isAdmin() || (
+        isTeacher() && resource.data.teacherUid == request.auth.uid
       );
     }
 

@@ -10,7 +10,7 @@ COURSE DETAILS:
 - Institute: As-Sunnah Skill Development Institute (আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউট)
 - Location: আলি নগর গেটের বিপরীত পাশের বিল্ডিং, সাতারকুল রোড, উত্তর বাড্ডা, ঢাকা
 - Duration: 90 Days (পুরুষদের জন্য ৯০ দিনের আবাসিক কোর্স)
-- Price: 70,000 BDT (কোর্সের মোট ফি ৭০,০০০ টাকা। এর মধ্যে ভর্তি ফি ১০,০০০ টাকা দেওয়া বাধ্যতামূলক এবং বাকি কোর্স ফি ও আবাসন ফি ৬০,০০০ টাকা। আর্থিক অস্বচ্ছলতার প্রমাণ সাপেক্ষে ১০০% পর্যন্ত স্কলারশিপ দেওয়া হয়)
+- Price: 70,000 BDT (কোর্সের মোট ফি ৭০,০০০ টাকা। এর মধ্যে ভর্তি ফি ১০,০০০ টাকা দেওয়া বাধ্যতামূলক এবং বাকি কোর্স ফি ও আবাসন ফি ৬০,০০০ টাকা। আর্থিক অস্বচ্ছলতার প্রমাণ সাপেক্ষে ১০০% পর্যন্ত স্কলারশিপ দেওয়া হয়)
 - Contact Email: abul.hayat@skill.assunnahfoundation.org
 - Phone: 01862534626 (Available 9am–5pm)
 - Certificate: Yes, official certification upon completion
@@ -34,7 +34,7 @@ TOPICS COVERED (9 Modules):
 9. Dawah & Business Ethics
 
 GUIDELINES:
-- No matter what language the user types in (Bengali, English, or Banglish), you MUST reply in Modern, Professional Bengali mixed with English corporate terms (e.g., "কোর্স আউটলাইন", "স্কিলস", "অ্যাডমিশন", "ইন্টারভিউ", "ক্যারিয়ার", "অ্যাসাইনমেন্ট").
+- No matter what language the user types in (Bengali, English, or Banglish), you MUST reply in Modern, Professional Bengali mixed with English corporate terms (e.g., "কোর্স আউটলাইন", "স্কিলস", "অ্যাডমিশন", "ইন্টারভিউ", "ক্যারিয়ার", "অ্যাসাইনমেন্ট").
 - Always address the user politely using "আপনি" (Aapni / You). Never use informal words like "ব্রায়", "চিল", "প্যারা", "ব্রো". 
 - Maintain a highly professional, respectful, and corporate tone.
 - Write the Bengali text using Bengali script (বাংলা অক্ষর).
@@ -42,42 +42,174 @@ GUIDELINES:
 - If someone asks something outside this course, politely say you can only help about this course.
 - Never make up information not listed above.`;
 
-// Try models in order — fallback if one fails
+// ============================================================
+// Model fallback chain — tried in order until one succeeds.
+// Primary: cutting-edge models. Fallback: stable LTS models.
+// ============================================================
 const MODELS = [
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
+    "gemini-2.5-flash",          // Latest experimental — try first
+    "gemini-1.5-flash",          // Stable, widely available fallback
+    "gemini-1.5-pro",            // Stable pro fallback
+    "gemini-2.5-pro",            // Experimental pro (may have quota limits)
 ];
+
+// ============================================================
+// Maximum allowed user message length (chars)
+// ============================================================
+const MAX_MESSAGE_LENGTH = 2000;
+
+// ============================================================
+// Prompt injection patterns
+// These patterns attempt to override the system prompt or
+// break out of the assistant's constrained role.
+// ============================================================
+const INJECTION_PATTERNS: RegExp[] = [
+    /ignore\s+(all\s+)?(previous|prior|above|system)\s+(instructions?|prompts?|context)/i,
+    /you\s+are\s+now\s+(a\s+)?/i,
+    /pretend\s+(you\s+are|to\s+be)/i,
+    /act\s+as\s+(a\s+)?(different|new|another)/i,
+    /disregard\s+(your\s+)?(previous|prior|system|all)/i,
+    /system\s*:\s*/i,
+    /<\s*\|?\s*(system|inst|user|assistant)\s*\|?\s*>/i,  // <|system|> style tokens
+    /###\s*(system|instruction|prompt)/i,
+    /\[INST\]/i,
+    /\[\/INST\]/i,
+    /reveal\s+(your\s+)?(system\s+)?prompt/i,
+    /what\s+(are|is)\s+your\s+(system\s+)?instructions?/i,
+];
+
+/**
+ * Sanitizes user input before forwarding to the Gemini API.
+ *
+ * Returns { safe: true, message } if clean, or
+ *         { safe: false, reason } if injection is detected.
+ */
+function sanitizeInput(raw: string): { safe: true; message: string } | { safe: false; reason: string } {
+    // Trim and enforce length limit
+    const trimmed = raw.trim();
+
+    if (trimmed.length === 0) {
+        return { safe: false, reason: "Message cannot be empty." };
+    }
+
+    if (trimmed.length > MAX_MESSAGE_LENGTH) {
+        return {
+            safe: false,
+            reason: `Message is too long. Please keep it under ${MAX_MESSAGE_LENGTH} characters.`,
+        };
+    }
+
+    // Check for prompt injection patterns
+    for (const pattern of INJECTION_PATTERNS) {
+        if (pattern.test(trimmed)) {
+            return {
+                safe: false,
+                reason: "Your message contains content that cannot be processed.",
+            };
+        }
+    }
+
+    return { safe: true, message: trimmed };
+}
+
+// ============================================================
+// Chat message type for history
+// ============================================================
+interface ChatMessage {
+    role: "user" | "model";
+    parts: string;
+}
+
+const rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
 
 export async function POST(request: NextRequest) {
     try {
-        const { message } = await request.json();
+        let body;
+        try {
+            body = await request.json();
+        } catch (e) {
+            return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+        }
 
+        const ip = request.headers.get("x-forwarded-for")?.split(',')[0] || "unknown-ip";
+        if (ip !== "unknown-ip") {
+            const now = Date.now();
+            const record = rateLimitMap.get(ip);
+            if (!record || (now - record.lastReset > RATE_LIMIT_WINDOW_MS)) {
+                rateLimitMap.set(ip, { count: 1, lastReset: now });
+            } else if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+                return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
+            } else {
+                record.count += 1;
+            }
+        }
+
+        const { message, history } = body as { message: unknown; history?: unknown };
+
+        // ── Input validation ──────────────────────────────────
         if (!message || typeof message !== "string") {
             return NextResponse.json({ error: "Message is required" }, { status: 400 });
         }
 
+        const sanitized = sanitizeInput(message);
+        if (!sanitized.safe) {
+            return NextResponse.json({ error: sanitized.reason }, { status: 400 });
+        }
+
+        // Validate and shape the history array (ignore malformed entries)
+        const safeHistory: ChatMessage[] = [];
+        if (Array.isArray(history)) {
+            for (const item of history) {
+                if (
+                    item &&
+                    typeof item === "object" &&
+                    (item.role === "user" || item.role === "model") &&
+                    typeof item.parts === "string" &&
+                    item.parts.trim().length > 0
+                ) {
+                    // Sanitize each historical message too
+                    const histSanitized = sanitizeInput(item.parts);
+                    if (histSanitized.safe) {
+                        safeHistory.push({ role: item.role, parts: histSanitized.message });
+                    }
+                }
+            }
+        }
+
+        // ── API key ───────────────────────────────────────────
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
             return NextResponse.json({ error: "API key not configured" }, { status: 500 });
         }
 
+        // ── Build contents array with history + current message ─
+        // Gemini expects alternating user/model turns, so we push all
+        // history turns first, then the current user message.
+        const contents = [
+            ...safeHistory.map((msg) => ({
+                role: msg.role,
+                parts: [{ text: msg.parts }],
+            })),
+            {
+                role: "user",
+                parts: [{ text: sanitized.message }],
+            },
+        ];
+
         const requestBody = JSON.stringify({
             system_instruction: {
                 parts: [{ text: SYSTEM_PROMPT }],
             },
-            contents: [
-                {
-                    role: "user",
-                    parts: [{ text: message }],
-                },
-            ],
+            contents,
             generationConfig: {
                 temperature: 0.7,
                 maxOutputTokens: 512,
             },
         });
 
-        // Try each model until one works
+        // ── Model fallback loop ───────────────────────────────
         for (const model of MODELS) {
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -88,18 +220,13 @@ export async function POST(request: NextRequest) {
                 }
             );
 
-            if (response.status === 404) {
-                // Model not available, try next
-                continue;
-            }
-
-            if (response.status === 429) {
-                // Rate limited — try next model
+            if (response.status === 404 || response.status === 429) {
+                // Model not available or rate-limited — try next
                 continue;
             }
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({}));
                 console.error(`Gemini API error (${model}):`, errorData);
                 continue;
             }
@@ -119,7 +246,6 @@ export async function POST(request: NextRequest) {
             },
             { status: 200 }
         );
-
     } catch (error) {
         console.error("Chat API error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });

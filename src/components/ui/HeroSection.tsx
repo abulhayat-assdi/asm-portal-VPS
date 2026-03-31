@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Reveal from "./Reveal";
 import Image from "next/image";
+import Link from "next/link";
 import { getImageUrl } from "@/lib/getImageUrl";
 
 interface HeroSectionProps {
@@ -12,6 +13,8 @@ interface HeroSectionProps {
     subheading: string;
     primaryButtonText: string;
     secondaryButtonText: string;
+    primaryButtonHref?: string;
+    secondaryButtonHref?: string;
     onPrimaryClick?: () => void;
     onSecondaryClick?: () => void;
     className?: string;
@@ -23,6 +26,8 @@ export default function HeroSection({
     subheading,
     primaryButtonText,
     secondaryButtonText,
+    primaryButtonHref,
+    secondaryButtonHref,
     onPrimaryClick,
     onSecondaryClick,
     className = "",
@@ -103,25 +108,50 @@ export default function HeroSection({
 
                 <Reveal delay={800}>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <button
-                            onClick={onPrimaryClick}
-                            className="px-8 py-3.5 bg-[#4CAF50] text-white font-bold text-lg rounded-full 
-                                transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
-                                hover:bg-[#43A047] hover:shadow-lg
-                                focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:ring-offset-2 focus:ring-offset-gray-900"
-                        >
-                            {primaryButtonText}
-                        </button>
-                        <button
-                            onClick={onSecondaryClick}
-                            className="px-8 py-3.5 bg-transparent text-white font-bold text-lg rounded-full 
-                                border-2 border-white
-                                transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
-                                hover:bg-white hover:text-gray-900
-                                focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900"
-                        >
-                            {secondaryButtonText}
-                        </button>
+                        {primaryButtonHref ? (
+                            <Link
+                                href={primaryButtonHref}
+                                className="px-8 py-3.5 bg-[#4CAF50] text-white font-bold text-lg rounded-full 
+                                    transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
+                                    hover:bg-[#43A047] hover:shadow-lg text-center
+                                    focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:ring-offset-2 focus:ring-offset-gray-900"
+                            >
+                                {primaryButtonText}
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={onPrimaryClick}
+                                className="px-8 py-3.5 bg-[#4CAF50] text-white font-bold text-lg rounded-full 
+                                    transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
+                                    hover:bg-[#43A047] hover:shadow-lg
+                                    focus:outline-none focus:ring-2 focus:ring-[#4CAF50] focus:ring-offset-2 focus:ring-offset-gray-900"
+                            >
+                                {primaryButtonText}
+                            </button>
+                        )}
+                        {secondaryButtonHref ? (
+                            <Link
+                                href={secondaryButtonHref}
+                                className="px-8 py-3.5 bg-transparent text-white font-bold text-lg rounded-full 
+                                    border-2 border-white text-center
+                                    transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
+                                    hover:bg-white hover:text-gray-900
+                                    focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900"
+                            >
+                                {secondaryButtonText}
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={onSecondaryClick}
+                                className="px-8 py-3.5 bg-transparent text-white font-bold text-lg rounded-full 
+                                    border-2 border-white
+                                    transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
+                                    hover:bg-white hover:text-gray-900
+                                    focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-900"
+                            >
+                                {secondaryButtonText}
+                            </button>
+                        )}
                     </div>
                 </Reveal>
 

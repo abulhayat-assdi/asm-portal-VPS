@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import BrandLogo from "@/components/ui/BrandLogo";
 
@@ -16,9 +15,12 @@ interface HeaderProps {
     brandText?: string;
     navLinks: NavLink[];
     ctaText: string;
+    ctaHref?: string;
     onCtaClick?: () => void;
     secondaryCtaText?: string;
+    secondaryCtaHref?: string;
     onSecondaryCtaClick?: () => void;
+    studentLoginHref?: string;
     onBrandClick?: () => void;
     className?: string;
 }
@@ -27,14 +29,16 @@ export default function Header({
     brandText = "Sales & Marketing",
     navLinks,
     ctaText,
+    ctaHref = "/enroll",
     onCtaClick,
     secondaryCtaText = "Login as Teacher",
+    secondaryCtaHref = "/login",
     onSecondaryCtaClick,
+    studentLoginHref = "/student-login",
     onBrandClick,
     className = "",
     transparent = false,
 }: HeaderProps & { transparent?: boolean }) {
-    const router = useRouter();
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -55,15 +59,6 @@ export default function Header({
 
     const isTransparent = transparent && !isScrolled;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    const handleSecondaryClick = onSecondaryCtaClick || (() => router.push('/login'));
-
-    // Default handler for Enroll button if onCtaClick is not provided
-    const handleCtaClick = onCtaClick || (() => {
-        if (ctaText === "Enroll") {
-            router.push('/enroll');
-        }
-    });
 
     return (
         <header
@@ -121,30 +116,30 @@ export default function Header({
                     {/* Right Components */}
                     <div className="hidden lg:flex items-center gap-2 md:gap-3">
 
-                        <button
-                            onClick={() => router.push('/student-login')}
+                        <Link
+                            href={studentLoginHref}
                             className="px-5 py-2.5 text-sm font-bold/90 rounded-md bg-white text-[#059669] border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                         >
                             Login as Student
-                        </button>
+                        </Link>
 
                         {/* Secondary CTA - Login as Teacher */}
                         {secondaryCtaText && (
-                            <button
-                                onClick={handleSecondaryClick}
+                            <Link
+                                href={secondaryCtaHref}
                                 className="px-5 py-2.5 text-sm font-bold/90 rounded-md bg-white text-[#059669] border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                             >
                                 {secondaryCtaText}
-                            </button>
+                            </Link>
                         )}
 
                         {/* Primary CTA */}
-                        <button
-                            onClick={handleCtaClick}
+                        <Link
+                            href={ctaHref}
                             className="px-5 py-2.5 text-sm font-bold rounded-md bg-[#059669] text-white hover:bg-[#047857] shadow-sm transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                         >
                             {ctaText}
-                        </button>
+                        </Link>
                     </div>
 
                     {/* Mobile Menu Button */}
@@ -191,43 +186,37 @@ export default function Header({
                             ))}
                         </nav>
                         <div className="flex flex-col gap-3">
-                            <button
-                                onClick={() => {
-                                    router.push('/student-login');
-                                    setIsMobileMenuOpen(false);
-                                }}
+                            <Link
+                                href={studentLoginHref}
+                                onClick={() => setIsMobileMenuOpen(false)}
                                 className="w-full px-6 py-3.5 bg-white text-[#059669] border border-[#059669] text-base font-bold rounded-full
-                                transition-all duration-200 ease-out
+                                transition-all duration-200 ease-out text-center
                                 hover:bg-[#f0fdf4]
                                 focus:outline-none focus:ring-2 focus:ring-[#059669] focus:ring-offset-2"
                             >
                                 Login as Student
-                            </button>
-                            <button
-                                onClick={() => {
-                                    handleCtaClick();
-                                    setIsMobileMenuOpen(false);
-                                }}
+                            </Link>
+                            <Link
+                                href={ctaHref}
+                                onClick={() => setIsMobileMenuOpen(false)}
                                 className="w-full px-6 py-3.5 bg-[#059669] text-white text-base font-bold rounded-full
-                                transition-all duration-200 ease-out
+                                transition-all duration-200 ease-out text-center
                                 hover:bg-[#10b981]
                                 focus:outline-none focus:ring-2 focus:ring-[#059669] focus:ring-offset-2"
                             >
                                 {ctaText}
-                            </button>
+                            </Link>
                             {secondaryCtaText && (
-                                <button
-                                    onClick={() => {
-                                        handleSecondaryClick();
-                                        setIsMobileMenuOpen(false);
-                                    }}
+                                <Link
+                                    href={secondaryCtaHref}
+                                    onClick={() => setIsMobileMenuOpen(false)}
                                     className="w-full px-6 py-3.5 bg-white text-[#059669] border border-[#059669] text-base font-bold rounded-full
-                                    transition-all duration-200 ease-out
+                                    transition-all duration-200 ease-out text-center
                                     hover:bg-[#f0fdf4]
                                     focus:outline-none focus:ring-2 focus:ring-[#059669] focus:ring-offset-2"
                                 >
                                     {secondaryCtaText}
-                                </button>
+                                </Link>
                             )}
                         </div>
                     </div>
