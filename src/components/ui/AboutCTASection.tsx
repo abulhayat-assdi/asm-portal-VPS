@@ -17,6 +17,7 @@ export default function AboutCTASection() {
                 <Reveal delay={100} width="100%">
                     <Link
                         href="/modules"
+                        prefetch={true}
                         className="inline-flex items-center justify-center px-8 py-4 bg-[#4CAF50] text-white font-bold rounded-full
                         transition-all duration-300 ease-out
                         hover:bg-[#43A047] hover:shadow-[0_10px_30px_-10px_rgba(76,175,80,0.4)] hover:-translate-y-1

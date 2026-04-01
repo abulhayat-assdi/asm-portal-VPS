@@ -1,11 +1,14 @@
 "use client";
 
+export const dynamic = "force-static";
+
 import { useState, useEffect } from "react";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import Card, { CardBody } from "@/components/ui/Card";
 import * as ssService from "@/services/successStoryService";
 import Image from "next/image";
+import Link from "next/link";
 
 // ─── Video Card ───
 function VideoCard({ story, onPlay }: { story: ssService.VideoStory; onPlay: (id: string) => void }) {
@@ -244,15 +247,16 @@ export default function PublicSuccessStoriesPage() {
                         {(videos.length > 0 || reviews.length > 0) && (
                             <section className="w-full pb-16 md:pb-20">
                                 <div className="text-center">
-                                    <a
+                                    <Link
                                         href="/enroll"
+                                        prefetch={true}
                                         className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white bg-[#059669] border border-transparent rounded-full hover:bg-[#047857] hover:shadow-lg transform hover:-translate-y-1 transition-all duration-200"
                                     >
                                         Start Your Success Story Today
                                         <svg className="w-5 h-5 ml-2 -mr-1" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                                         </svg>
-                                    </a>
+                                    </Link>
                                 </div>
                             </section>
                         )}

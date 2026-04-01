@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "npm run build && npx -y firebase-tools deploy"
+    "deploy": "firebase deploy --only hosting"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -15,10 +15,10 @@
     "firebase": "^12.10.0",
     "google-auth-library": "^10.6.2",
     "google-spreadsheet": "^5.0.2",
-    "next": "16.1.4",
+    "next": "^15.0.0",
     "nodemailer": "^7.0.13",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
@@ -29,7 +29,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.1.4",
+    "eslint-config-next": "^15.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -62,6 +62,7 @@ export default function Footer({
                                                 <li key={linkIndex}>
                                                     <Link
                                                         href={link.href}
+                                                        prefetch={true}
                                                         className="text-sm text-gray-400 hover:text-[#4CAF50] transition-colors"
                                                     >
                                                         {link.label}

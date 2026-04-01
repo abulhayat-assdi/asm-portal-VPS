@@ -111,6 +111,7 @@ export default function HeroSection({
                         {primaryButtonHref ? (
                             <Link
                                 href={primaryButtonHref}
+                                prefetch={true}
                                 className="px-8 py-3.5 bg-[#4CAF50] text-white font-bold text-lg rounded-full 
                                     transition-all duration-300 ease-out transform hover:scale-105 active:scale-95
                                     hover:bg-[#43A047] hover:shadow-lg text-center
@@ -132,6 +133,7 @@ export default function HeroSection({
                         {secondaryButtonHref ? (
                             <Link
                                 href={secondaryButtonHref}
+                                prefetch={true}
                                 className="px-8 py-3.5 bg-transparent text-white font-bold text-lg rounded-full 
                                     border-2 border-white text-center
                                     transition-all duration-300 ease-out transform hover:scale-105 active:scale-95

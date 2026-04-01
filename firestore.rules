@@ -112,7 +112,10 @@ service cloud.firestore {
     // Student Profile Updates
     match /student_profile_updates/{docId} {
       allow read: if isAuth();
-      allow write: if isAdmin() || isAuth(); // Students create, admins review/delete
+      // Students can only create updates tagged with their own UID
+      allow create: if isAuth() && request.resource.data.studentUid == request.auth.uid;
+      // Only the owning student or an admin can update/delete
+      allow update, delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
     }
 
     // Public Batch Students list for registration
@@ -127,10 +130,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Student Notices - any authenticated teacher/admin can write, students & all auth users can read
+    // Student Notices — only teachers and admins can create/edit/delete
     match /student_notices/{docId} {
       allow read: if true; // Students read before login; also shown in dashboard
-      allow write: if isAuth(); // Teachers and admins can post
+      allow write: if isAdmin() || isTeacher();
     }
 
     // Student Contact Messages - students create, admins read/manage
@@ -152,9 +155,9 @@ service cloud.firestore {
       );
     }
 
-    // Homework Submissions — Students create, all auth read, admin/system deletes
+    // Homework Submissions — Students create (owner-only), all auth read, admin/system deletes
     match /homework_submissions/{docId} {
-      allow create: if isAuth();
+      allow create: if isAuth() && request.resource.data.studentUid == request.auth.uid;
       allow read: if isAuth();
       allow update: if false; // Homework cannot be edited once submitted
       // Only owner or admin can delete

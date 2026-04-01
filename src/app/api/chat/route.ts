@@ -1,5 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// ============================================================
+// 🛡️ In-memory IP-based Rate Limiter
+// Limits each IP to MAX_REQUESTS_PER_WINDOW requests per window.
+// NOTE: This resets on server restart and is per-instance only.
+// For production at scale, use Redis or a distributed store.
+// ============================================================
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+
+interface RateLimitEntry {
+    count: number;
+    resetAt: number;
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+// Cleanup stale entries every 5 minutes to prevent memory leaks
+setInterval(() => {
+    const now = Date.now();
+    for (const [ip, entry] of rateLimitMap) {
+        if (now > entry.resetAt) {
+            rateLimitMap.delete(ip);
+        }
+    }
+}, 5 * 60 * 1000);
+
+function isRateLimited(ip: string): boolean {
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip);
+
+    if (!entry || now > entry.resetAt) {
+        // First request or window expired — start a new window
+        rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+        return false;
+    }
+
+    entry.count++;
+    if (entry.count > MAX_REQUESTS_PER_WINDOW) {
+        return true;
+    }
+
+    return false;
+}
+
 // কোর্স সম্পর্কিত সব তথ্য — Gemini শুধু এই বিষয়ে উত্তর দেবে
 const SYSTEM_PROMPT = `You are a helpful and professional AI assistant for "The Art of Sales & Marketing" course offered by As-Sunnah Skill Development Institute (আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউট).
 
@@ -121,6 +165,19 @@ interface ChatMessage {
 }
 
 export async function POST(request: NextRequest) {
+    // ── Rate limiting ─────────────────────────────────────
+    const ip =
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        "unknown";
+
+    if (isRateLimited(ip)) {
+        return NextResponse.json(
+            { error: "Too many requests. Please wait a minute before trying again." },
+            { status: 429 }
+        );
+    }
+
     try {
         const body = await request.json();
         const { message, history } = body as { message: unknown; history?: unknown };

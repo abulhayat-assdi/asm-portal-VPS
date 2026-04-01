@@ -68,13 +68,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                         if (teacherMatch) {
                             if (!profile.teacherId && teacherMatch.teacherId && profile.role === "teacher") {
-                                const { doc, updateDoc } = await import("firebase/firestore");
-                                const { db } = await import("@/lib/firebase");
-
-                                await updateDoc(doc(db, "users", profile.uid), {
-                                    teacherId: teacherMatch.teacherId,
-                                });
-
+                                // WARNING: Real DB role/ID assignments must happen via secure backend Functions, not here.
+                                // We only set the value in local state for UI display purposes.
                                 profile.teacherId = teacherMatch.teacherId;
                             }
 

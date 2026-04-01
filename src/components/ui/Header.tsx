@@ -101,6 +101,7 @@ export default function Header({
                             <Link
                                 key={index}
                                 href={link.href}
+                                prefetch={true}
                                 className={cn(
                                     "text-sm font-semibold transition-all duration-200 ease-out py-6 border-b-2 relative top-[1px]",
                                     link.isActive
@@ -173,6 +174,7 @@ export default function Header({
                                 <Link
                                     key={index}
                                     href={link.href}
+                                    prefetch={true}
                                     className={cn(
                                         "px-5 py-3 text-base font-semibold rounded-full border transition-all duration-200 ease-out",
                                         link.isActive

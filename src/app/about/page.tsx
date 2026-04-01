@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import AboutCourseSection from "@/components/ui/AboutCourseSection";
