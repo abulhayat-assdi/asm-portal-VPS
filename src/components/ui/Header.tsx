@@ -119,6 +119,7 @@ export default function Header({
 
                         <Link
                             href={studentLoginHref}
+                            prefetch={true}
                             className="px-5 py-2.5 text-sm font-bold/90 rounded-md bg-white text-[#059669] border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                         >
                             Login as Student
@@ -128,6 +129,7 @@ export default function Header({
                         {secondaryCtaText && (
                             <Link
                                 href={secondaryCtaHref}
+                                prefetch={true}
                                 className="px-5 py-2.5 text-sm font-bold/90 rounded-md bg-white text-[#059669] border border-gray-200 hover:bg-gray-50 shadow-sm transition-all duration-200 ease-out whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                             >
                                 {secondaryCtaText}
@@ -137,6 +139,7 @@ export default function Header({
                         {/* Primary CTA */}
                         <Link
                             href={ctaHref}
+                            prefetch={true}
                             className="px-5 py-2.5 text-sm font-bold rounded-md bg-[#059669] text-white hover:bg-[#047857] shadow-sm transition-all duration-200 whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#059669]"
                         >
                             {ctaText}

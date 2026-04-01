@@ -1,7 +1,7 @@
 import Card, { CardBody } from "./Card";
 import Badge from "./Badge";
 import Button from "./Button";
-import { Resource } from "@/lib/mockData";
+import { Resource } from "@/services/resourceService";
 import { formatDateShort } from "@/lib/utils";
 
 interface ResourceCardProps {
@@ -11,12 +11,16 @@ interface ResourceCardProps {
 export default function ResourceCard({ resource }: ResourceCardProps) {
     const getCategoryIcon = (category: string) => {
         switch (category) {
-            case "PDF":
-                return "📄";
-            case "Drive":
-                return "☁️";
-            case "Link":
-                return "🔗";
+            case "Course Module":
+                return "📚";
+            case "Class Routine":
+                return "🗓️";
+            case "Notes":
+                return "📝";
+            case "Assignment":
+                return "📋";
+            case "Exam / Practice":
+                return "🎓";
             default:
                 return "📁";
         }
@@ -24,11 +28,15 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
 
     const getCategoryVariant = (category: string): "success" | "info" | "warning" => {
         switch (category) {
-            case "PDF":
-                return "error" as "success";
-            case "Drive":
+            case "Course Module":
+                return "success";
+            case "Class Routine":
                 return "info";
-            case "Link":
+            case "Notes":
+                return "info";
+            case "Assignment":
+                return "warning";
+            case "Exam / Practice":
                 return "warning";
             default:
                 return "info";
@@ -58,7 +66,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
 
                 <div className="space-y-2 mb-4">
                     <p className="text-xs text-gray-500 dark:text-gray-500">
-                        👤 Uploaded by: {resource.uploadedBy}
+                        👤 Uploaded by: {resource.uploadedByName}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                         📅 Date: {formatDateShort(resource.uploadDate)}
@@ -66,7 +74,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                 </div>
 
                 <Button variant="primary" size="sm" className="w-full">
-                    {resource.category === "Link" ? "Open Link" : "View / Download"}
+                    View / Download
                 </Button>
             </CardBody>
         </Card>
