@@ -24,7 +24,7 @@ export default function BlogShare({ title, excerpt }: BlogShareProps) {
                     url,
                 });
             } catch (err) {
-                console.log("Error opening native share", err);
+                console.error("Error opening native share", err);
             }
         }
     };

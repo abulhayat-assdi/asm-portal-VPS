@@ -7,7 +7,8 @@ import {
     serverTimestamp,
     orderBy,
     writeBatch,
-    doc
+    doc,
+    Timestamp
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -29,7 +30,7 @@ export interface BatchItem {
     id: string;
     name: string;
     status: "active" | "archived";
-    createdAt: any;
+    createdAt: Timestamp | null;
 }
 
 // Helper to normalize date string to YYYY-MM-DD
@@ -447,12 +448,12 @@ export const getBatchClassCounts = async () => {
         // The hardcoded subjects dictated by the UI layout requirement
         const SUBJECTS = [
             "Sales",
-            "Customer Service Excelence",
+            "Customer Service Excellence",
             "Career Planning & Branding",
             "Digital Marketing",
             "AI + Canva",
             "Business Management Tools (MS Office)",
-            "Landing Page & Content Marketiing",
+            "Landing Page & Content Marketing",
             "English",
             "Dawah"
         ];
@@ -462,11 +463,16 @@ export const getBatchClassCounts = async () => {
 
         // Fetch known active batches
         const allBatches = await getBatches();
-        const activeBatches = allBatches.filter(b => b.status === "active").map(b => b.name);
+        let activeBatches = allBatches.filter(b => b.status === "active").map(b => b.name);
 
         if (activeBatches.length === 0) {
-            // Safe fallback if the db is completely new and no batches added
-            activeBatches.push("Batch_06", "Batch_07");
+            // Safe fallback to any batches that currently exist in the database, even if not explicitly "active", or use defaults
+            const uniqueBatchesInDb = Object.keys(counts);
+            if (uniqueBatchesInDb.length > 0) {
+                 activeBatches = uniqueBatchesInDb;
+            } else {
+                 activeBatches = ["Batch_06", "Batch_07"];
+            }
         }
 
         activeBatches.forEach(batch => {

@@ -51,14 +51,6 @@ export default function Sidebar() {
     const [contactSuccess, setContactSuccess] = useState(false);
     const [contactError, setContactError] = useState("");
 
-    // Debug: Log user role
-    useEffect(() => {
-        if (!loading && userProfile) {
-            console.log("🔍 User Role:", userProfile.role);
-            console.log("🔍 Is Admin:", userProfile.role === "admin");
-        }
-    }, [loading, userProfile]);
-
     const isStudent = userProfile?.role === "student";
     const activeNavItems = isStudent ? studentNavItems : teacherAdminNavItems;
 

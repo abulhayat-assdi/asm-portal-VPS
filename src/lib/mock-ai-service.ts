@@ -6,7 +6,7 @@
 
 import { getAI, getGenerativeModel, GoogleAIBackend } from "@firebase/ai";
 import app from "@/lib/firebase";
-import { and } from "firebase/firestore";
+
 
 // কোর্স সম্পর্কিত system prompt
 const SYSTEM_PROMPT = `You are the official AI Admission Counselor and Virtual Assistant for "The Art of Sales & Marketing", a 90-day residential training program by As-Sunnah Skill Development Institute (আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউট). 

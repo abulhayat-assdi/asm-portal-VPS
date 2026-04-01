@@ -171,7 +171,7 @@ export const markClassComplete = async (classId: string, adminUid: string) => {
                 status: "Completed"
             };
 
-            console.log("Syncing to Sheet:", payload);
+
 
             const response = await fetch('/api/schedule', {
                 method: 'PUT',
@@ -196,63 +196,3 @@ export const markClassComplete = async (classId: string, adminUid: string) => {
 };
 
 // --- Database Setup Service ---
-
-export const initializeDatabase = async () => {
-    try {
-        const batch = writeBatch(db);
-
-        // 1. Create Sample Class
-        const classRef = doc(collection(db, "classes"));
-        batch.set(classRef, {
-            teacherUid: "test_teacher_uid",
-            teacherName: "Test Teacher",
-            date: "2026-01-26",
-            startTime: "10:00",
-            endTime: "11:00",
-            batch: "Batch_06",
-            subject: "Mathematics",
-            status: "PENDING",
-            completedByUid: null,
-            completedAt: null,
-            createdAt: serverTimestamp()
-        });
-
-        // 2. Create Sample Notice (if needed for stats)
-        const noticeRef = doc(collection(db, "notices"));
-        batch.set(noticeRef, {
-            title: "Welcome to Internal Portal",
-            content: "System initialized successfully.",
-            date: "2026-01-25",
-            type: "General",
-            createdAt: serverTimestamp()
-        });
-
-        // 3. Create Sample Resource
-        const resourceRef = doc(collection(db, "resources"));
-        batch.set(resourceRef, {
-            title: "Getting Started Guide",
-            link: "#",
-            subject: "General",
-            batch: "All",
-            createdAt: serverTimestamp()
-        });
-
-        // 4. Create Initial Activity Log
-        const logRef = doc(collection(db, "activity_logs"));
-        batch.set(logRef, {
-            actorUid: "system",
-            actorRole: "ADMIN",
-            actionType: "INIT",
-            targetType: "system",
-            targetId: "root",
-            description: "Database initialized via Admin Panel",
-            createdAt: serverTimestamp()
-        });
-
-        await batch.commit();
-        return true;
-    } catch (error) {
-        console.error("Error initializing database:", error);
-        throw error;
-    }
-};

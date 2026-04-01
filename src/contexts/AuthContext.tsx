@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     try {
                         await authService.createUserProfile(
                             firebaseUser.uid,
-                            firebaseUser.email!,
+                            firebaseUser.email || "",
                             firebaseUser.displayName || "Student",
                             "student"
                         );
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 // Auto-assign `teacherId` and `profileImageUrl` from the teachers
                 // directory — this is safe and read-only, no role changes involved.
-                if (profile) {
+                if (profile && profile.role !== "student") {
                     try {
                         const { getAllTeachers } = await import("@/services/teacherService");
                         const allTeachers = await getAllTeachers();

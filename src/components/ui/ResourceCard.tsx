@@ -1,6 +1,5 @@
 import Card, { CardBody } from "./Card";
 import Badge from "./Badge";
-import Button from "./Button";
 import { Resource } from "@/services/resourceService";
 import { formatDateShort } from "@/lib/utils";
 
@@ -73,9 +72,14 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                     </p>
                 </div>
 
-                <Button variant="primary" size="sm" className="w-full">
+                <a
+                    href={resource.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center px-4 py-2 bg-[#059669] hover:bg-[#047857] text-white text-sm font-semibold rounded-lg transition-colors"
+                >
                     View / Download
-                </Button>
+                </a>
             </CardBody>
         </Card>
     );

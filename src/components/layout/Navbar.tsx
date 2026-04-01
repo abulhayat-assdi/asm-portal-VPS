@@ -2,6 +2,7 @@
 
 import { getInitials } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -115,11 +116,12 @@ export default function Navbar() {
                         </div>
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#059669] to-[#10b981] flex items-center justify-center text-white font-bold text-sm overflow-hidden relative border border-gray-100">
                             {userProfile?.profileImageUrl ? (
-                                <img
+                                <Image
                                     src={getImageUrl(userProfile.profileImageUrl)}
                                     alt={displayName}
-                                    referrerPolicy="no-referrer"
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover"
                                 />
                             ) : (
                                 <span>{getInitials(displayName)}</span>

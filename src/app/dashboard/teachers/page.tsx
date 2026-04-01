@@ -35,6 +35,7 @@ export default function TeachersPage() {
         about: "",
         phone: "",
         email: "",
+        password: "",
         profileImageUrl: "",
         isAdmin: false,
     });
@@ -64,6 +65,7 @@ export default function TeachersPage() {
             about: "",
             phone: "",
             email: "",
+            password: "",
             profileImageUrl: "",
             isAdmin: false,
         });
@@ -87,6 +89,7 @@ export default function TeachersPage() {
             about: teacher.about || "",
             phone: teacher.phone,
             email: teacher.email,
+            password: "", // intentionally blank for edit
             profileImageUrl: teacher.profileImageUrl || "",
             isAdmin: Boolean(teacher.isAdmin), // Ensure boolean type
         });
@@ -124,7 +127,25 @@ export default function TeachersPage() {
                     isAdmin: formData.isAdmin,
                 });
             } else {
-                // Add new teacher
+                // Add new teacher in Firebase Auth FIRST via secure backend
+                const response = await fetch("/api/admin/create-teacher", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        password: formData.password,
+                        name: formData.name,
+                        phone: formData.phone,
+                        role: formData.isAdmin ? "admin" : "teacher",
+                    }),
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || "Failed to create teacher account.");
+                }
+
+                // Add to standard Teachers directory collection now that auth succeeded
                 await addTeacher({
                     teacherId: formData.teacherId,
                     name: formData.name,
@@ -367,6 +388,22 @@ export default function TeachersPage() {
                                     />
                                 </div>
                             </div>
+                            
+                            {!isEditMode && (
+                                <div>
+                                    <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                                        Password * (for teacher login)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder="Secure password (min 6 chars)"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]"
+                                    />
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-[#1f2937] mb-1">

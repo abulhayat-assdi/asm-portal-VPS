@@ -26,7 +26,7 @@ function BlogCard({ post, priority = false }: { post: BlogPost; priority?: boole
                     url: url,
                 });
             } catch (err) {
-                console.log("Error sharing", err);
+                console.error("Error sharing", err);
             }
         } else {
             navigator.clipboard.writeText(url);

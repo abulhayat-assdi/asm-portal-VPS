@@ -272,20 +272,6 @@ export default function AdminPage() {
         setLoading(false);
     };
 
-    const handleInitialize = async () => {
-        if (confirm("This will create sample data for Classes, Notices, and Activity Logs. Continue?")) {
-            setLoading(true);
-            try {
-                await adminService.initializeDatabase();
-                await loadData();
-                alert("Database initialized successfully!");
-            } catch (error) {
-                alert("Failed to initialize database.");
-            }
-            setLoading(false);
-        }
-    };
-
     return (
         <AdminRoute>
             <div className="space-y-8">
@@ -302,12 +288,6 @@ export default function AdminPage() {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleInitialize}
-                        className="px-4 py-2 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 border border-gray-300 transition-colors"
-                    >
-                        ⚡ Initialize DB
-                    </button>
                 </div>
 
                 {/* Summary Cards */}

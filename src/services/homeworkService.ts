@@ -214,7 +214,7 @@ export const cleanupCompletedBatchHomework = async (
 
             await Promise.all(deletePromises);
             totalDeleted += snapshot.docs.length;
-            console.log(`🗑️ Cleaned up ${snapshot.docs.length} homework submissions for batch: ${batch.batchName}`);
+
         } catch (error) {
             console.error(`Error cleaning up homework for batch ${batch.batchName}:`, error);
         }

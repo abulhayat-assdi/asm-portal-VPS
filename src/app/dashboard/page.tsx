@@ -5,6 +5,7 @@ import NoticeCard from "@/components/ui/NoticeCard";
 import Badge from "@/components/ui/Badge";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Clock from "@/components/ui/Clock";
 import {
     getAllClasses,
     getAllNotices,
@@ -27,7 +28,6 @@ import { serverTimestamp } from "firebase/firestore";
 
 export default function DashboardPage() {
     const { userProfile } = useAuth();
-    const [currentTime, setCurrentTime] = useState(new Date());
     const [classes, setClasses] = useState<Class[]>([]);
     const [notices, setNotices] = useState<Notice[]>([]);
     const [studentNotices, setStudentNotices] = useState<StudentNotice[]>([]);
@@ -84,35 +84,10 @@ export default function DashboardPage() {
         fetchData();
     }, []);
 
-    // Update time every second
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
-
     // Calculate statistics from real data
     const todayClasses = getTodayClassesCount(classes);
     const completedThisMonth = getCompletedClassesThisMonth(classes);
     const pendingThisMonth = getPendingClassesThisMonth(classes);
-
-    const formatDateTime = (date: Date) => {
-        return date.toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric"
-        });
-    };
-
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
-        });
-    };
 
     const handleAddNotice = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -299,24 +274,7 @@ export default function DashboardPage() {
                         <p className="text-white/90 mb-8 text-lg font-normal max-w-2xl mx-auto">
                             Comprehensive Portal for the Art of Sales & Marketing Course
                         </p>
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mt-8">
-                            <div className="glassmorphic-pill flex items-center gap-3 px-6 py-3 min-w-full md:min-w-[280px] justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 md:w-8 h-8">
-                                    <path fillRule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 2.25h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V5.25a3 3 0 013-3h.75zM5.25 9h13.5v9.75a1.5 1.5 0 01-1.5 1.5H6.75a1.5 1.5 0 01-1.5-1.5V9zm1.5 2.25a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm3 0a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm3 0a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm3 0a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm-9 3a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm3 0a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm3 0a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5zm3 0a.75.75 0 00-1.5 0v1.5a.75.75 0 001.5 0v-1.5z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-lg md:text-xl font-bold tracking-wide">
-                                    {formatDateTime(currentTime)}
-                                </span>
-                            </div>
-                            <div className="glassmorphic-pill flex items-center gap-3 px-6 py-3 min-w-full md:min-w-[200px] justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 md:w-8 h-8">
-                                    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-lg md:text-xl font-bold tracking-wide">
-                                    {formatTime(currentTime)}
-                                </span>
-                            </div>
-                        </div>
+                        <Clock />
                     </div>
                 </CardBody>
 

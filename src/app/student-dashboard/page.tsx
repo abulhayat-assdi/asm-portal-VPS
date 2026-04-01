@@ -187,7 +187,7 @@ export default function StudentDashboardOverview() {
                                     <div className={`p-2 rounded-lg text-center min-w-[60px] ${
                                         notice.priority === 'urgent' ? 'bg-red-500 text-white' : 'bg-[#059669] text-white'
                                     }`}>
-                                        <p className="text-xs font-semibold uppercase">{notice.date?.split('-')[1] ? new Date(notice.date).toLocaleString('en', { month: 'short' }) : 'New'}</p>
+                                        <p className="text-xs font-semibold uppercase">{notice.date?.split('-')[1] ? new Date(notice.date + 'T00:00:00').toLocaleString('en', { month: 'short' }) : 'New'}</p>
                                         <p className="text-xl font-bold">{notice.date?.split('-')[2] || '•'}</p>
                                     </div>
                                     <div className="flex-1 min-w-0">

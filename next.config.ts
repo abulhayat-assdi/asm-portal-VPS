@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    // Prevent firebase-admin from being bundled — it uses Node.js native modules
+    // that are incompatible with Next.js edge/server component bundling.
+    serverExternalPackages: ['firebase-admin'],
     images: {
         minimumCacheTTL: 86400, // Cache images for 24 hours
         formats: ['image/avif', 'image/webp'], // Auto-convert to smallest format
@@ -52,6 +55,12 @@ const nextConfig: NextConfig = {
                 hostname: 'drive.google.com',
                 port: '',
                 pathname: '/thumbnail**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+                port: '',
+                pathname: '/**',
             },
         ],
     },

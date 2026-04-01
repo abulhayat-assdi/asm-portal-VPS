@@ -92,7 +92,7 @@ export const getPublishedPosts = cache(async (limitCount?: number): Promise<Blog
         });
     } catch (error) {
         console.error("Error fetching published posts:", error);
-        throw error;
+        return [];
     }
 });
 

@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, Timestamp, orderBy } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, Timestamp, orderBy, FieldValue } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Types
@@ -9,7 +9,7 @@ export interface Class {
     batch: string;
     subject: string;
     time: string;
-    status: "Today" | "Completed" | "Pending" | "Upcoming";
+    status: "Today" | "Completed" | "Pending" | "Upcoming" | "COMPLETED" | "PENDING";
 }
 
 export interface Notice {
@@ -20,7 +20,7 @@ export interface Notice {
     priority: "normal" | "urgent";
     createdBy?: string;
     createdByName?: string;
-    createdAt?: any;
+    createdAt?: Timestamp | Date | FieldValue | null;
 }
 
 export interface StudentNotice {
@@ -31,7 +31,7 @@ export interface StudentNotice {
     priority: "normal" | "urgent";
     createdBy?: string;
     createdByName?: string;
-    createdAt?: any;
+    createdAt?: Timestamp | Date | FieldValue | null;
 }
 
 /**
@@ -160,8 +160,8 @@ export const getAllClasses = async (): Promise<Class[]> => {
  */
 export const getAllNotices = async (): Promise<Notice[]> => {
     try {
-        const noticesRef = collection(db, "notices");
-        const snapshot = await getDocs(noticesRef);
+        const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
 
         return snapshot.docs.map(doc => ({
             id: doc.id,
@@ -191,7 +191,7 @@ export const getCompletedClassesThisMonth = (classes: Class[]): number => {
 
     return classes.filter(cls => {
         const classDate = new Date(cls.date);
-        return cls.status === "Completed" &&
+        return (cls.status === "COMPLETED" || cls.status === "Completed") &&
             classDate.getMonth() === currentMonth &&
             classDate.getFullYear() === currentYear;
     }).length;
@@ -207,7 +207,7 @@ export const getPendingClassesThisMonth = (classes: Class[]): number => {
 
     return classes.filter(cls => {
         const classDate = new Date(cls.date);
-        return cls.status === "Pending" &&
+        return (cls.status === "PENDING" || cls.status === "Pending") &&
             classDate.getMonth() === currentMonth &&
             classDate.getFullYear() === currentYear;
     }).length;

@@ -36,40 +36,6 @@ export function formatDateShort(dateString: string): string {
 }
 
 /**
- * Get time-based greeting
- */
-export function getGreeting(): string {
-    const hour = new Date().getHours();
-
-    if (hour < 12) {
-        return "সুপ্রভাত";
-    } else if (hour < 17) {
-        return "শুভ অপরাহ্ন";
-    } else {
-        return "শুভ সন্ধ্যা";
-    }
-}
-
-/**
- * Get current date and time in Bangla format
- */
-export function getCurrentDateTime(): string {
-    const now = new Date();
-    const options: Intl.DateTimeFormatOptions = {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    };
-    const dateStr = now.toLocaleDateString("bn-BD", options);
-    const timeStr = now.toLocaleTimeString("bn-BD", {
-        hour: "2-digit",
-        minute: "2-digit",
-    });
-    return `${dateStr}, ${timeStr}`;
-}
-
-/**
  * Get badge color classes based on variant (Brand Theme)
  */
 export function getBadgeColor(
