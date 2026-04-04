@@ -84,7 +84,8 @@ export default function ContactPage() {
             <main className="min-h-screen bg-white">
 
                 {/* 1. AI Powered FAQ Section */}
-                <AIFAQSection />
+                {/* TODO: AI Assistant temporarily hidden to save API costs. */}
+                {false && <AIFAQSection />}
 
                 {/* 2. Contact Information Section */}
                 <section className="w-full bg-[#f9fafb] pt-4 pb-8 md:pt-6 md:pb-10">

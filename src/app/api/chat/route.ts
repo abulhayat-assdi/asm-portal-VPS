@@ -165,6 +165,9 @@ interface ChatMessage {
 }
 
 export async function POST(request: NextRequest) {
+    if (!process.env.GEMINI_API_KEY) {
+        return NextResponse.json({ error: "AI Assistant is currently disabled." }, { status: 503 });
+    }
     // ── Rate limiting ─────────────────────────────────────
     const ip =
         request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
