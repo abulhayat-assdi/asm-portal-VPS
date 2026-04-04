@@ -173,6 +173,7 @@ export default function SchedulePage() {
 
     useEffect(() => {
         fetchScheduleData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userProfile, authLoading]);
 
     // Fetch Class Routines (Firestore)

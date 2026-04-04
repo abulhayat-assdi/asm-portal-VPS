@@ -102,6 +102,7 @@ export default function ResourcesPage() {
         fetchResources();
         fetchMyModuleResources();
         getPublicUniqueBatches().then(setBatchNames);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // ─── Module Resource Handlers ──────────────────────────────────

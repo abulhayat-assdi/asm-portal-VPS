@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Profile not found" }, { status: 404 });
         }
 
-        const profileData = userDoc.data();
-        const profile = {
+        const profileData = userDoc.data() || {};
+        const profile: Record<string, any> = {
             ...profileData,
             createdAt: profileData?.createdAt?.toDate() || new Date(),
             lastLogin: profileData?.lastLogin?.toDate() || new Date(),

@@ -31,6 +31,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
 
     useEffect(() => {
         loadComments();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [blogId]);
 
     const loadComments = async () => {

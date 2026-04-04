@@ -93,7 +93,7 @@ export default function HomeworkViewPage() {
         if (!authLoading && userProfile) {
             fetchData();
         }
-    }, [userProfile, authLoading]);
+    }, [userProfile, authLoading, isAdmin, isTeacher]);
 
     // Filtered results
     const filteredHomework = homework.filter(hw => {
