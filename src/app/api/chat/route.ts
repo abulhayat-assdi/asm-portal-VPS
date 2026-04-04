@@ -269,8 +269,9 @@ export async function POST(request: NextRequest) {
             }
 
             const data = await response.json();
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
             const aiText =
-                data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+                text ||
                 "Sorry, I couldn't generate a response. Please try again.";
 
             return NextResponse.json({ reply: aiText });
