@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    output: 'standalone',
     // Prevent firebase-admin from being bundled — it uses Node.js native modules
     // that are incompatible with Next.js edge/server component bundling.
     serverExternalPackages: ['firebase-admin'],

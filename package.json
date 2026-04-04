@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "cpanel-start": "NODE_ENV=production node server.js",
     "lint": "next lint",
     "deploy": "firebase deploy --only hosting"
   },
