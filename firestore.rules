@@ -126,7 +126,7 @@ service cloud.firestore {
 
     // Exam Results
     match /exam_results/{docId} {
-      allow read: if isAuth();
+      allow read: if isAuth() && (resource.data.studentUid == request.auth.uid || isAdmin() || isTeacher());
       allow write: if isAdmin();
     }
 

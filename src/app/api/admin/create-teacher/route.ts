@@ -5,10 +5,22 @@ export async function POST(req: NextRequest) {
     try {
         const { adminAuth, adminDb } = getAdminServices();
 
-        // Very basic check to ensure admin is making this request. 
-        // In a real production system, you'd extract the session cookie from req.cookies 
-        // and verify it with adminAuth.verifySessionCookie().
-        
+        const sessionCookie = req.cookies.get('__session')?.value;
+        if (!sessionCookie) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        try {
+            const decodedToken = await adminAuth.verifyIdToken(sessionCookie);
+            const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+            if (!callerDoc.exists || callerDoc.data()?.role !== 'admin') {
+                return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+            }
+        } catch (authError) {
+            console.error("Auth verification failed:", authError);
+            return NextResponse.json({ error: "Unauthorized: Invalid session" }, { status: 401 });
+        }
+
         const body = await req.json();
         const { email, password, name, phone, role } = body;
 

@@ -145,7 +145,7 @@ export default function Sidebar() {
                 <div className="p-6 border-b border-[#e5e7eb] flex items-center justify-center">
                     <Link
                         href={isStudent ? "/student-dashboard" : "/dashboard"}
-                        prefetch={false}
+                        prefetch={true}
                         className="cursor-pointer group"
                         onClick={() => setIsMobileMenuOpen(false)}
                     >
@@ -170,7 +170,7 @@ export default function Sidebar() {
                                 <li key={item.href}>
                                     <Link
                                         href={item.href}
-                                        prefetch={false}
+                                        prefetch={true}
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200",

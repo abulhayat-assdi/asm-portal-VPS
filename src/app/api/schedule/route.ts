@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import serviceAccount from '@/../serviceAccountKey.json'; // Import directly
+import { getAdminServices } from "@/lib/firebase-admin";
 
 // Config
 const SHEET_ID = '10BxvXsxAjrA2nJ3ypns_LoP3y84VkZPLIfXrTr183eQ';
@@ -13,12 +14,15 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export async function GET(req: NextRequest) {
     try {
+        const sessionCookie = req.cookies.get('__session')?.value;
+        if (!sessionCookie) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const { adminAuth } = getAdminServices();
+        await adminAuth.verifyIdToken(sessionCookie);
+
         const searchParams = req.nextUrl.searchParams;
         const teacherId = searchParams.get('teacherId');
-
-        // if (!teacherId) {
-        //     return NextResponse.json({ error: 'Teacher ID is required' }, { status: 400 });
-        // }
 
         const normalizedTeacherId = String(teacherId).trim();
 
@@ -96,6 +100,17 @@ export async function GET(req: NextRequest) {
 // Mark Class as Completed (UPDATE Status)
 export async function PUT(req: NextRequest) {
     try {
+        const sessionCookie = req.cookies.get('__session')?.value;
+        if (!sessionCookie) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const { adminAuth, adminDb } = getAdminServices();
+        const decodedToken = await adminAuth.verifyIdToken(sessionCookie);
+        const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
+        if (!callerDoc.exists || callerDoc.data()?.role !== 'admin') {
+            return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+        }
+
         const body = await req.json();
         const { teacherId, date, time, status } = body;
 

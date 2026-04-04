@@ -1,3 +1,5 @@
+export const dynamic = "force-static";
+
 import HeroSection from "@/components/ui/HeroSection";
 import LearningOutcomes from "@/components/ui/LearningOutcomes";
 import TargetAudience, { defaultAudienceIcons } from "@/components/ui/TargetAudience";

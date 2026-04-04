@@ -91,10 +91,10 @@ GUIDELINES:
 // Primary: cutting-edge models. Fallback: stable LTS models.
 // ============================================================
 const MODELS = [
-    "gemini-2.5-flash",          // Latest experimental — try first
+    "gemini-2.0-flash",          // Latest experimental — try first
     "gemini-1.5-flash",          // Stable, widely available fallback
     "gemini-1.5-pro",            // Stable pro fallback
-    "gemini-2.5-pro",            // Experimental pro (may have quota limits)
+    "gemini-2.0-pro-exp",        // Experimental pro (may have quota limits)
 ];
 
 // ============================================================

@@ -1,6 +1,5 @@
-"use client";
-
 export const dynamic = "force-static";
+export const revalidate = 86400;
 
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";

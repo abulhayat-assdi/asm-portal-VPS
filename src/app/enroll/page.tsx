@@ -5,6 +5,8 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import emailjs from "@emailjs/browser";
 
+export const dynamic = "force-static";
+
 export default function EnrollPage() {
     const [formData, setFormData] = useState({
         name: "",
