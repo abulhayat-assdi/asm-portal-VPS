@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "ASM Internal Portal",
-    description: "Internal portal for ASM",
+    title: "Sales & Marketing",
+    description: "Sales & Marketing Internal Portal",
 };
 
 export default function RootLayout({

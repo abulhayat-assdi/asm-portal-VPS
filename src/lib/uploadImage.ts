@@ -1,13 +1,11 @@
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "./firebase";
 import imageCompression from "browser-image-compression";
 
 /**
- * Compresses an image and uploads it to Firebase Storage.
+ * Compresses an image and uploads it to the local cPanel storage via API.
  * @param file The image file to upload
- * @param path The path in Firebase Storage (e.g., 'images/blog')
- * @param onProgress Callback function for upload progress (0-100)
- * @returns The download URL of the uploaded image
+ * @param path The sub-path in public/images/ (e.g., 'blog')
+ * @param onProgress Callback function for upload progress (currently limited in native fetch)
+ * @returns The relative path of the uploaded image (e.g., 'blog/filename.webp')
  */
 export const uploadImage = async (
     file: File,
@@ -18,42 +16,42 @@ export const uploadImage = async (
         // 1. Compress the image aggressively for fast web loading
         const options = {
             maxSizeMB: 0.2,          // Max 200KB per image
-            maxWidthOrHeight: 800,   // Max 800px (perfect for blog thumbnails)
+            maxWidthOrHeight: 1200,  // Slightly larger for better quality on cPanel
             useWebWorker: true,
             initialQuality: 0.7,     // 70% quality — good balance
             fileType: 'image/webp',  // Convert to WebP for best compression
         };
         const compressedFile = await imageCompression(file, options);
 
-        // 2. Create a unique filename to avoid overwrites
-        const timestamp = Date.now();
-        const cleanName = compressedFile.name.replace(/[^a-zA-Z0-9.]/g, '-');
-        const filename = `${timestamp}-${cleanName}`;
-        const storageRef = ref(storage, `${path}/${filename}`);
+        // 2. Prepare FormData
+        const formData = new FormData();
+        formData.append("file", compressedFile);
+        
+        // Clean the path (remove leading/trailing slashes)
+        const cleanPath = path.replace(/^\/|\/$/g, '').replace('images/', '');
+        formData.append("path", cleanPath);
 
-        // 3. Upload to Firebase Storage
-        const uploadTask = uploadBytesResumable(storageRef, compressedFile);
+        if (onProgress) onProgress(10); // Start progress
 
-        return new Promise((resolve, reject) => {
-            uploadTask.on(
-                "state_changed",
-                (snapshot) => {
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    if (onProgress) {
-                        onProgress(progress);
-                    }
-                },
-                (error) => {
-                    console.error("Upload error:", error);
-                    reject(error);
-                },
-                async () => {
-                    // Upload completed successfully, now we can get the download URL
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    resolve(downloadURL);
-                }
-            );
+        // 3. Upload to our local API route
+        const response = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
         });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Upload failed");
+        }
+
+        if (onProgress) onProgress(100); // Complete progress
+
+        const data = await response.json();
+        
+        // Return the full relative path that getImageUrl understands
+        // e.g., 'blog/12345-image.webp'
+        return data.path;
+
     } catch (error) {
         console.error("Error compressing or uploading image:", error);
         throw error;

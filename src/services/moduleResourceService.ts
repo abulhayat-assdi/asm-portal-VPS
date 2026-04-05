@@ -2,10 +2,7 @@ import {
     collection, getDocs, addDoc, doc, updateDoc, deleteDoc,
     query, orderBy, where, Timestamp
 } from "firebase/firestore";
-import {
-    ref, uploadBytesResumable, getDownloadURL, deleteObject
-} from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 
 export type ResourceType = "Presentation" | "Notes" | "Assignment" | "Practice" | "Other";
 
@@ -19,8 +16,8 @@ export interface ModuleResource {
     description?: string;
     fileType: string;           // pdf | pptx | docx | image | other
     fileName: string;
-    fileUrl: string;            // Firebase Storage download URL
-    storagePath: string;        // Full storage path for deletion
+    fileUrl: string;            // Local API serve URL
+    storagePath: string;        // Relative path for API deletion
     fileSize?: string;
     resourceType: ResourceType;
     visibleForBatches: string[]; // ['all'] or ['Batch 7', 'Batch 8', ...]
@@ -30,7 +27,7 @@ export interface ModuleResource {
 }
 
 /**
- * Upload a file to Firebase Storage and return download URL + storage path
+ * Upload a file to local storage via API
  */
 export const uploadModuleResourceFile = (
     file: File,
@@ -38,30 +35,47 @@ export const uploadModuleResourceFile = (
     onProgress?: (progress: number) => void
 ): Promise<{ fileUrl: string; storagePath: string; fileSize: string; fileType: string }> => {
     return new Promise((resolve, reject) => {
-        const sanitized = moduleTitle.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50);
-        const timestamp = Date.now();
-        const storagePath = `module_resources/${sanitized}/${timestamp}_${file.name}`;
-        const storageRef = ref(storage, storagePath);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "resource");
+        formData.append("path", moduleTitle.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50));
 
-        uploadTask.on(
-            "state_changed",
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                onProgress?.(Math.round(progress));
-            },
-            (error) => reject(error),
-            async () => {
-                const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                const ext = file.name.split(".").pop()?.toLowerCase() || "other";
-                const fileType = ["pdf", "pptx", "ppt", "docx", "doc"].includes(ext) ? ext
-                    : ["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? "image"
-                    : "other";
-                const kb = file.size / 1024;
-                const fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
-                resolve({ fileUrl, storagePath, fileSize, fileType });
+        xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable && onProgress) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                onProgress(Math.round(percentComplete));
             }
-        );
+        });
+
+        xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    const ext = file.name.split(".").pop()?.toLowerCase() || "other";
+                    const fileType = ["pdf", "pptx", "ppt", "docx", "doc"].includes(ext) ? ext
+                        : ["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? "image"
+                        : "other";
+                    const kb = file.size / 1024;
+                    const fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
+                    
+                    resolve({ 
+                        fileUrl: response.fileUrl, 
+                        storagePath: response.storagePath, 
+                        fileSize, 
+                        fileType 
+                    });
+                } catch (err) {
+                    reject(new Error("Failed to parse upload response"));
+                }
+            } else {
+                reject(new Error(xhr.responseText || "Upload failed"));
+            }
+        });
+
+        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.open("POST", "/api/storage/upload");
+        xhr.send(formData);
     });
 };
 
@@ -170,7 +184,7 @@ export const toggleModuleResourceVisibility = async (
 };
 
 /**
- * Delete a module resource (Firestore + Storage)
+ * Delete a module resource (Firestore + local storage)
  */
 export const deleteModuleResource = async (
     id: string,
@@ -178,11 +192,12 @@ export const deleteModuleResource = async (
 ): Promise<void> => {
     // Delete from Firestore
     await deleteDoc(doc(db, "module_resources", id));
-    // Delete from Firebase Storage
+    // Delete from local storage via API
     try {
-        const fileRef = ref(storage, storagePath);
-        await deleteObject(fileRef);
+        await fetch(`/api/storage/delete?path=${encodeURIComponent(storagePath)}`, {
+            method: "DELETE"
+        });
     } catch (err) {
-        console.warn("Storage file may already be deleted:", err);
+        console.warn("Local storage deletion failed:", err);
     }
 };

@@ -1,8 +1,7 @@
 import {
     collection, getDocs, addDoc, doc, deleteDoc, query, orderBy, where, Timestamp
 } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 
 export interface HomeworkSubmission {
     id: string;
@@ -33,7 +32,7 @@ export const formatHomeworkDate = (date: Date): string => {
 };
 
 /**
- * Upload a homework file to Firebase Storage
+ * Upload a homework file to local storage via API
  */
 export const uploadHomeworkFile = (
     file: File,
@@ -41,24 +40,39 @@ export const uploadHomeworkFile = (
     onProgress?: (progress: number) => void
 ): Promise<{ fileUrl: string; storagePath: string; fileName: string }> => {
     return new Promise((resolve, reject) => {
-        const sanitizedBatch = batchName.replace(/[^a-zA-Z0-9_]/g, "_");
-        const timestamp = Date.now();
-        const storagePath = `homework/${sanitizedBatch}/${timestamp}_${file.name}`;
-        const storageRef = ref(storage, storagePath);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "homework");
+        formData.append("path", batchName.replace(/[^a-zA-Z0-9_]/g, "_"));
 
-        uploadTask.on(
-            "state_changed",
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                onProgress?.(Math.round(progress));
-            },
-            (error) => reject(error),
-            async () => {
-                const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve({ fileUrl, storagePath, fileName: file.name });
+        xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable && onProgress) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                onProgress(Math.round(percentComplete));
             }
-        );
+        });
+
+        xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    resolve({
+                        fileUrl: response.fileUrl,
+                        storagePath: response.storagePath,
+                        fileName: response.fileName
+                    });
+                } catch (err) {
+                    reject(new Error("Failed to parse upload response"));
+                }
+            } else {
+                reject(new Error(xhr.responseText || "Upload failed"));
+            }
+        });
+
+        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.open("POST", "/api/storage/upload");
+        xhr.send(formData);
     });
 };
 
@@ -152,16 +166,18 @@ export const getAllHomework = async (): Promise<HomeworkSubmission[]> => {
 };
 
 /**
- * Delete a single homework submission (Firestore doc + Storage file)
+ * Delete a single homework submission (Firestore doc + local file)
  */
 export const deleteHomework = async (id: string, storagePath?: string): Promise<void> => {
     try {
-        // Delete file from Storage if it exists
+        // Delete file from local storage via API if it exists
         if (storagePath) {
             try {
-                await deleteObject(ref(storage, storagePath));
+                await fetch(`/api/storage/delete?path=${encodeURIComponent(storagePath)}`, { 
+                    method: "DELETE" 
+                });
             } catch (err) {
-                console.warn("Storage file may not exist:", err);
+                console.warn("Storage deletion failed:", err);
             }
         }
         // Delete Firestore document
@@ -204,9 +220,11 @@ export const cleanupCompletedBatchHomework = async (
                 const data = docSnap.data();
                 if (data.storagePath) {
                     try {
-                        await deleteObject(ref(storage, data.storagePath));
+                        await fetch(`/api/storage/delete?path=${encodeURIComponent(data.storagePath)}`, { 
+                            method: "DELETE" 
+                        });
                     } catch (err) {
-                        console.warn(`Failed to delete storage file: ${data.storagePath}`, err);
+                        console.warn(`Failed to delete local file: ${data.storagePath}`, err);
                     }
                 }
                 await deleteDoc(doc(db, HOMEWORK_COLLECTION, docSnap.id));

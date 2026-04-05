@@ -7,7 +7,8 @@ import { getImageUrl } from "@/lib/getImageUrl";
 import Image from "next/image";
 
 interface AudienceCard {
-    icon: React.ReactNode;
+    icon?: React.ReactNode;
+    iconKey?: string;
     title: string;
     description: string;
 }
@@ -141,7 +142,7 @@ export default function TargetAudience({
                                 {/* Icon Container */}
                                 <div className="w-16 h-16 rounded-2xl bg-green-50 flex items-center justify-center text-[#4CAF50] mb-8
                                     transition-transform duration-250 ease-out group-hover:scale-105 group-hover:rotate-2 shadow-sm border border-green-100">
-                                    {card.icon}
+                                    {card.icon || (card.iconKey && defaultAudienceIcons[card.iconKey as keyof typeof defaultAudienceIcons])}
                                 </div>
 
                                 {/* Content */}

@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface Policy {
@@ -7,6 +7,7 @@ export interface Policy {
     date: string; // Display date string
     version: string;
     fileUrl: string;
+    sortOrder: number;
     createdAt?: any;
 }
 
@@ -16,16 +17,17 @@ export interface MeetingMinute {
     date: string; // Display date string
     meetingNumber: string;
     fileUrl: string;
+    sortOrder: number;
     createdAt?: any;
 }
 
 /**
- * Fetch all policies from Firestore
+ * Fetch all policies from Firestore, sorted by sortOrder then createdAt
  */
 export const getAllPolicies = async (): Promise<Policy[]> => {
     try {
         const policiesRef = collection(db, "policies");
-        const q = query(policiesRef, orderBy("createdAt", "desc"));
+        const q = query(policiesRef, orderBy("sortOrder", "asc"));
         const snapshot = await getDocs(q);
 
         return snapshot.docs.map(doc => {
@@ -35,8 +37,8 @@ export const getAllPolicies = async (): Promise<Policy[]> => {
                 title: data.title,
                 version: data.version,
                 fileUrl: data.fileUrl,
+                sortOrder: data.sortOrder ?? 999,
                 createdAt: data.createdAt,
-                // Use createdAt for date display, fallback to today
                 date: data.createdAt?.toDate ? data.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
             } as Policy;
         });
@@ -47,12 +49,12 @@ export const getAllPolicies = async (): Promise<Policy[]> => {
 };
 
 /**
- * Fetch all meeting minutes from Firestore
+ * Fetch all meeting minutes from Firestore, sorted by sortOrder
  */
 export const getAllMeetingMinutes = async (): Promise<MeetingMinute[]> => {
     try {
         const meetingsRef = collection(db, "meeting_minutes");
-        const q = query(meetingsRef, orderBy("createdAt", "desc"));
+        const q = query(meetingsRef, orderBy("sortOrder", "asc"));
         const snapshot = await getDocs(q);
 
         return snapshot.docs.map(doc => {
@@ -62,8 +64,8 @@ export const getAllMeetingMinutes = async (): Promise<MeetingMinute[]> => {
                 title: data.title,
                 meetingNumber: data.meetingNumber,
                 fileUrl: data.fileUrl,
+                sortOrder: data.sortOrder ?? 999,
                 createdAt: data.createdAt,
-                // Use createdAt for date display, fallback to today
                 date: data.createdAt?.toDate ? data.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
             } as MeetingMinute;
         });
@@ -80,6 +82,7 @@ export const addPolicy = async (data: {
     title: string;
     version: string;
     fileUrl: string;
+    sortOrder: number;
 }): Promise<string> => {
     try {
         const policiesRef = collection(db, "policies");
@@ -87,6 +90,7 @@ export const addPolicy = async (data: {
             title: data.title,
             version: data.version,
             fileUrl: data.fileUrl,
+            sortOrder: data.sortOrder,
             createdAt: serverTimestamp()
         });
         return docRef.id;
@@ -103,6 +107,7 @@ export const addMeetingMinute = async (data: {
     title: string;
     meetingNumber: string;
     fileUrl: string;
+    sortOrder: number;
 }): Promise<string> => {
     try {
         const meetingsRef = collection(db, "meeting_minutes");
@@ -110,6 +115,7 @@ export const addMeetingMinute = async (data: {
             title: data.title,
             meetingNumber: data.meetingNumber,
             fileUrl: data.fileUrl,
+            sortOrder: data.sortOrder,
             createdAt: serverTimestamp()
         });
         return docRef.id;

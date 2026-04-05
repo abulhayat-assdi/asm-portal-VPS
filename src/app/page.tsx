@@ -2,7 +2,7 @@ export const dynamic = "force-static";
 
 import HeroSection from "@/components/ui/HeroSection";
 import LearningOutcomes from "@/components/ui/LearningOutcomes";
-import TargetAudience, { defaultAudienceIcons } from "@/components/ui/TargetAudience";
+import TargetAudience from "@/components/ui/TargetAudience";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 
@@ -30,22 +30,22 @@ const learningOutcomes = [
 
 const audiences = [
     {
-        icon: defaultAudienceIcons.students,
+        iconKey: "students",
         title: "Students",
         description: "যারা শুধু পুঁথিগত বিদ্যায় আটকে না থেকে রিয়েল-ওয়ার্ল্ডের জন্য রেডি হতে চায়। কথা বলার জড়তা কাটিয়ে Practical Skills ও সেলফ-কনফিডেন্স দিয়ে ক্যারিয়ারের একটি স্ট্রং ফাউন্ডেশন গড়তে চায়।",
     },
     {
-        icon: defaultAudienceIcons.jobSeekers,
+        iconKey: "jobSeekers",
         title: "Job Seekers",
         description: "যারা কনফিডেন্ট কমিউনিকেশন এবং High-Demanding Skills দিয়ে জব ইন্টারভিউতে নিজেকে বেস্ট প্রমাণ করতে চায়। আজকের এই কম্পিটিটিভ মার্কেটে একটি সম্মানজনক ক্যারিয়ার কনফার্ম করতে চায়।",
     },
     {
-        icon: defaultAudienceIcons.entrepreneurs,
+        iconKey: "entrepreneurs",
         title: "Entrepreneurs",
         description: "যারা প্র্যাকটিক্যাল অফলাইন এবং অনলাইন সেলস স্ট্র্যাটেজি মাস্টার করে নিজেদের বিজনেস Scale Up করতে চায়। আর কাস্টমারদের সাথে লং-টার্ম ট্রাস্ট এবং স্ট্রং রিলেশনশিপ বিল্ড করতে চায়।",
     },
     {
-        icon: defaultAudienceIcons.ethicalLearners,
+        iconKey: "ethicalLearners",
         title: "Ethical Learners",
         description: "যারা সেলসকে 'আমানাহ' (Trust) হিসেবে নিতে চায়। কোনো ফেক প্রমিস, ম্যানিপুলেশন বা হারাম শর্টকাটের ফাঁদে না পড়ে, 100% সততা ও সম্মানের সাথে হালাল ইনকাম জেনারেট করতে চায়।",
     },

@@ -1,6 +1,5 @@
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 
 export interface Resource {
     id: string;
@@ -14,12 +13,12 @@ export interface Resource {
     teacherName?: string;
     order?: number;
     fileUrl: string;
-    storagePath?: string; // Firebase Storage path for deletion
+    storagePath?: string; // Relative path for API deletion
     fileName?: string;
 }
 
 /**
- * Upload a file to Firebase Storage under the "resources/" path
+ * Upload a file to local storage via API
  */
 export const uploadResourceFile = (
     file: File,
@@ -27,35 +26,52 @@ export const uploadResourceFile = (
     onProgress?: (progress: number) => void
 ): Promise<{ fileUrl: string; storagePath: string; fileName: string }> => {
     return new Promise((resolve, reject) => {
-        const sanitized = category.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
-        const timestamp = Date.now();
-        const storagePath = `resources/${sanitized}/${timestamp}_${file.name}`;
-        const storageRef = ref(storage, storagePath);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("category", "resource");
+        formData.append("path", category.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40));
 
-        uploadTask.on(
-            "state_changed",
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                onProgress?.(Math.round(progress));
-            },
-            (error) => reject(error),
-            async () => {
-                const fileUrl = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve({ fileUrl, storagePath, fileName: file.name });
+        xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable && onProgress) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                onProgress(Math.round(percentComplete));
             }
-        );
+        });
+
+        xhr.addEventListener("load", () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    resolve({
+                        fileUrl: response.fileUrl,
+                        storagePath: response.storagePath,
+                        fileName: response.fileName
+                    });
+                } catch (err) {
+                    reject(new Error("Failed to parse upload response"));
+                }
+            } else {
+                reject(new Error(xhr.responseText || "Upload failed"));
+            }
+        });
+
+        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+        xhr.open("POST", "/api/storage/upload");
+        xhr.send(formData);
     });
 };
 
 /**
- * Delete a resource file from Firebase Storage
+ * Delete a resource file from local storage via API
  */
 export const deleteResourceFile = async (storagePath: string): Promise<void> => {
     try {
-        await deleteObject(ref(storage, storagePath));
+        await fetch(`/api/storage/delete?path=${encodeURIComponent(storagePath)}`, {
+            method: "DELETE"
+        });
     } catch (err) {
-        console.warn("Storage file may not exist:", err);
+        console.warn("Local storage deletion failed:", err);
     }
 };
 
@@ -81,6 +97,8 @@ export const getAllResources = async (): Promise<Resource[]> => {
                 teacherName: data.teacherName,
                 order: data.order,
                 fileUrl: data.fileUrl,
+                storagePath: data.storagePath,
+                fileName: data.fileName,
                 createdAt: data.createdAt,
                 // Convert timestamp to readable date string for initial UI requirement
                 uploadDate: data.createdAt?.toDate ? data.createdAt.toDate().toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
