@@ -90,7 +90,7 @@ const getCurrentWeekRange = () => {
  * Fetch class schedules for a specific teacher via API (Sheets) 
  * AND Firestore (for overrides/requests)
  */
-export const getClassesByTeacherId = async (teacherId: string, filterCurrentWeek: boolean = true): Promise<ClassSchedule[]> => {
+export const getClassesByTeacherId = async (teacherId: string, teacherUid?: string, filterCurrentWeek: boolean = true): Promise<ClassSchedule[]> => {
     try {
         // 1. Fetch Request/Status Overrides from Firestore
         // These are actions the teacher or admin took that might not be in Sheets yet
@@ -98,7 +98,8 @@ export const getClassesByTeacherId = async (teacherId: string, filterCurrentWeek
         const firestoreClasses: FirestoreClass[] = [];
         try {
             const classesRef = collection(db, "classes");
-            const q = query(classesRef, where("teacherUid", "==", teacherId));
+            // Use teacherUid for overrides if provided, otherwise fallback to teacherId
+            const q = query(classesRef, where("teacherUid", "==", teacherUid || teacherId));
             // We fetch all for this teacher to catch matching overrides
             const snapshot = await getDocs(q);
             snapshot.forEach(doc => firestoreClasses.push(doc.data() as FirestoreClass));
@@ -117,17 +118,7 @@ export const getClassesByTeacherId = async (teacherId: string, filterCurrentWeek
             console.error("Error fetching custom schedules:", e);
         }
 
-        // 2. Fetch Base Schedule from Sheets API
-        const response = await fetch(`/api/schedule?teacherId=${teacherId}`);
-        if (!response.ok) {
-            console.error("Failed to fetch schedule from API", await response.text());
-            throw new Error(`API returned ${response.status}`);
-        }
-        const result = await response.json();
-        let classes: ClassSchedule[] = Array.isArray(result.data) ? result.data : [];
-
-        // Merge custom schedules with mock/sheet schedules
-        classes = [...classes, ...customSchedules];
+        let classes: ClassSchedule[] = [...customSchedules];
 
         // 3. Merge & Process Logic based on Date
         const today = getNormalizedDate(new Date().toISOString());

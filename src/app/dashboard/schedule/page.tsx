@@ -158,8 +158,9 @@ export default function SchedulePage() {
             if (userProfile.role === "admin") {
                 const data = await getAllClassesSchedules();
                 setScheduleData(data);
-            } else if (userProfile.teacherId) {
-                const data = await getClassesByTeacherId(userProfile.teacherId);
+            } else if (userProfile.uid) {
+                // Pass both teacherId (numeric) and uid (Firebase) to correctly match schedules and overrides
+                const data = await getClassesByTeacherId(userProfile.teacherId || "", userProfile.uid);
                 setScheduleData(data);
             }
         } catch (error) {
@@ -261,7 +262,7 @@ export default function SchedulePage() {
 
         try {
             await markClassAsCompleted(
-                userProfile?.teacherId || "admin",
+                userProfile?.uid || "admin",
                 userProfile?.displayName || "Admin",
                 targetSchedule
             );
@@ -280,14 +281,14 @@ export default function SchedulePage() {
 
     const handleRequestToComplete = async (schedule: ClassSchedule) => {
         setExpandedPending(null);
-        if (!userProfile?.teacherId) return;
+        if (!userProfile?.uid) return;
 
         const uniqueKey = `${schedule.date}-${schedule.time}-${schedule.batch}`;
         setProcessingId(uniqueKey);
 
         try {
             await requestClassCompletion(
-                userProfile.teacherId,
+                userProfile.uid,
                 userProfile.displayName || "Teacher",
                 schedule
             );
@@ -645,7 +646,7 @@ export default function SchedulePage() {
         return <div className="p-8 text-center text-[#6b7280]">Loading profile...</div>;
     }
 
-    if (!userProfile?.teacherId && userProfile?.role !== "admin") {
+    if ((!userProfile?.uid || (userProfile?.role === "teacher" && !userProfile?.teacherId)) && userProfile?.role !== "admin") {
         return (
             <div className="flex flex-col items-center justify-center p-12 text-center text-[#6b7280] bg-white rounded-lg shadow-sm border border-gray-100">
                 <div className="p-3 bg-yellow-100 rounded-full mb-4">
@@ -653,8 +654,8 @@ export default function SchedulePage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 </div>
-                <h2 className="text-xl font-bold text-[#1f2937] mb-2">Teacher ID Missing</h2>
-                <p className="max-w-md mx-auto">Your account is not linked to any Teacher ID. Please ask the administrator to update your profile with your ID.</p>
+                <h2 className="text-xl font-bold text-[#1f2937] mb-2">Teacher ID Not Linked</h2>
+                <p className="max-w-md mx-auto">Your account (UID: {userProfile?.uid?.substring(0,8)}...) is missing a numeric **Teacher ID** (e.g., 101, 102). Without this, the system cannot match your classes from the schedule grid. Please contact the administrator to link your account.</p>
             </div>
         );
     }
@@ -672,8 +673,13 @@ export default function SchedulePage() {
                         <p className="text-[#6b7280] mt-1">
                             {userProfile.role === "admin" 
                                 ? "Viewing schedule for all teachers (Current Week)" 
-                                : `Viewing schedule for Teacher ID: ${userProfile.teacherId} (Current Week)`}
+                                : `Viewing schedule for Teacher ID: ${userProfile.teacherId || 'Not Linked'} (Current Week)`}
                         </p>
+                        {!userProfile.teacherId && userProfile.role !== "admin" && (
+                            <p className="text-xs text-red-500 font-medium mt-1">
+                                ⚠️ Warning: Your profile is missing a numeric Teacher ID. Classes from the grid will not appear.
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -801,8 +807,8 @@ export default function SchedulePage() {
                                 let data: ClassSchedule[] = [];
                                 if (userProfile?.role === 'admin') {
                                     data = await getAllClassesSchedules(false);
-                                } else if (userProfile?.teacherId) {
-                                    data = await getClassesByTeacherId(userProfile.teacherId, false);
+                                } else if (userProfile?.uid) {
+                                    data = await getClassesByTeacherId(userProfile.uid, false);
                                 }
                                 // No week filter — show all
                                 setAllSchedules(data.sort((a, b) => a.date > b.date ? -1 : 1));
@@ -1011,7 +1017,7 @@ export default function SchedulePage() {
                                     {userProfile?.role === 'admin' ? 'All Class Schedules' : 'Your Full Class Schedule'}
                                 </h3>
                                 <p className="text-blue-200 text-sm mt-0.5">
-                                    {userProfile?.role === 'admin' ? 'Read-only view of all schedules' : `All classes for Teacher ID: ${userProfile?.teacherId}`}
+                                    {userProfile?.role === 'admin' ? 'Read-only view of all schedules' : `All classes for Teacher ID: ${userProfile?.uid}`}
                                 </p>
                             </div>
                             <button onClick={() => setIsViewAllModalOpen(false)} className="text-blue-200 hover:text-white transition-colors">
