@@ -4,7 +4,6 @@ import { useState } from "react";
 import Image from "next/image";
 
 interface InstructorCardProps {
-    index: number;
     name: string;
     role: string;
     description: string;
@@ -12,7 +11,7 @@ interface InstructorCardProps {
     image?: string;
 }
 
-export default function InstructorCard({ index, name, role, description, email, image }: InstructorCardProps) {
+export default function InstructorCard({ name, role, description, email, image }: InstructorCardProps) {
     const [expanded, setExpanded] = useState(false);
     const [copied, setCopied] = useState(false);
 

@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, getDocs, getDoc, updateDoc, query, orderBy, Timestamp, where } from "firebase/firestore";
+import { collection, doc, setDoc, getDocs, getDoc, updateDoc, query, orderBy, Timestamp } from "firebase/firestore";
 import { StudentBatchInfo } from "./batchInfoService";
 
 export interface StudentUpdateRequest {

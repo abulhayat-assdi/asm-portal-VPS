@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import Reveal from "./Reveal";
+import { Reveal } from "./Reveal";
 
 const learningPrinciples = [
     {

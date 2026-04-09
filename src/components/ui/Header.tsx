@@ -16,12 +16,9 @@ interface HeaderProps {
     navLinks: NavLink[];
     ctaText: string;
     ctaHref?: string;
-    onCtaClick?: () => void;
     secondaryCtaText?: string;
     secondaryCtaHref?: string;
-    onSecondaryCtaClick?: () => void;
     studentLoginHref?: string;
-    onBrandClick?: () => void;
     className?: string;
 }
 
@@ -30,12 +27,9 @@ export default function Header({
     navLinks,
     ctaText,
     ctaHref = "/enroll",
-    onCtaClick,
     secondaryCtaText = "Login as Teacher",
     secondaryCtaHref = "/login",
-    onSecondaryCtaClick,
     studentLoginHref = "/student-login",
-    onBrandClick,
     className = "",
     transparent = false,
 }: HeaderProps & { transparent?: boolean }) {

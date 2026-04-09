@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRouter } from "next/navigation";
 import { getPublicBatchStudents, getPublicUniqueBatches, PublicStudentInfo } from "@/services/batchInfoService";
 import BrandLogo from "@/components/ui/BrandLogo";
 import Link from "next/link";
@@ -22,7 +21,6 @@ const EyeSlashIcon = ({ className }: { className: string }) => (
 
 export default function StudentLoginPage() {
     const { userProfile, loading, loginWithEmail, registerWithEmail, sendPasswordReset } = useAuth();
-    const router = useRouter();
 
     // UI States
     const [isRegistering, setIsRegistering] = useState(false);
@@ -307,7 +305,7 @@ export default function StudentLoginPage() {
                                     />
                                     {batchName && roll && !name && (
                                         <p className="text-xs text-red-500 mt-1 italic">
-                                            Warning: Your roll number isn't in our active database. Please contact admin.
+                                            Warning: Your roll number isn&apos;t in our active database. Please contact admin.
                                         </p>
                                     )}
                                 </div>

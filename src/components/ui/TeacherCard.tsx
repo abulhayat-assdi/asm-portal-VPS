@@ -105,7 +105,7 @@ export default function TeacherCard({ teacher, onEdit, onDelete }: TeacherCardPr
                 <div className="w-full mb-6 border-b border-gray-200 pb-6">
                     <div className="text-sm text-[#4b5563] text-center italic leading-relaxed px-2">
                         <p className={`${!isExpanded ? 'line-clamp-3' : ''}`}>
-                            "{teacher.about || "No details available."}"
+                            &quot;{teacher.about || "No details available."}&quot;
                         </p>
                         {teacher.about && teacher.about.length > 100 && (
                             <div className="text-center mt-2">

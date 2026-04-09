@@ -149,11 +149,8 @@ export default function SchedulePage() {
         }
     };
 
-    // We can rely on service logic for "Today" so no need to calculate date strictly here 
-    const today = new Date().toISOString().split('T')[0];
-
     // Fetch Class Schedule (Google Sheet & Firestore)
-    const fetchScheduleData = async () => {
+    const fetchScheduleData = useCallback(async () => {
         if (authLoading || !userProfile) return;
 
         setLoading(true);
@@ -170,12 +167,11 @@ export default function SchedulePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authLoading, userProfile]);
 
     useEffect(() => {
         fetchScheduleData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userProfile, authLoading]);
+    }, [fetchScheduleData]);
 
     // Fetch Class Routines (Firestore)
     useEffect(() => {

@@ -314,7 +314,7 @@ export default function DashboardPage() {
                                 📅
                             </div>
                             <div>
-                                <p className="text-sm text-[#6b7280]">Today&apos;s Classes</p>
+                                <p className="text-sm text-[#6b7280]">{"Today's Classes"}</p>
                                 <p className="text-2xl font-bold text-[#1f2937]">
                                     {loading ? "..." : todayClasses}
                                 </p>
@@ -429,7 +429,7 @@ export default function DashboardPage() {
                     </div>
                 ) : studentNotices.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-lg shadow-soft">
-                        <p className="text-[#6b7280]">No student notices yet. Click &quot;Add Notice for Students&quot; to post one.</p>
+                        <p className="text-[#6b7280]">No student notices yet. Click {"\"Add Notice for Students\""} to post one.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -564,7 +564,7 @@ export default function DashboardPage() {
                             </div>
                             <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Notice</h3>
                             <p className="text-gray-500 mb-6">
-                                Are you sure you want to delete <strong>&quot;{noticeToDelete.title}&quot;</strong>? This action cannot be undone.
+                                Are you sure you want to delete <strong>{"\""}{noticeToDelete.title}{"\""}</strong>? This action cannot be undone.
                             </p>
                             <div className="flex gap-3">
                                 <button
@@ -673,7 +673,7 @@ export default function DashboardPage() {
                             </div>
                             <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Student Notice</h3>
                             <p className="text-gray-500 mb-6">
-                                Are you sure you want to delete <strong>&quot;{studentNoticeToDelete.title}&quot;</strong>? This action cannot be undone.
+                                Are you sure you want to delete <strong>{"\""}{studentNoticeToDelete.title}{"\""}</strong>? This action cannot be undone.
                             </p>
                             <div className="flex gap-3">
                                 <button

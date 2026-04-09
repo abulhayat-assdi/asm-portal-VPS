@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminServices } from "@/lib/firebase-admin";
+import type { auth } from "firebase-admin";
 
 export async function POST(req: NextRequest) {
     try {
@@ -20,10 +21,11 @@ export async function POST(req: NextRequest) {
         let decodedToken;
         try {
             decodedToken = await adminAuth.verifyIdToken(token);
-        } catch (authError: any) {
+        } catch (authError: unknown) {
             console.error("Auth verification failed in create-teacher:", authError);
+            const message = authError instanceof Error ? authError.message : String(authError);
             return NextResponse.json({ 
-                error: `Forbidden: Invalid session! (${authError.message})` 
+                error: `Forbidden: Invalid session! (${message})` 
             }, { status: 403 });
         }
 
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
         }
 
         // 1. Create User in Firebase Authentication
-        const createUserOptions: any = {
+        const createUserOptions: auth.CreateRequest = {
             email,
             password,
             displayName: name,
@@ -82,12 +84,13 @@ export async function POST(req: NextRequest) {
                 order: Number(order) || 0, // Store as number
                 createdAt: new Date(),
             });
-        } catch (dbError: any) {
+        } catch (dbError: unknown) {
             // Rollback: Delete the dangling auth user if DB operations fail
             console.error("Database operation failed, rolling back user creation:", dbError);
             await adminAuth.deleteUser(userRecord.uid);
+            const message = dbError instanceof Error ? dbError.message : String(dbError);
             return NextResponse.json(
-                { error: `Database error: ${dbError.message}` },
+                { error: `Database error: ${message}` },
                 { status: 500 }
             );
         }
@@ -96,10 +99,11 @@ export async function POST(req: NextRequest) {
             { success: true, uid: userRecord.uid, message: "Teacher created successfully." },
             { status: 201 }
         );
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error creating teacher:", error);
+        const message = error instanceof Error ? error.message : "Failed to create teacher account.";
         return NextResponse.json(
-            { error: error.message || "Failed to create teacher account." },
+            { error: message },
             { status: 500 }
         );
     }

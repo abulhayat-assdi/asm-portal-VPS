@@ -35,7 +35,7 @@ export default function BlogAdminPage() {
         try {
             await blogService.publishPost(post.id);
             await loadPosts();
-        } catch (error) {
+        } catch {
             alert("Failed to publish post");
         }
     };
@@ -46,7 +46,7 @@ export default function BlogAdminPage() {
         try {
             await blogService.deletePost(post.id);
             await loadPosts();
-        } catch (error) {
+        } catch {
             alert("Failed to delete post");
         }
     };

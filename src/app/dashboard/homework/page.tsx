@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllTeachers, Teacher } from "@/services/teacherService";
 import {
@@ -16,7 +16,6 @@ export default function HomeworkViewPage() {
     const { userProfile, loading: authLoading } = useAuth();
 
     const [homework, setHomework] = useState<HomeworkSubmission[]>([]);
-    const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -36,64 +35,64 @@ export default function HomeworkViewPage() {
     const isAdmin = userProfile?.role === "admin";
     const isTeacher = userProfile?.role === "teacher";
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!userProfile) return;
-            setLoading(true);
-            try {
-                let batchData: any[] = [];
-                
-                if (isAdmin) {
-                    batchData = await getAllBatchInfo();
-                }
-
-                const [teacherData] = await Promise.all([
-                    getAllTeachers()
-                ]);
-                setTeachers(teacherData);
-
-                // Auto-cleanup: check completed batches (Admin only)
-                if (isAdmin) {
-                    const completedBatches: { batchName: string; completedAt: Date }[] = [];
-                    const batchMap = new Map<string, { batchType?: string; createdAt?: Date }>();
-                    batchData.forEach(s => {
-                        if (!batchMap.has(s.batchName)) {
-                            batchMap.set(s.batchName, { batchType: s.batchType, createdAt: s.createdAt });
-                        }
-                    });
-                    batchMap.forEach((info, batchName) => {
-                        if (info.batchType === "Completed" && info.createdAt) {
-                            completedBatches.push({ batchName, completedAt: info.createdAt });
-                        }
-                    });
-
-                    if (completedBatches.length > 0) {
-                        const deleted = await cleanupCompletedBatchHomework(completedBatches);
-                        if (deleted > 0) setCleanupCount(deleted);
-                    }
-                }
-
-                // Fetch homework based on role
-                let homeworkData: HomeworkSubmission[];
-                if (isAdmin) {
-                    homeworkData = await getAllHomework();
-                } else if (isTeacher && userProfile.displayName) {
-                    homeworkData = await getHomeworkByTeacher(userProfile.displayName);
-                } else {
-                    homeworkData = [];
-                }
-                setHomework(homeworkData);
-            } catch (err) {
-                console.error("Error fetching homework data:", err);
-            } finally {
-                setLoading(false);
+    const fetchData = useCallback(async () => {
+        if (!userProfile) return;
+        setLoading(true);
+        try {
+            let batchData: any[] = [];
+            
+            if (isAdmin) {
+                batchData = await getAllBatchInfo();
             }
-        };
 
+            const [teacherData] = await Promise.all([
+                getAllTeachers()
+            ]);
+            setTeachers(teacherData);
+
+            // Auto-cleanup: check completed batches (Admin only)
+            if (isAdmin) {
+                const completedBatches: { batchName: string; completedAt: Date }[] = [];
+                const batchMap = new Map<string, { batchType?: string; createdAt?: Date }>();
+                batchData.forEach(s => {
+                    if (!batchMap.has(s.batchName)) {
+                        batchMap.set(s.batchName, { batchType: s.batchType, createdAt: s.createdAt });
+                    }
+                });
+                batchMap.forEach((info, batchName) => {
+                    if (info.batchType === "Completed" && info.createdAt) {
+                        completedBatches.push({ batchName, completedAt: info.createdAt });
+                    }
+                });
+
+                if (completedBatches.length > 0) {
+                    const deleted = await cleanupCompletedBatchHomework(completedBatches);
+                    if (deleted > 0) setCleanupCount(deleted);
+                }
+            }
+
+            // Fetch homework based on role
+            let homeworkData: HomeworkSubmission[];
+            if (isAdmin) {
+                homeworkData = await getAllHomework();
+            } else if (isTeacher && userProfile.displayName) {
+                homeworkData = await getHomeworkByTeacher(userProfile.displayName);
+            } else {
+                homeworkData = [];
+            }
+            setHomework(homeworkData);
+        } catch (err) {
+            console.error("Error fetching homework data:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, [userProfile, isAdmin, isTeacher]);
+
+    useEffect(() => {
         if (!authLoading && userProfile) {
             fetchData();
         }
-    }, [userProfile, authLoading, isAdmin, isTeacher]);
+    }, [authLoading, userProfile, fetchData]);
 
     // Filtered results
     const filteredHomework = homework.filter(hw => {

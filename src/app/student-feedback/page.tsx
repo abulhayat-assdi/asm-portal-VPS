@@ -94,7 +94,7 @@ export default function StudentFeedbackPage() {
                 rating
             );
             setSubmitted(true);
-        } catch (err) {
+        } catch {
             setError("Failed to submit review. Please try again.");
         } finally {
             setSubmitting(false);

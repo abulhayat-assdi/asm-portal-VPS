@@ -14,6 +14,10 @@ import { COOKIES, AUTH_ROLES, COLLECTIONS } from "@/lib/constants";
 
 const googleProvider = new GoogleAuthProvider();
 
+interface FirebaseAuthError extends Error {
+    code: string;
+}
+
 /**
  * Login with Email and Password
  */
@@ -24,7 +28,7 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
         return userCredential.user;
     } catch (error: unknown) {
         if (error instanceof Error && 'code' in error) {
-            throw new Error(getAuthErrorMessage((error as any).code));
+            throw new Error(getAuthErrorMessage((error as FirebaseAuthError).code));
         }
         throw new Error("An unexpected error occurred during login.");
     }
@@ -80,7 +84,7 @@ export const loginWithGoogle = async (): Promise<User> => {
         return user;
     } catch (error: unknown) {
         if (error instanceof Error && 'code' in error) {
-            throw new Error(getAuthErrorMessage((error as any).code));
+            throw new Error(getAuthErrorMessage((error as FirebaseAuthError).code));
         }
         throw new Error("An unexpected error occurred during Google login.");
     }
@@ -105,7 +109,7 @@ export const sendPasswordReset = async (email: string): Promise<void> => {
         await sendPasswordResetEmail(auth, email);
     } catch (error: unknown) {
         if (error instanceof Error && 'code' in error) {
-            throw new Error(getAuthErrorMessage((error as any).code));
+            throw new Error(getAuthErrorMessage((error as FirebaseAuthError).code));
         }
         throw new Error("Failed to send password reset email.");
     }
@@ -133,8 +137,8 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
             };
         }
         return null;
-    } catch (error) {
-        console.error("Error fetching user profile:", error);
+    } catch {
+        console.error("Error fetching user profile:");
         return null;
     }
 };

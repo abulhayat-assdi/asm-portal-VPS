@@ -6,69 +6,99 @@ import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo } from "@/services/bat
 import Button from "@/components/ui/Button";
 import * as XLSX from "xlsx";
 
+interface IconProps extends React.SVGProps<SVGSVGElement> {}
+
 // Inline SVG icons (retained from previous design)
-const CheckCircleIcon = (props: any) => (
+const CheckCircleIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
     </svg>
 );
-const PlayCircleIcon = (props: any) => (
+const PlayCircleIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
     </svg>
 );
-const AcademicCapIcon = (props: any) => (
+const AcademicCapIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
     </svg>
 );
-const XCircleIcon = (props: any) => (
+const XCircleIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="m10.5 13.5 3-3m0 0 3-3m-3 3-3-3m3 3 3 3M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
     </svg>
 );
-const NoSymbolIcon = (props: any) => (
+const NoSymbolIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
     </svg>
 );
-const BriefcaseIcon = (props: any) => (
+const BriefcaseIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.896 1.95-2 1.95H5.75c-1.104 0-2-.856-2-1.95v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
     </svg>
 );
-const BuildingOfficeIcon = (props: any) => (
+const BuildingOfficeIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />
     </svg>
 );
-const QuestionMarkCircleIcon = (props: any) => (
+const QuestionMarkCircleIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
     </svg>
 );
-const CurrencyDollarIcon = (props: any) => (
+const CurrencyDollarIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
 );
-const UserGroupIcon = (props: any) => (
+const UserGroupIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
     </svg>
 );
-const MagnifyingGlassIcon = (props: any) => (
+const MagnifyingGlassIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
     </svg>
 );
 
-const ArrowDownTrayIcon = (props: any) => (
+const ArrowDownTrayIcon = (props: IconProps) => (
     <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
     </svg>
 );
+
+interface BatchStatItem {
+    id: string;
+    total: number;
+    completed: number;
+    incomplete: number;
+    expelled: number;
+    job: number;
+    business: number;
+    furtherStudy: number;
+}
+
+interface OverviewStat {
+    label: string;
+    value?: string;
+    icon: React.ComponentType<IconProps>;
+    color: string;
+    lightColor: string;
+    textColor: string;
+    // For combined stats
+    combined?: boolean;
+    valueA?: string;
+    valueB?: string;
+    labelA?: string;
+    labelB?: string;
+    iconB?: React.ComponentType<IconProps>;
+    textColorB?: string;
+}
 
 export default function AllBatchInfoPage() {
     const { userProfile } = useAuth();
@@ -96,7 +126,7 @@ export default function AllBatchInfoPage() {
 
     // Grid Data Ref
     const MAX_ROWS = 200;
-    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"];
+    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
     const gridRef = useRef<HTMLTableElement>(null);
     const rowDataRef = useRef<Record<string, string>[]>([]);
 
@@ -145,7 +175,7 @@ export default function AllBatchInfoPage() {
 
     const isBatchFiltered = selectedSearchBatch !== "all";
 
-    const overviewStats = [
+    const overviewStats: OverviewStat[] = [
         { label: isBatchFiltered ? "Batch" : "Completed Batches", value: isBatchFiltered ? selectedSearchBatch : uniqueBatchesCount.toString(), icon: CheckCircleIcon, color: "bg-emerald-500", lightColor: "bg-emerald-50", textColor: "text-emerald-700" },
         { label: "Total Student Admitted", value: totalStudents.toString(), icon: UserGroupIcon, color: "bg-blue-500", lightColor: "bg-blue-50", textColor: "text-blue-700" },
         { label: "Students Completed", value: completedStudents.toString(), icon: AcademicCapIcon, color: "bg-indigo-500", lightColor: "bg-indigo-50", textColor: "text-indigo-700" },
@@ -164,7 +194,7 @@ export default function AllBatchInfoPage() {
     const runningExpelled = runningBatchesFiltered.filter(s => s.courseStatus === "Expelled").length;
     const runningActiveList = runningBatchesFiltered.length - runningIncomplete - runningExpelled;
 
-    const runningStats = [
+    const runningStats: OverviewStat[] = [
         { label: isBatchFiltered ? "Running Batch" : "Running Batches", value: isBatchFiltered ? selectedSearchBatch : runningUniqueBatchesCount.toString(), icon: PlayCircleIcon, color: "bg-blue-500", lightColor: "bg-blue-50", textColor: "text-blue-700" },
         { label: "Total Student Admitted", value: runningTotalStudents.toString(), icon: UserGroupIcon, color: "bg-purple-500", lightColor: "bg-purple-50", textColor: "text-purple-700" },
         { label: "Total Student Running", value: runningActiveList.toString(), icon: UserGroupIcon, color: "bg-emerald-500", lightColor: "bg-emerald-50", textColor: "text-emerald-700" },
@@ -200,7 +230,7 @@ export default function AllBatchInfoPage() {
         if (student.currentlyDoing === "Business") b.business += 1;
         if (student.currentlyDoing === "Nothing" || student.currentlyDoing === "Studying Further") b.furtherStudy += 1;
         return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, BatchStatItem>);
 
     const batchWiseData = Object.values(batchStatsMap).sort((a, b) => a.id.localeCompare(b.id));
     const uniqueBatchesList = Array.from(new Set(allStudents.map(s => s.batchName))).sort();
@@ -262,7 +292,7 @@ export default function AllBatchInfoPage() {
         if (!clipboardData) return;
 
         const pastedLines = clipboardData.split(/\r?\n/).filter(line => line.length > 0);
-        const startColIndex = COLUMNS.indexOf(startColKey);
+        const startColIndex = (COLUMNS as readonly string[]).indexOf(startColKey);
         if (startColIndex === -1) return;
 
         pastedLines.forEach((line, lineIndex) => {
@@ -319,11 +349,11 @@ export default function AllBatchInfoPage() {
                 phone: row.phone || "",
                 dob: row.dob || "",
                 educationalDegree: row.educationalDegree || "",
-                category: (row.category as any) || "",
+                category: (row.category as StudentBatchInfo['category']) || "",
                 bloodGroup: row.bloodGroup || "",
                 address: row.address || "",
-                courseStatus: row.courseStatus as any,
-                currentlyDoing: row.currentlyDoing as any,
+                courseStatus: row.courseStatus as StudentBatchInfo['courseStatus'],
+                currentlyDoing: row.currentlyDoing as StudentBatchInfo['currentlyDoing'],
                 companyName: row.companyName || "",
                 businessName: row.businessName || "",
                 salary: Number(row.salary) || 0
@@ -375,11 +405,11 @@ export default function AllBatchInfoPage() {
                         phone: row.phone || "",
                         dob: row.dob || "",
                         educationalDegree: row.educationalDegree || "",
-                        category: (row.category as any) || "",
+                        category: (row.category as StudentBatchInfo['category']) || "",
                         bloodGroup: row.bloodGroup || "",
                         address: row.address || "",
-                        courseStatus: updatedStatus as any,
-                        currentlyDoing: row.currentlyDoing as any,
+                        courseStatus: updatedStatus as StudentBatchInfo['courseStatus'],
+                        currentlyDoing: row.currentlyDoing as StudentBatchInfo['currentlyDoing'],
                         companyName: row.companyName || "",
                         businessName: row.businessName || "",
                         salary: Number(row.salary) || 0
@@ -415,7 +445,7 @@ export default function AllBatchInfoPage() {
             const expEarnings = currentExportStudents.reduce((sum, s) => sum + (Number(s.salary) || 0), 0);
 
             const wb = XLSX.utils.book_new();
-            const sheetData: any[][] = [];
+            const sheetData: (string | number)[][] = [];
 
             // 1. Overview Summary Header
             sheetData.push(["Overview Summary", ""]);
@@ -644,8 +674,8 @@ export default function AllBatchInfoPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {overviewStats.map((stat, index) => {
                             const Icon = stat.icon;
-                            if ((stat as any).combined) {
-                                const IconB = (stat as any).iconB;
+                            if (stat.combined) {
+                                const IconB = stat.iconB!;
                                 return (
                                     <div
                                         key={index}
@@ -655,19 +685,19 @@ export default function AllBatchInfoPage() {
                                             <p className="text-sm font-medium text-gray-500 mb-2">{stat.label}</p>
                                             <div className="flex items-center gap-2">
                                                 <div className="text-center">
-                                                    <p className="text-xs text-gray-400 mb-0.5">{(stat as any).labelA}</p>
-                                                    <span className={"text-2xl lg:text-3xl font-bold " + stat.textColor}>{(stat as any).valueA}</span>
+                                                    <p className="text-xs text-gray-400 mb-0.5">{stat.labelA}</p>
+                                                    <span className={"text-2xl lg:text-3xl font-bold " + stat.textColor}>{stat.valueA}</span>
                                                 </div>
                                                 <span className="text-2xl font-light text-gray-300 pb-0 mt-4">+</span>
                                                 <div className="text-center">
-                                                    <p className="text-xs text-gray-400 mb-0.5">{(stat as any).labelB}</p>
-                                                    <span className={"text-2xl lg:text-3xl font-bold " + (stat as any).textColorB}>{(stat as any).valueB}</span>
+                                                    <p className="text-xs text-gray-400 mb-0.5">{stat.labelB}</p>
+                                                    <span className={"text-2xl lg:text-3xl font-bold " + stat.textColorB}>{stat.valueB}</span>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className={"flex flex-col gap-1.5 p-2 rounded-xl " + stat.lightColor}>
                                             <Icon className={"w-5 h-5 " + stat.textColor} />
-                                            <IconB className={"w-5 h-5 " + (stat as any).textColorB} />
+                                            <IconB className={"w-5 h-5 " + stat.textColorB} />
                                         </div>
                                     </div>
                                 );
@@ -699,8 +729,8 @@ export default function AllBatchInfoPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {runningStats.map((stat, index) => {
                                     const Icon = stat.icon;
-                                    if ((stat as any).combined) {
-                                        const IconB = (stat as any).iconB;
+                                    if (stat.combined) {
+                                        const IconB = stat.iconB!;
                                         return (
                                             <div
                                                 key={`run-${index}`}
@@ -710,19 +740,19 @@ export default function AllBatchInfoPage() {
                                                     <p className="text-sm font-medium text-gray-500 mb-2">{stat.label}</p>
                                                     <div className="flex items-center gap-2">
                                                         <div className="text-center">
-                                                            <p className="text-xs text-gray-400 mb-0.5">{(stat as any).labelA}</p>
-                                                            <span className={"text-2xl lg:text-3xl font-bold " + stat.textColor}>{(stat as any).valueA}</span>
+                                                            <p className="text-xs text-gray-400 mb-0.5">{stat.labelA}</p>
+                                                            <span className={"text-2xl lg:text-3xl font-bold " + stat.textColor}>{stat.valueA}</span>
                                                         </div>
                                                         <span className="text-2xl font-light text-gray-300 pb-0 mt-4">+</span>
                                                         <div className="text-center">
-                                                            <p className="text-xs text-gray-400 mb-0.5">{(stat as any).labelB}</p>
-                                                            <span className={"text-2xl lg:text-3xl font-bold " + (stat as any).textColorB}>{(stat as any).valueB}</span>
+                                                            <p className="text-xs text-gray-400 mb-0.5">{stat.labelB}</p>
+                                                            <span className={"text-2xl lg:text-3xl font-bold " + stat.textColorB}>{stat.valueB}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className={"flex flex-col gap-1.5 p-2 rounded-xl " + stat.lightColor}>
                                                     <Icon className={"w-5 h-5 " + stat.textColor} />
-                                                    <IconB className={"w-5 h-5 " + (stat as any).textColorB} />
+                                                    <IconB className={"w-5 h-5 " + stat.textColorB} />
                                                 </div>
                                             </div>
                                         );
@@ -782,7 +812,7 @@ export default function AllBatchInfoPage() {
                             <tbody>
                                 {searchResults.length === 0 ? (
                                     <tr>
-                                        <td colSpan={12} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={13} className="px-6 py-12 text-center text-gray-500">
                                             <NoSymbolIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                                             <p>No students found.</p>
                                         </td>
@@ -1082,7 +1112,7 @@ export default function AllBatchInfoPage() {
                                                             data-row={idx}
                                                             data-col={col}
                                                             onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e as any, idx, col)}
+                                                            onPaste={e => handlePaste(e, idx, col)}
                                                             className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
                                                         >
                                                             <option value=""></option>
@@ -1106,7 +1136,7 @@ export default function AllBatchInfoPage() {
                                                             data-row={idx}
                                                             data-col={col}
                                                             onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e as any, idx, col)}
+                                                            onPaste={e => handlePaste(e, idx, col)}
                                                             className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
                                                         >
                                                             <option value=""></option>
@@ -1119,7 +1149,7 @@ export default function AllBatchInfoPage() {
                                                             data-row={idx}
                                                             data-col={col}
                                                             onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e as any, idx, col)}
+                                                            onPaste={e => handlePaste(e, idx, col)}
                                                             className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
                                                         >
                                                             <option value=""></option>
@@ -1138,7 +1168,7 @@ export default function AllBatchInfoPage() {
                                                             data-row={idx}
                                                             data-col={col}
                                                             onChange={e => handleCellBlur(idx, col, e.target.value)}
-                                                            onPaste={e => handlePaste(e as any, idx, col)}
+                                                            onPaste={e => handlePaste(e, idx, col)}
                                                             className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
                                                         >
                                                             <option value=""></option>

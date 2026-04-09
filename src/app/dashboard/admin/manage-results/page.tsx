@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getAllBatchInfo, StudentBatchInfo } from "@/services/batchInfoService";
-import { saveBatchResults, getStudentResult, ExamResult, getAllExamResults } from "@/services/resultService";
+import { saveBatchResults, ExamResult, getAllExamResults } from "@/services/resultService";
 
 export default function ManageResultsPage() {
     const [allStudents, setAllStudents] = useState<StudentBatchInfo[]>([]);

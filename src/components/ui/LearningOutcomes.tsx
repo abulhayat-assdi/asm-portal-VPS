@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 
 import Reveal from "./Reveal";
 

@@ -10,13 +10,11 @@ import { getClassesByTeacherId } from "@/services/scheduleService";
 import { formatDateShort } from "@/lib/utils";
 import {
     collection,
-    addDoc,
     serverTimestamp,
     writeBatch,
     doc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminPage() {

@@ -22,6 +22,7 @@ export interface Notice {
     createdBy?: string;
     createdByName?: string;
     createdAt?: Timestamp | Date | FieldValue | null;
+    updatedAt?: Timestamp | Date | FieldValue | null;
 }
 
 export interface StudentNotice {
@@ -33,7 +34,9 @@ export interface StudentNotice {
     createdBy?: string;
     createdByName?: string;
     createdAt?: Timestamp | Date | FieldValue | null;
+    updatedAt?: Timestamp | Date | FieldValue | null;
 }
+
 
 /**
  * Add a new notice to Firestore

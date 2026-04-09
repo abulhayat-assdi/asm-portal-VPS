@@ -9,7 +9,18 @@ const SHEET_ID = '10BxvXsxAjrA2nJ3ypns_LoP3y84VkZPLIfXrTr183eQ';
 
 // Simple in-memory cache for Teacher Schedules
 // Key: teacherId, Value: { data: classes[], timestamp: number }
-const scheduleCache = new Map<string, { data: any[], timestamp: number }>();
+export interface ScheduleEntry {
+    teacherId: string;
+    teacherName: string;
+    date: string;
+    day: string;
+    time: string;
+    batch: string;
+    subject: string;
+    status: string;
+}
+
+const scheduleCache = new Map<string, { data: ScheduleEntry[], timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export async function GET(req: NextRequest) {
@@ -58,7 +69,7 @@ export async function GET(req: NextRequest) {
         const rows = await sheet.getRows();
 
         // 5. Transform & Filter
-        const classes = rows
+        const classes: ScheduleEntry[] = rows
             .filter(row => {
                 const rowTeacherId = row.get('TeacherID');
                 // If ID is 'ALL', return everything. Else filter.
@@ -91,9 +102,10 @@ export async function GET(req: NextRequest) {
             source: 'network'
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Sheet Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
@@ -159,8 +171,9 @@ export async function PUT(req: NextRequest) {
 
         return NextResponse.json({ success: true, message: 'Class marked as completed' });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Update Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

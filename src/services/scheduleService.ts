@@ -33,6 +33,20 @@ export interface BatchItem {
     createdAt: Timestamp | null;
 }
 
+export interface FirestoreClass {
+    teacherUid: string;
+    teacherName: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    batch: string;
+    subject: string;
+    status: "REQUEST_TO_COMPLETE" | "COMPLETED" | "PENDING";
+    completedByUid?: string | null;
+    completedAt?: Timestamp | null;
+    createdAt?: Timestamp | null;
+}
+
 // Helper to normalize date string to YYYY-MM-DD
 const getNormalizedDate = (dateStr: string) => {
     if (!dateStr) return "";
@@ -50,7 +64,7 @@ const getNormalizedDate = (dateStr: string) => {
         if (!isNaN(d.getTime())) {
             return d.toISOString().split('T')[0];
         }
-    } catch (e) { }
+    } catch { }
     return dateStr;
 };
 
@@ -81,13 +95,13 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
         // 1. Fetch Request/Status Overrides from Firestore
         // These are actions the teacher or admin took that might not be in Sheets yet
         // OR are pending admin approval
-        const firestoreClasses: any[] = [];
+        const firestoreClasses: FirestoreClass[] = [];
         try {
             const classesRef = collection(db, "classes");
             const q = query(classesRef, where("teacherUid", "==", teacherId));
             // We fetch all for this teacher to catch matching overrides
             const snapshot = await getDocs(q);
-            snapshot.forEach(doc => firestoreClasses.push(doc.data()));
+            snapshot.forEach(doc => firestoreClasses.push(doc.data() as FirestoreClass));
         } catch (e) {
             console.error("Firestore fetch error (skipping override):", e);
         }
@@ -134,7 +148,7 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
                 fc.subject === cls.subject
             );
 
-            let computedStatus = "Pending";
+            let computedStatus: ClassSchedule["status"] = "Pending";
 
             if (override) {
                 if (override.status === "REQUEST_TO_COMPLETE") {
@@ -158,7 +172,7 @@ export const getClassesByTeacherId = async (teacherId: string): Promise<ClassSch
 
             return {
                 ...cls,
-                status: computedStatus as any
+                status: computedStatus
             };
         }).sort((a, b) => {
             const dateA = getNormalizedDate(a.date);
@@ -198,7 +212,7 @@ export const getAllClassesSchedules = async (): Promise<ClassSchedule[]> => {
             return normalizedDate >= weekRange.start && normalizedDate <= weekRange.end;
         }).map(cls => {
             const normalizedDate = getNormalizedDate(cls.date);
-            let computedStatus = "Pending";
+            let computedStatus: ClassSchedule["status"] = "Pending";
 
             // Treat today and any past uncompleted class as "Today" (meaning it needs "Done" button)
             if (normalizedDate <= today) {
@@ -210,7 +224,7 @@ export const getAllClassesSchedules = async (): Promise<ClassSchedule[]> => {
 
             return {
                 ...cls,
-                status: computedStatus as any
+                status: computedStatus
             };
         }).sort((a, b) => {
             const dateA = getNormalizedDate(a.date);
@@ -304,17 +318,16 @@ export const syncBatchClassSchedules = async (schedules: Partial<ClassSchedule>[
                     // Scenario: Row existed, and user might have edited it. Update it.
                     const docRef = doc(db, "class_schedules", schedule.id as string);
                     // Dynamically spread to support new excel-like columns
-                    const updateData: any = { ...schedule };
-                    delete updateData.id; // don't write the id into the doc fields
-                    batch.update(docRef, updateData);
+                    const { id, ...updateData } = schedule;
+                    batch.update(docRef, updateData as Record<string, string | Timestamp | undefined>);
                 }
                 else if (!hasId && hasValidData) {
                     // Scenario: Fresh empty row was typed into. Create it.
                     const newDocRef = doc(schedulesRef);
-                    const insertData: any = { ...schedule, createdAt: serverTimestamp() };
-                    if (!insertData.status) insertData.status = "Scheduled";
-                    delete insertData.id;
-                    batch.set(newDocRef, insertData);
+                    const { id, ...insertData } = schedule;
+                    const finalData = { ...insertData, createdAt: serverTimestamp() };
+                    if (!finalData.status) finalData.status = "Scheduled";
+                    batch.set(newDocRef, finalData);
                 }
             });
             return batch.commit();
@@ -546,9 +559,9 @@ export const getCompletedClassesByBatch = async (batchName: string) => {
             where("status", "==", "COMPLETED")
         );
         const snapshot = await getDocs(q);
-        const records: any[] = [];
+        const records: (FirestoreClass & { id: string })[] = [];
         snapshot.forEach(doc => {
-            records.push({ id: doc.id, ...doc.data() });
+            records.push({ id: doc.id, ...doc.data() } as FirestoreClass & { id: string });
         });
         // Sort effectively by date descending
         return records.sort((a, b) => (a.date > b.date ? -1 : 1));

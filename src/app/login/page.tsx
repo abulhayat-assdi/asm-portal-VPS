@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function LoginPage() {
-    const router = useRouter();
-    const { userProfile, loading, loginWithEmail, loginWithGoogle, sendPasswordReset } = useAuth();
+    const { userProfile, loading, loginWithEmail, sendPasswordReset } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -58,21 +56,6 @@ export default function LoginPage() {
             return;
         } catch (err: any) {
             setError(err.message || "Failed to login. Please try again.");
-            setIsSubmitting(false); // Only reset on error
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        setError("");
-        setSuccessMessage("");
-        setIsSubmitting(true);
-
-        try {
-            await loginWithGoogle();
-            window.location.href = "/dashboard";
-            return;
-        } catch (err: any) {
-            setError(err.message || "Failed to login with Google. Please try again.");
             setIsSubmitting(false); // Only reset on error
         }
     };

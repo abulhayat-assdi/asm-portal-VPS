@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
 import { getAllResources, addResource, updateResource, deleteResource, uploadResourceFile, deleteResourceFile, Resource } from "@/services/resourceService";
@@ -80,7 +80,7 @@ export default function ResourcesPage() {
     });
 
     // ─── Initial Data Load ─────────────────────────────────────────
-    const fetchResources = async () => {
+    const fetchResources = useCallback(async () => {
         try {
             const data = await getAllResources();
             setResources(data);
@@ -90,24 +90,23 @@ export default function ResourcesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const fetchMyModuleResources = async () => {
+    const fetchMyModuleResources = useCallback(async () => {
         if (!user) return;
         const data = await getModuleResourcesByTeacher(user.uid);
         setMyModuleResources(data);
-    };
+    }, [user]);
 
     useEffect(() => {
         fetchResources();
         fetchMyModuleResources();
         getPublicUniqueBatches().then(setBatchNames);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+    }, [fetchResources, fetchMyModuleResources]);
 
     // ─── Module Resource Handlers ──────────────────────────────────
-    const openUploadModal = (courseModule: Resource) => {
-        setUploadingForModule(courseModule);
+    const openUploadModal = (moduleData: Resource) => {
+        setUploadingForModule(moduleData);
         setEditingModuleResource(null);
         setUploadForm({ title: "", description: "", resourceType: "Presentation", visibleForBatches: [], isHidden: false });
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -115,8 +114,8 @@ export default function ResourcesPage() {
     };
 
     const openEditModal = (resource: ModuleResource) => {
-        const courseModule = courseModules.find(m => m.id === resource.moduleId) || null;
-        setUploadingForModule(courseModule);
+        const moduleData = courseModules.find(m => m.id === resource.moduleId) || null;
+        setUploadingForModule(moduleData);
         setEditingModuleResource(resource);
         setUploadForm({
             title: resource.title,
@@ -338,26 +337,26 @@ export default function ResourcesPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {myModules.map(courseModule => {
-                            const moduleResources = myModuleResources.filter(r => r.moduleId === courseModule.id);
-                            const isExpanded = expandedModuleId === courseModule.id;
+                        {myModules.map(moduleData => {
+                            const moduleResources = myModuleResources.filter(r => r.moduleId === moduleData.id);
+                            const isExpanded = expandedModuleId === moduleData.id;
                             return (
-                                <div key={courseModule.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                <div key={moduleData.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                     {/* Module Header */}
                                     <div
                                         className="flex items-center justify-between p-5 cursor-pointer hover:bg-gray-50 transition-colors"
-                                        onClick={() => setExpandedModuleId(isExpanded ? null : courseModule.id)}
+                                        onClick={() => setExpandedModuleId(isExpanded ? null : moduleData.id)}
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="p-2.5 bg-[#1e3a5f]/10 text-[#1e3a5f] rounded-xl text-xl">📁</div>
                                             <div>
-                                                <h3 className="font-bold text-gray-900">{courseModule.title}</h3>
-                                                <p className="text-xs text-gray-500 mt-0.5">Teacher: {courseModule.teacherName || courseModule.uploadedByName} &nbsp;·&nbsp; {moduleResources.length} files</p>
+                                                <h3 className="font-bold text-gray-900">{moduleData.title}</h3>
+                                                <p className="text-xs text-gray-500 mt-0.5">Teacher: {moduleData.teacherName || moduleData.uploadedByName} &nbsp;·&nbsp; {moduleResources.length} files</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <button
-                                                onClick={e => { e.stopPropagation(); openUploadModal(courseModule); }}
+                                                onClick={e => { e.stopPropagation(); openUploadModal(moduleData); }}
                                                 className="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#162e4a] transition-colors flex items-center gap-1"
                                             >
                                                 <span>+</span> Upload File
