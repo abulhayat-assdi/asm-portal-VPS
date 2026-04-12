@@ -6,7 +6,7 @@ import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo } from "@/services/bat
 import Button from "@/components/ui/Button";
 import * as XLSX from "xlsx";
 
-interface IconProps extends React.SVGProps<SVGSVGElement> {}
+type IconProps = React.SVGProps<SVGSVGElement>;
 
 // Inline SVG icons (retained from previous design)
 const CheckCircleIcon = (props: IconProps) => (

@@ -54,7 +54,7 @@ export default function Sidebar() {
         if (pathname && !loading) {
             markPageAsVisited(pathname);
         }
-    }, [pathname, loading]);
+    }, [pathname, loading, markPageAsVisited]);
 
     // Contact Modal State
     const [isContactOpen, setIsContactOpen] = useState(false);

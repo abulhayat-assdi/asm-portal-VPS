@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,10 +57,10 @@ export function useSidebarNotifications() {
     const [trigger, setTrigger] = useState(0);
 
     // Function to force a refetch if needed
-    const refreshNotifications = () => setTrigger(prev => prev + 1);
+    const refreshNotifications = useCallback(() => setTrigger(prev => prev + 1), []);
 
     // Call this when user navigates to a tracked page
-    const markPageAsVisited = (path: string) => {
+    const markPageAsVisited = useCallback((path: string) => {
         if (typeof window !== "undefined") {
             const now = Date.now();
             localStorage.setItem(`lastVisited_${path}`, now.toString());
@@ -68,7 +68,7 @@ export function useSidebarNotifications() {
             setCounts(prev => ({ ...prev, [path]: 0 }));
             refreshNotifications();
         }
-    };
+    }, [refreshNotifications]);
 
     useEffect(() => {
         if (loading || !userProfile || !userProfile.role) return;

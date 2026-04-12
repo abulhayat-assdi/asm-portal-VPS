@@ -608,6 +608,7 @@ export default function TeachersPage() {
                                 <div className="flex items-center gap-4">
                                     {imagePreview && (
                                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#059669] flex-shrink-0">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
                                                 src={imagePreview}
                                                 alt="Preview"

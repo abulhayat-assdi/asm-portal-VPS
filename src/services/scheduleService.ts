@@ -118,7 +118,7 @@ export const getClassesByTeacherId = async (teacherId: string, teacherUid?: stri
             console.error("Error fetching custom schedules:", e);
         }
 
-        let classes: ClassSchedule[] = [...customSchedules];
+        const classes: ClassSchedule[] = [...customSchedules];
 
         // 3. Merge & Process Logic based on Date
         const today = getNormalizedDate(new Date().toISOString());
