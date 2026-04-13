@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, limit, startAfter, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getImageUrl } from "@/lib/getImageUrl";
 import { COLLECTIONS } from "@/lib/constants";
@@ -52,6 +52,45 @@ export const getAllTeachers = async (): Promise<Teacher[]> => {
     } catch (error: unknown) {
         console.error("Error fetching teachers:", error);
         return [];
+    }
+};
+
+/**
+ * Fetch teachers with cursor-based pagination
+ */
+export const getTeachersPaginated = async (
+    pageSize: number,
+    lastDoc?: QueryDocumentSnapshot<DocumentData> | null
+): Promise<{ teachers: Teacher[]; nextCursor: QueryDocumentSnapshot<DocumentData> | null; hasMore: boolean }> => {
+    try {
+        const teachersRef = collection(db, COLLECTIONS.TEACHERS);
+        
+        let q = query(teachersRef, orderBy("order", "asc"), limit(pageSize));
+        if (lastDoc) {
+            q = query(teachersRef, orderBy("order", "asc"), startAfter(lastDoc), limit(pageSize));
+        }
+
+        const snapshot = await getDocs(q);
+
+        const teachers = snapshot.docs.map(docSnap => {
+            const data = docSnap.data() as Omit<Teacher, 'id'>;
+            // Fallback to public images if their profileImageUrl is missing
+            if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
+                data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
+            }
+            return {
+                id: docSnap.id,
+                ...data
+            } as Teacher;
+        });
+
+        const nextCursor = snapshot.docs.length === pageSize ? snapshot.docs[snapshot.docs.length - 1] : null;
+
+        return { teachers, nextCursor, hasMore: snapshot.docs.length === pageSize };
+
+    } catch (error: unknown) {
+        console.error("Error fetching paginated teachers:", error);
+        return { teachers: [], nextCursor: null, hasMore: false };
     }
 };
 

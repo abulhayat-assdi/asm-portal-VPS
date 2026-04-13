@@ -209,11 +209,11 @@ export default function StudentDashboardOverview() {
                      <svg className="absolute top-0 right-0 opacity-10 blur-xl w-64 h-64 -translate-y-12 translate-x-12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z" /></svg>
                      
                      <div className="relative z-10">
-                        <h3 className="text-xl font-bold mb-3 flex items-center gap-2">
+                        <h3 className="text-xl text-white font-bold mb-3 flex items-center gap-2 no-gradient">
                              <span className="bg-white/20 p-2 rounded-lg">👤</span>
                              Update Profile
                         </h3>
-                        <p className="text-blue-200 text-sm leading-relaxed mb-6">
+                        <p className="text-white/90 text-sm leading-relaxed mb-6 no-gradient">
                             Is your current employment, business, or address information outdated? Submit a profile update request to keep our batch records accurate.
                         </p>
                      </div>

@@ -6,8 +6,6 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
-import { submitContactMessage } from "@/services/contactService";
-import { serverTimestamp } from "firebase/firestore";
 import { useSidebarNotifications } from "@/hooks/useSidebarNotifications";
 
 const teacherAdminNavItems = [
@@ -59,14 +57,6 @@ export default function Sidebar() {
         }
     }, [pathname, loading, markPageAsVisited]);
 
-    // Contact Modal State
-    const [isContactOpen, setIsContactOpen] = useState(false);
-    const [contactSubject, setContactSubject] = useState("");
-    const [contactMessage, setContactMessage] = useState("");
-    const [isSending, setIsSending] = useState(false);
-    const [contactSuccess, setContactSuccess] = useState(false);
-    const [contactError, setContactError] = useState("");
-
     const isStudent = userProfile?.role === "student";
     const activeNavItems = isStudent ? studentNavItems : teacherAdminNavItems;
 
@@ -88,39 +78,6 @@ export default function Sidebar() {
             router.push(redirectPath);
         } catch (error) {
             console.error("Logout error:", error);
-        }
-    };
-
-    const handleContactSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!contactSubject.trim() || !contactMessage.trim()) return;
-        setIsSending(true);
-        setContactError("");
-        try {
-            await submitContactMessage({
-                subject: contactSubject,
-                message: contactMessage,
-                studentUid: userProfile?.uid || "",
-                studentName: userProfile?.displayName || "Unknown",
-                studentEmail: userProfile?.email || "",
-                studentBatchName: userProfile?.studentBatchName || "N/A",
-                studentRoll: userProfile?.studentRoll || "N/A",
-                status: "unread",
-                date: new Date().toISOString().split('T')[0],
-                createdAt: serverTimestamp()
-            });
-            setContactSuccess(true);
-            setContactSubject("");
-            setContactMessage("");
-            setTimeout(() => {
-                setIsContactOpen(false);
-                setContactSuccess(false);
-            }, 2000);
-        } catch (err) {
-            console.error(err);
-            setContactError("Failed to send. Please try again.");
-        } finally {
-            setIsSending(false);
         }
     };
 
@@ -217,15 +174,16 @@ export default function Sidebar() {
                 <div className="p-4 border-t border-[#e5e7eb] space-y-2">
                     {/* Contact Button - Students Only */}
                     {isStudent && (
-                        <button
-                            onClick={() => setIsContactOpen(true)}
+                        <Link
+                            href="/student-dashboard/contact-admin"
+                            onClick={() => setIsMobileMenuOpen(false)}
                             className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-all duration-200 cursor-pointer"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                             </svg>
                             <span className="text-sm font-bold">Contact Admin</span>
-                        </button>
+                        </Link>
                     )}
 
                     {/* Logout Button */}
@@ -245,69 +203,6 @@ export default function Sidebar() {
                     </button>
                 </div>
             </aside>
-
-            {/* Contact Modal */}
-            {isContactOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsContactOpen(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                        {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-[#059669] to-[#10b981] p-5 text-white">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-xl font-bold">Contact Admin</h3>
-                                    <p className="text-emerald-100 text-sm mt-0.5">আপনার সমস্যা জানান, আমরা সাহায্য করব।</p>
-                                </div>
-                                <button onClick={() => setIsContactOpen(false)} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
-                            </div>
-                            {/* Auto-filled student info */}
-                            <div className="mt-3 bg-white/20 rounded-xl px-4 py-2 text-xs space-y-0.5">
-                                <p><span className="opacity-75">Name:</span> <strong>{userProfile?.displayName}</strong></p>
-                                <p><span className="opacity-75">Batch:</span> <strong>{userProfile?.studentBatchName || 'N/A'}</strong> &nbsp;|&nbsp; <span className="opacity-75">Roll:</span> <strong>{userProfile?.studentRoll || 'N/A'}</strong></p>
-                            </div>
-                        </div>
-
-                        {contactSuccess ? (
-                            <div className="p-10 text-center">
-                                <div className="text-5xl mb-3">✅</div>
-                                <h4 className="text-lg font-bold text-gray-900">Message Sent!</h4>
-                                <p className="text-gray-500 text-sm mt-1">Admin will get back to you soon.</p>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleContactSubmit} className="p-6 space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Subject / বিষয়</label>
-                                    <input
-                                        type="text"
-                                        value={contactSubject}
-                                        onChange={e => setContactSubject(e.target.value)}
-                                        placeholder="e.g. Result issue, Login problem..."
-                                        required
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Message / বার্তা</label>
-                                    <textarea
-                                        value={contactMessage}
-                                        onChange={e => setContactMessage(e.target.value)}
-                                        placeholder="আপনার সমস্যা বিস্তারিত লিখুন..."
-                                        required
-                                        rows={5}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all resize-none"
-                                    />
-                                </div>
-                                {contactError && <p className="text-red-500 text-sm">{contactError}</p>}
-                                <div className="flex gap-3 pt-1">
-                                    <button type="button" onClick={() => setIsContactOpen(false)} className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm">Cancel</button>
-                                    <button type="submit" disabled={isSending} className="flex-1 px-4 py-2.5 bg-[#059669] text-white font-bold rounded-xl hover:bg-[#047857] transition-colors disabled:opacity-60 text-sm">
-                                        {isSending ? "Sending..." : "Send Message"}
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            )}
         </>
     );
 }

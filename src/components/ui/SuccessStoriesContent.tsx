@@ -12,52 +12,59 @@ function VideoCard({ story, onPlay }: { story: ssService.VideoStory; onPlay: (id
     const thumbUrl = `https://img.youtube.com/vi/${story.videoId}/hqdefault.jpg`;
 
     return (
-        <div
-            className="group relative cursor-pointer rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-400 aspect-video bg-[#0f1923]"
-            onClick={() => onPlay(story.videoId)}
-        >
-            {!imgError ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <Image
-                    src={thumbUrl}
-                    alt={story.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-70 group-hover:opacity-85"
-                    onError={() => setImgError(true)}
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                />
-            ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0d2137] via-[#0a3020] to-[#0f1923]" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-            <span className="absolute top-4 left-4 bg-[#059669] text-white text-xs font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-lg">
-                {story.label}
-            </span>
-            <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30 shadow-2xl">
-                    <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                    </svg>
+        <div className="flex flex-col group cursor-pointer w-full">
+            <div
+                className="relative rounded-2xl overflow-hidden shadow-md group-hover:shadow-xl transition-all duration-400 aspect-video bg-[#0f1923]"
+                onClick={() => onPlay(story.videoId)}
+            >
+                {!imgError ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <Image
+                        src={thumbUrl}
+                        alt={story.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                        onError={() => setImgError(true)}
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#0d2137] via-[#0a3020] to-[#0f1923]" />
+                )}
+                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
+                <span className="absolute top-4 left-4 bg-[#059669] text-white text-xs font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-lg">
+                    {story.label}
+                </span>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:bg-white/30 shadow-2xl">
+                        <svg className="w-7 h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </div>
                 </div>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 px-5 py-4">
-                <h3 className="text-white font-bold text-base leading-snug mb-2 line-clamp-2 drop-shadow-md no-gradient">
-                    {story.title}
-                </h3>
+
+            <div className="flex gap-3 mt-4 px-1" onClick={() => onPlay(story.videoId)}>
                 {story.studentName && (
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-300 flex items-center justify-center flex-shrink-0 shadow">
-                            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <div className="flex-shrink-0 mt-1">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#059669] to-teal-400 flex items-center justify-center shadow-md text-white">
+                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
                             </svg>
                         </div>
-                        <div>
-                            <p className="text-white font-semibold text-sm leading-none">{story.studentName}</p>
-                            <p className="text-white/60 text-xs mt-0.5 line-clamp-1">{story.batch}</p>
-                        </div>
                     </div>
                 )}
+                <div className="flex flex-col">
+                    <h3 className="text-gray-900 font-bold text-base md:text-lg leading-snug mb-1 line-clamp-2 group-hover:text-[#059669] transition-colors">
+                        {story.title}
+                    </h3>
+                    {story.studentName && (
+                        <div className="flex flex-col text-gray-500 text-sm">
+                            <span className="font-semibold text-gray-700">{story.studentName}</span>
+                            {story.batch && <span className="text-xs mt-0.5">{story.batch}</span>}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

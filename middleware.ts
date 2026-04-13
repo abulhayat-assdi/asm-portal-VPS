@@ -5,6 +5,8 @@ import { COOKIES, APP_PATHS } from '@/lib/constants';
 const PUBLIC_API_ROUTES = [
     '/api/chat',
     '/api/auth/register',
+    '/api/auth/session',
+    '/api/auth/batches',
     '/api/feedback',
 ];
 

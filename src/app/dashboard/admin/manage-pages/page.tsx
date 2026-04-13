@@ -17,10 +17,21 @@ const PAGES = [
     { id: "blog_page", label: "Blog Page" },
 ];
 
+interface PageContent {
+    header?: { title?: string; subtitle?: string };
+    hero?: { heading?: string; subheading?: string; primaryButtonText?: string; secondaryButtonText?: string };
+    targetAudience?: { title?: string; subtitle?: string };
+    learningOutcomes?: { title?: string; subtitle?: string };
+    aboutSection?: { title?: string; description1?: string; description2?: string; description3?: string };
+    whySection?: { title?: string };
+    ctaSection?: { text?: string; buttonText?: string };
+    socialHeader?: { title?: string; subtitle?: string };
+}
+
 export default function ManagePages() {
     const { user } = useAuth();
     const [selectedPage, setSelectedPage] = useState(PAGES[0].id);
-    const [content, setContent] = useState<any>(null);
+    const [content, setContent] = useState<PageContent | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -28,6 +39,7 @@ export default function ManagePages() {
     useEffect(() => {
         const fetchContent = async () => {
             setLoading(true);
+            setContent(null); // Clear previous content to prevent desync edits
             try {
                 const data = await getPageContent(selectedPage);
                 setContent(data);

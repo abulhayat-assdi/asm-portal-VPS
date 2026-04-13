@@ -111,11 +111,12 @@ export default function StudentVideoTestimonials() {
                     {/* Carousel Viewport */}
                     <div className="overflow-visible relative">
                         <div 
-                            className="flex transition-transform duration-700 ease-in-out"
+                            className={`flex transition-transform duration-700 ease-in-out ${videos.length === 1 ? 'justify-center' : ''}`}
                             style={{ 
-                                transform: `translateX(-${offset}%)`,
+                                width: '100%',
+                                transform: videos.length === 1 ? 'none' : `translateX(-${offset}%)`,
                                 // 20% centers the active item when slideWidth is 60% ((100 - 60)/2)
-                                ...(isMobile ? {} : { marginLeft: '20%' })
+                                ...(videos.length === 1 || isMobile ? {} : { marginLeft: '20%' })
                             }}
                         >
                             {videos.map((video, index) => {
@@ -137,27 +138,45 @@ export default function StudentVideoTestimonials() {
                                                 style={{ backgroundImage: `url(https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg)` }}
                                             />
                                             {/* Gradients */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a192f] via-transparent to-transparent opacity-90" />
-                                            {isActive && (
-                                                <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors duration-500" />
-                                            )}
+                                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors duration-500" />
 
                                             {/* Play Button Icon */}
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <div className="w-16 h-16 md:w-24 md:h-24 bg-white/20 backdrop-blur-md flex items-center justify-center rounded-full shadow-2xl group-hover:bg-white/40 transition-all duration-300 group-hover:scale-110 text-white">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-12 md:w-12 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                                <div className="w-16 h-16 md:w-20 md:h-20 bg-white/20 backdrop-blur-md flex items-center justify-center rounded-full shadow-2xl group-hover:bg-white/40 transition-all duration-300 group-hover:scale-110 text-white">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 md:h-10 md:w-10 ml-1" viewBox="0 0 20 20" fill="currentColor">
                                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
                                                     </svg>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        {/* Video Details below thumbnail (YouTube style) */}
+                                        <div 
+                                            className={`mt-4 px-2 md:px-4 flex gap-3 transition-opacity duration-700 ${isActive ? 'opacity-100 cursor-pointer' : 'opacity-0 pointer-events-none'}`}
+                                            onClick={() => isActive && setSelectedVideo(video.videoId)}
+                                        >
+                                            {/* Avatar */}
+                                            {video.studentName && (
+                                                <div className="flex-shrink-0 mt-1">
+                                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#059669] to-teal-400 flex items-center justify-center shadow-md text-white">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                                                            <circle cx="12" cy="7" r="4" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            )}
                                             
-                                            <div className="absolute bottom-6 left-6 right-6 text-white transform transition-transform duration-500 group-hover:translate-y-[-5px]">
+                                            {/* Title & Student Info */}
+                                            <div className="flex flex-col text-left">
+                                                <h3 className="text-gray-900 font-bold text-lg md:text-xl line-clamp-2 leading-snug hover:text-[#059669] transition-colors">
+                                                    {video.title}
+                                                </h3>
                                                 {video.studentName && (
-                                                    <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-lg text-xs font-semibold mb-2">
-                                                        {video.studentName}
-                                                    </span>
+                                                    <div className="flex flex-col mt-1 text-gray-500 text-sm md:text-base">
+                                                        <span className="font-semibold text-gray-700">{video.studentName}</span>
+                                                    </div>
                                                 )}
-                                                <h3 className="line-clamp-2 drop-shadow-lg text-xl md:text-3xl font-bold leading-tight no-gradient text-white">{video.title}</h3>
                                             </div>
                                         </div>
                                     </div>

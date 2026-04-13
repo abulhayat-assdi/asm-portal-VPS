@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminServices } from "@/lib/firebase-admin";
 
-// OWNER email - only this account can grant/revoke admin access
-const PORTAL_OWNER_EMAIL = "mohammadabulhayatt@gmail.com";
-
 export async function POST(req: NextRequest) {
     try {
         const { adminAuth, adminDb } = getAdminServices();
@@ -35,13 +32,14 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // 2. Check caller is admin
+        // 2. Check caller is admin or super_admin
         const callerDoc = await adminDb
             .collection("users")
             .doc(decodedToken.uid)
             .get();
 
-        if (!callerDoc.exists || callerDoc.data()?.role !== "admin") {
+        const callerRole = callerDoc.data()?.role;
+        if (!callerDoc.exists || (callerRole !== "admin" && callerRole !== "super_admin")) {
             return NextResponse.json(
                 { error: "Forbidden: Admin access required" },
                 { status: 403 }
@@ -58,12 +56,12 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // 3. If granting admin, check caller is portal owner
+        // 3. If granting admin, check caller has super_admin role (via Custom Claims)
         if (isAdmin) {
-            const callerEmail = decodedToken.email || callerDoc.data()?.email;
-            if (callerEmail?.toLowerCase() !== PORTAL_OWNER_EMAIL.toLowerCase()) {
+            const callerClaimRole = decodedToken.role || callerRole;
+            if (callerClaimRole !== "super_admin") {
                 return NextResponse.json(
-                    { error: "Forbidden: Only the portal owner can grant admin access." },
+                    { error: "Forbidden: Only the portal owner (super_admin) can grant admin access." },
                     { status: 403 }
                 );
             }

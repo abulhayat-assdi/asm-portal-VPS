@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getPublicBatchStudents, getPublicUniqueBatches, PublicStudentInfo } from "@/services/batchInfoService";
 import BrandLogo from "@/components/ui/BrandLogo";
 import Link from "next/link";
+
+// Minimal type for student info returned by the API proxy
+interface PublicStudentInfo {
+    batchName: string;
+    roll: string;
+    name: string;
+    batchType?: string;
+}
 
 const EyeIcon = ({ className }: { className: string }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -21,6 +29,7 @@ const EyeSlashIcon = ({ className }: { className: string }) => (
 
 export default function StudentLoginPage() {
     const { loading, loginWithEmail, registerWithEmail, sendPasswordReset } = useAuth();
+    const router = useRouter();
 
     // UI States
     const [isRegistering, setIsRegistering] = useState(false);
@@ -44,12 +53,15 @@ export default function StudentLoginPage() {
     const [batchStudents, setBatchStudents] = useState<PublicStudentInfo[]>([]);
     const [loadingStudents, setLoadingStudents] = useState(false);
 
-    // Fetch batches on mount
+    // Fetch batches on mount via secure API proxy (no direct Firestore access)
     useEffect(() => {
         const loadBatches = async () => {
             try {
-                const uniqueBatches = await getPublicUniqueBatches();
-                setBatches(uniqueBatches);
+                const res = await fetch("/api/auth/batches?mode=batches");
+                if (res.ok) {
+                    const data = await res.json();
+                    setBatches(data.batches || []);
+                }
             } catch (err) {
                 console.error("Failed to load batches", err);
             }
@@ -57,7 +69,7 @@ export default function StudentLoginPage() {
         loadBatches();
     }, []);
 
-    // Fetch students when a batch is selected
+    // Fetch students when a batch is selected (via secure API proxy)
     useEffect(() => {
         if (!batchName) {
             setBatchStudents([]);
@@ -69,8 +81,11 @@ export default function StudentLoginPage() {
         const fetchStudents = async () => {
             setLoadingStudents(true);
             try {
-                const students = await getPublicBatchStudents(batchName);
-                setBatchStudents(students);
+                const res = await fetch(`/api/auth/batches?mode=students&batchName=${encodeURIComponent(batchName)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setBatchStudents(data.students || []);
+                }
             } catch (error) {
                 console.error("Failed to fetch rolling list", error);
             } finally {
@@ -112,12 +127,12 @@ export default function StudentLoginPage() {
                 
                 // Directly pass batch and roll so profile maps at creation
                 await registerWithEmail(email, password, name, batchName, roll);
-                window.location.href = "/student-dashboard";
+                router.push("/student-dashboard");
                 return; // Prevent further execution and finally block from running
             } else {
                 if (!password) throw new Error("Password is required");
                 await loginWithEmail(email, password);
-                window.location.href = "/student-dashboard";
+                router.push("/student-dashboard");
                 return; // Prevent finally block from clearing state while navigating
             }
         } catch (err) {

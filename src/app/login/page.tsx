@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
 
 export default function LoginPage() {
+    const router = useRouter();
     const { loginWithEmail, sendPasswordReset } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -45,7 +47,7 @@ export default function LoginPage() {
 
         try {
             await loginWithEmail(email, password);
-            window.location.href = "/dashboard";
+            router.push("/dashboard");
             return;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to login. Please try again.";

@@ -4,21 +4,25 @@ import { useState, useEffect } from "react";
 import TeacherCard from "@/components/ui/TeacherCard";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { getAllTeachers, addTeacher, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
+import { getAllTeachers, getTeachersPaginated, addTeacher, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
+import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Portal owner email — only this account can grant/revoke admin access
-const PORTAL_OWNER_EMAIL = "mohammadabulhayatt@gmail.com";
 
 export default function TeachersPage() {
     const { user, userProfile } = useAuth();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    
+    // Pagination states
+    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const PAGE_SIZE = 10;
 
     // Role checks
-    const isAdminUser = userProfile?.role === "admin";
-    const isPortalOwner = userProfile?.email?.toLowerCase() === PORTAL_OWNER_EMAIL.toLowerCase();
+    const isAdminUser = userProfile?.role === "admin" || userProfile?.role === "super_admin";
+    const isPortalOwner = userProfile?.role === "super_admin";
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,12 +55,29 @@ export default function TeachersPage() {
     const fetchTeachers = async () => {
         setLoading(true);
         try {
-            const data = await getAllTeachers();
-            setTeachers(data);
+            const data = await getTeachersPaginated(PAGE_SIZE, null);
+            setTeachers(data.teachers);
+            setLastDoc(data.nextCursor);
+            setHasMore(data.hasMore);
         } catch (error) {
             console.error("Failed to load teachers", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMoreTeachers = async () => {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const data = await getTeachersPaginated(PAGE_SIZE, lastDoc);
+            setTeachers(prev => [...prev, ...data.teachers]);
+            setLastDoc(data.nextCursor);
+            setHasMore(data.hasMore);
+        } catch (error) {
+            console.error("Failed to load more teachers", error);
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -197,7 +218,6 @@ export default function TeachersPage() {
 
                 // Get fresh token for admin API calls
                 const freshToken = user ? await user.getIdToken(true) : "";
-                document.cookie = `__session=${freshToken}; path=/; max-age=86400; SameSite=Lax`;
 
                 const oldLoginEmail = editingTeacher.loginEmail || editingTeacher.email;
                 const newLoginEmail = formData.loginEmail;
@@ -245,7 +265,6 @@ export default function TeachersPage() {
                 let freshToken = "";
                 if (user) {
                     freshToken = await user.getIdToken(true);
-                    document.cookie = `__session=${freshToken}; path=/; max-age=86400; SameSite=Lax`;
                 }
 
                 // Create Firebase Auth user via secure backend (uses loginEmail)
@@ -405,6 +424,33 @@ export default function TeachersPage() {
                             ? "No teachers found in the directory."
                             : `No teachers found matching "${searchQuery}"`}
                     </p>
+                </div>
+            )}
+
+            {/* Load More Button */}
+            {!loading && hasMore && !searchQuery && (
+                <div className="flex justify-center mt-8">
+                    <Button 
+                        variant="secondary" 
+                        onClick={loadMoreTeachers} 
+                        disabled={loadingMore}
+                        className="min-w-[200px]"
+                    >
+                        {loadingMore ? "Loading..." : "Load More Teachers"}
+                    </Button>
+                </div>
+            )}
+
+            {/* Warning if searching with partial data */}
+            {!loading && hasMore && searchQuery && (
+                <div className="text-center mt-8 text-sm text-[#6b7280]">
+                    <p>Showing search results from the currently loaded teachers.</p>
+                    <button 
+                        onClick={() => { setSearchQuery(""); loadMoreTeachers(); }}
+                        className="text-[#059669] hover:underline font-medium mt-1"
+                    >
+                        Load more teachers to search the full directory
+                    </button>
                 </div>
             )}
 

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminServices } from "@/lib/firebase-admin";
 
-// OWNER email - only this account can grant/revoke admin access
-const PORTAL_OWNER_EMAIL = "mohammadabulhayatt@gmail.com";
-
 /**
  * POST /api/admin/update-teacher
  * Updates a teacher's auth email (if changed) and/or admin role.
@@ -35,9 +32,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: `Forbidden: Invalid session! (${message})` }, { status: 403 });
         }
 
-        // 2. Check caller is admin
+        // 2. Check caller is admin or super_admin
         const callerDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-        if (!callerDoc.exists || callerDoc.data()?.role !== "admin") {
+        const callerRole = callerDoc.data()?.role;
+        if (!callerDoc.exists || (callerRole !== "admin" && callerRole !== "super_admin")) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 
@@ -48,12 +46,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Missing firestoreDocId" }, { status: 400 });
         }
 
-        // 3. If changing admin status, check caller is portal owner
+        // 3. If changing admin status, check caller has super_admin role (via Custom Claims)
         if (isAdmin !== undefined) {
-            const callerEmail = decodedToken.email || callerDoc.data()?.email;
-            if (callerEmail?.toLowerCase() !== PORTAL_OWNER_EMAIL.toLowerCase()) {
+            const callerClaimRole = decodedToken.role || callerRole;
+            if (callerClaimRole !== "super_admin") {
                 return NextResponse.json(
-                    { error: "Forbidden: Only the portal owner can grant or revoke admin access." },
+                    { error: "Forbidden: Only the portal owner (super_admin) can grant or revoke admin access." },
                     { status: 403 }
                 );
             }

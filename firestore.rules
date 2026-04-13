@@ -11,17 +11,16 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      // Custom claims are synced on every login by /api/auth/profile
+      // No get() fallback needed — eliminates N+1 billed reads
       return isAuth() && (
         request.auth.token.role == 'admin' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        request.auth.token.role == 'super_admin'
       );
     }
 
     function isTeacher() {
-      return isAuth() && (
-        request.auth.token.role == 'teacher' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher'
-      );
+      return isAuth() && request.auth.token.role == 'teacher';
     }
 
     /* =====================================================
@@ -136,21 +135,23 @@ service cloud.firestore {
       allow update, delete: if isAdmin() || (isAuth() && request.auth.uid == resource.data.studentUid);
     }
 
-    // Public Batch Students list for registration
+    // Public Batch Students list for registration (proxied via API for unauthenticated users)
     match /public_batch_students/{docId} {
-      allow read: if true;
+      allow read: if isAuth();
       allow write: if isAdmin();
     }
 
     // Exam Results
+    // Uses custom claims (studentRoll, studentBatchName) instead of get() to
+    // avoid N+1 billed reads when listing results. Claims are synced on login.
     match /exam_results/{docId} {
       allow read: if isAuth() && (
         isAdmin() || 
         isTeacher() ||
         resource == null ||
         (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.studentRoll == resource.data.roll &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.studentBatchName == resource.data.batchName
+          request.auth.token.studentRoll == resource.data.roll &&
+          request.auth.token.studentBatchName == resource.data.batchName
         ) 
       );
       allow write: if isAdmin();
@@ -162,12 +163,26 @@ service cloud.firestore {
       allow write: if isAdmin() || isTeacher();
     }
 
-    // Student Contact Messages - students create, admins read/manage
+    // Legacy Student Contact Messages - students create, admins read/manage
     match /contact_messages/{docId} {
       allow create: if isAuth() && 
                     request.resource.data.message.size() < 2000 &&
                     request.resource.data.subject.size() < 200;
       allow read, update, delete: if isAdmin();
+    }
+
+    // New Real-Time Contact Chat System
+    match /admin_chats/{studentUid} {
+      // Students can read/write their own chat document
+      allow read, write: if isAuth() && request.auth.uid == studentUid;
+      // Admins have full access to all chat threads
+      allow read, write: if isAdmin();
+      
+      // Messages within the chat thread
+      match /messages/{messageId} {
+        allow read, write: if isAuth() && request.auth.uid == studentUid;
+        allow read, write: if isAdmin();
+      }
     }
 
     // Module Resources - teachers upload for their own module, admin manages all
@@ -318,8 +333,7 @@ service cloud.firestore {
     // Public Pages (CMS Content)
     match /public_pages/{pageId} {
       allow read: if true;
-      allow write: if isAuth() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if isAdmin();
     }
 
     /* =====================================================

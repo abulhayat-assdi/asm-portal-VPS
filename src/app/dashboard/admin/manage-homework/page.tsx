@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
     getAllHomework,
@@ -29,6 +29,14 @@ export default function ManageHomeworkPage() {
 
     // Cleanup info
     const [cleanupCount, setCleanupCount] = useState(0);
+
+    // Folder view state
+    const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+
+    // Reset selected folder when filters change
+    useEffect(() => {
+        setSelectedFolder(null);
+    }, [filterTeacher, filterBatch, searchQuery]);
 
     const isAdmin = userProfile?.role === "admin";
 
@@ -88,6 +96,33 @@ export default function ManageHomeworkPage() {
     // Unique batches and teachers from homework for filters
     const uniqueBatches = Array.from(new Set(homework.map(hw => hw.studentBatchName))).sort();
     const uniqueTeachers = Array.from(new Set(homework.map(hw => hw.teacherName))).sort();
+
+    // Grouping by folder when a specific teacher is selected
+    const groupedFolders = useMemo(() => {
+        if (filterTeacher === "all") return [];
+        const map = new Map<string, { id: string; name: string; items: HomeworkSubmission[] }>();
+        
+        filteredHomework.forEach(hw => {
+            const folderId = hw.assignmentId || "others";
+            const folderName = hw.assignmentId ? hw.subject : "Others";
+            
+            if (!map.has(folderId)) {
+                map.set(folderId, { id: folderId, name: folderName, items: [] });
+            }
+            map.get(folderId)!.items.push(hw);
+        });
+        
+        return Array.from(map.values()).sort((a, b) => {
+            if (a.id === "others") return 1;
+            if (b.id === "others") return -1;
+            return a.name.localeCompare(b.name);
+        });
+    }, [filteredHomework, filterTeacher]);
+
+    const homeworkToRender = useMemo(() => {
+        if (filterTeacher === "all" || !selectedFolder) return filteredHomework;
+        return groupedFolders.find(f => f.id === selectedFolder)?.items || [];
+    }, [filteredHomework, filterTeacher, selectedFolder, groupedFolders]);
 
     const handleDelete = async (hw: HomeworkSubmission) => {
         if (!confirm(`Delete homework "${hw.subject}" by ${hw.studentName}?`)) return;
@@ -210,9 +245,42 @@ export default function ManageHomeworkPage() {
                             : "No results match your current filters."}
                     </p>
                 </div>
+            ) : filterTeacher !== "all" && !selectedFolder ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {groupedFolders.map((folder) => (
+                        <div
+                            key={folder.id}
+                            onClick={() => setSelectedFolder(folder.id)}
+                            className="bg-white border border-gray-200 rounded-2xl p-5 hover:border-[#059669] hover:shadow-md cursor-pointer transition-all duration-200 group flex items-start gap-4"
+                        >
+                            <div className="text-4xl group-hover:scale-110 transition-transform mt-1">📁</div>
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-gray-900 truncate" title={folder.name}>{folder.name}</h3>
+                                <p className="text-[#059669] font-semibold text-sm mt-1">{folder.items.length} Submissions</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filteredHomework.map((hw) => (
+                <div className="space-y-4">
+                    {selectedFolder && (
+                        <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
+                             <button
+                                 onClick={() => setSelectedFolder(null)}
+                                 className="flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-[#059669] transition-colors bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200"
+                             >
+                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                 </svg>
+                                 Back to Folders
+                             </button>
+                             <span className="text-sm font-bold text-gray-800 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg border border-emerald-100 truncate max-w-sm">
+                                 📁 {groupedFolders.find(f => f.id === selectedFolder)?.name}
+                             </span>
+                        </div>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {homeworkToRender.map((hw) => (
                         <div
                             key={hw.id}
                             className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
@@ -289,6 +357,7 @@ export default function ManageHomeworkPage() {
                             </div>
                         </div>
                     ))}
+                    </div>
                 </div>
             )}
 

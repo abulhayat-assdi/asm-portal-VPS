@@ -1,8 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getRawBatchesPublic, BatchMetadata } from "@/services/batchInfoService";
 import "../dashboard/tracker/tracker.css";
+
+// Local type matching the API response
+interface BatchMetadata {
+    name: string;
+    status: string;
+}
 
 /**
  * Checklist items for the Daily Discipline Tracker
@@ -62,33 +67,29 @@ export default function DailyTrackerFormPage() {
     );
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // ─── 2. Data Fetching & Filtering ───
+    // ─── 2. Data Fetching & Filtering (via server-side API proxy) ───
     useEffect(() => {
         const fetchBatches = async () => {
             setIsLoadingBatches(true);
             setFetchError(false);
             try {
-                // Fetch raw batches from service (queries both meta and student collections)
-                const fetchedBatches: unknown[] = await getRawBatchesPublic();
+                // Fetch batch metadata via the secure API proxy
+                const res = await fetch("/api/auth/batches?mode=raw");
+                if (!res.ok) throw new Error("Failed to fetch batches");
+                const data = await res.json();
+                const fetchedBatches: BatchMetadata[] = data.batches || [];
                 
                 // CRITICAL - Robust Broad Filter to catch all active variations
-                const activeBatches = fetchedBatches.filter((b: unknown) => {
-                    if (typeof b !== 'object' || b === null) return false;
-                    const batch = b as Record<string, unknown>;
+                const activeBatches = fetchedBatches.filter((batch) => {
                     const status = String(batch.status || '').trim().toLowerCase();
                     // Catch: "running", "active", or explicitly not completed
-                    return status === 'running' || status === 'active' || batch.isCompleted === false;
+                    return status === 'running' || status === 'active';
                 });
 
                 // Sort alphabetically by name
-                activeBatches.sort((a: unknown, b: unknown) => {
-                    if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) return 0;
-                    const aName = String((a as Record<string, unknown>).name || '');
-                    const bName = String((b as Record<string, unknown>).name || '');
-                    return aName.localeCompare(bName);
-                });
+                activeBatches.sort((a, b) => a.name.localeCompare(b.name));
 
-                setRunningBatches(activeBatches as BatchMetadata[]);
+                setRunningBatches(activeBatches);
                 
                 if (activeBatches.length === 0) {
                     console.warn("Daily Tracker: No active batches found after broad filtering.", fetchedBatches);

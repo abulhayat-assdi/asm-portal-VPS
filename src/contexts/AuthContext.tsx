@@ -5,7 +5,6 @@ import { User, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AuthContextType, UserProfile } from "@/types/auth";
 import * as authService from "@/services/authService";
-import { COOKIES } from "@/lib/constants";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -28,9 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (firebaseUser) {
                 try {
-                    // 1. Sync Edge Middleware session cookie
+                    // 1. Sync session cookie via secure server-side API (HttpOnly)
                     const token = await firebaseUser.getIdToken();
-                    document.cookie = `${COOKIES.SESSION}=${token}; path=/; max-age=86400; SameSite=Lax`;
+                    await fetch("/api/auth/session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idToken: token }),
+                    });
 
                     // 2. Fetch enriched profile via Server API
                     const profileRes = await fetch("/api/auth/profile");
@@ -49,8 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     setUserProfile(profile);
                 }
             } else {
-                // Clear session cookie on logout
-                document.cookie = `${COOKIES.SESSION}=; path=/; max-age=0; SameSite=Lax`;
+                // Clear session cookie via secure server-side API
+                await fetch("/api/auth/session", { method: "DELETE" }).catch(() => {});
                 setUserProfile(null);
             }
 
@@ -62,7 +65,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (auth.currentUser) {
                 try {
                     const token = await auth.currentUser.getIdToken(true);
-                    document.cookie = `${COOKIES.SESSION}=${token}; path=/; max-age=86400; SameSite=Lax`;
+                    await fetch("/api/auth/session", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idToken: token }),
+                    });
                     console.log("[AuthContext] Token refreshed automatically");
                 } catch (err) {
                     console.error("[AuthContext] Token refresh failed:", err);

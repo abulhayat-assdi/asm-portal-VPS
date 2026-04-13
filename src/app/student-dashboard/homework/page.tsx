@@ -276,8 +276,8 @@ export default function HomeworkSubmissionPage() {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         {/* Form Header with auto-filled student info */}
                         <div className="bg-gradient-to-r from-[#059669] to-[#10b981] p-5 text-white">
-                            <h2 className="text-xl font-bold">Submit Homework</h2>
-                            <p className="text-emerald-100 text-sm mt-0.5">আপনার হোমওয়ার্ক সাবমিট করুন</p>
+                            <h2 className="text-xl font-bold no-gradient text-white">Submit Homework</h2>
+                            <p className="text-emerald-100 text-sm mt-0.5 no-gradient">আপনার হোমওয়ার্ক সাবমিট করুন</p>
                             <div className="mt-3 bg-white/20 rounded-xl px-4 py-2.5 text-sm space-y-0.5">
                                 <p><span className="opacity-75">Name:</span> <strong>{userProfile?.displayName}</strong></p>
                                 <p>

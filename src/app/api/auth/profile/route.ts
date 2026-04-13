@@ -70,6 +70,44 @@ export async function GET(req: NextRequest) {
             }
         }
 
+        // 5. Sync Custom Claims if stale — ensures Firestore rules can rely on
+        //    request.auth.token without expensive get() fallbacks (N+1 fix)
+        try {
+            const tokenClaims = decodedToken as Record<string, any>;
+            const expectedClaims: Record<string, any> = {
+                role: profile.role,
+            };
+
+            // For students, include identity claims used by exam_results rules
+            if (profile.role === AUTH_ROLES.STUDENT) {
+                expectedClaims.student = true;
+                expectedClaims.studentRoll = profile.studentRoll || null;
+                expectedClaims.studentBatchName = profile.studentBatchName || null;
+            } else if (profile.role === AUTH_ROLES.SUPER_ADMIN) {
+                expectedClaims.admin = true;
+                expectedClaims.super_admin = true;
+            } else if (profile.role === 'admin') {
+                expectedClaims.admin = true;
+                expectedClaims.teacher = false;
+            } else if (profile.role === 'teacher') {
+                expectedClaims.teacher = true;
+                expectedClaims.admin = false;
+            }
+
+            // Check if any claim is out of sync
+            const needsSync = Object.entries(expectedClaims).some(
+                ([key, value]) => tokenClaims[key] !== value
+            );
+
+            if (needsSync) {
+                await adminAuth.setCustomUserClaims(uid, expectedClaims);
+                console.log(`[Profile API] Synced stale claims for ${uid}:`, expectedClaims);
+            }
+        } catch (claimsSyncError) {
+            console.error("[Profile API] Claims sync failed:", claimsSyncError);
+            // Non-critical — claims will be retried on next profile fetch
+        }
+
         return NextResponse.json(profile);
     } catch (error) {
         console.error("[Profile API] Global error:", error);

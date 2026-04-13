@@ -159,8 +159,8 @@ export default function StudentProfilePage() {
                             {userProfile?.displayName?.charAt(0).toUpperCase() || "?"}
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold">{userProfile?.displayName}</h2>
-                            <p className="text-blue-200 text-sm mt-0.5">{userProfile?.email}</p>
+                            <h2 className="text-2xl font-bold no-gradient text-white">{userProfile?.displayName}</h2>
+                            <p className="text-blue-200 text-sm mt-0.5 no-gradient">{userProfile?.email}</p>
                         </div>
                     </div>
                     <div className="text-right hidden sm:block">
