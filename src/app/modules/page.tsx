@@ -1,5 +1,6 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
+import Link from "next/link";
 
 export default function ModulesPage() {
     const navLinks = [
@@ -36,6 +37,7 @@ export default function ModulesPage() {
         {
             title: "Sales Mastery",
             pdfLink: "https://drive.google.com/file/d/1vmntDfYlD8ehHARP2K9_E4h1LIfz9osY/view?usp=drive_link",
+            slug: "sales-mastery",
             bullets: [
                 "Face-to-Face এবং অনলাইনে কনফিডেন্টলি প্রোডাক্ট সেল করার সাইকোলজি আয়ত্ত করা।",
                 "কাস্টমারের যেকোনো অবজেকশন স্মার্টলি এবং পেশাদারিত্বের সাথে হ্যান্ডেল করা।",
@@ -46,6 +48,7 @@ export default function ModulesPage() {
         {
             title: "Career Planning & Branding",
             pdfLink: "https://drive.google.com/file/d/1qqTxOoxeSD6Xpbq8wHmJ30SD_3Feu_Q8/view?usp=drive_link",
+            slug: "career-planning-branding",
             bullets: [
                 "এমন একটি Winning CV তৈরি করা যা সহজেই ইন্টারভিউ কল নিয়ে আসবে।",
                 "নিজেকে একটি পাওয়ারফুল Personal Brand হিসেবে এস্টাবলিশ করা।",
@@ -56,6 +59,7 @@ export default function ModulesPage() {
         {
             title: "Customer Service Excellence",
             pdfLink: "https://drive.google.com/file/d/18hfi3_fYNIizt2ARD6SHKPCJRYKFva7M/view?usp=drive_link",
+            slug: "customer-service-excellence",
             bullets: [
                 "রাগান্বিত কাস্টমারকেও আপনার ব্র্যান্ডের লয়্যাল ফ্যানে পরিণত করার সাইকোলজিক্যাল টেকনিক।",
                 "Empathy এবং সবরের সাথে যেকোনো ডিফিকাল্ট সিচুয়েশন হ্যান্ডেল করা।",
@@ -66,6 +70,7 @@ export default function ModulesPage() {
         {
             title: "AI for Digital Marketers",
             pdfLink: "https://drive.google.com/file/d/1A-9GAD-NJSdPjsVcwiMPzzSGexFvSR7Z/view?usp=drive_link",
+            slug: "ai-for-digital-marketers",
             bullets: [
                 "লেটেস্ট AI Tools ব্যবহার করে কাজের স্পিড এবং প্রোডাক্টিভিটি 10x বাড়িয়ে ফেলা।",
                 "Canva মাস্টার করে আইক্যাচি ব্র্যান্ডিং এবং সোশ্যাল মিডিয়া অ্যাড ডিজাইন করা।",
@@ -76,6 +81,7 @@ export default function ModulesPage() {
         {
             title: "Digital Marketing",
             pdfLink: "https://drive.google.com/file/d/1e2kmcTW0HgQjrKoqYBiPdz-2hDyF2JlG/view?usp=drive_link",
+            slug: "digital-marketing",
             bullets: [
                 "ম্যাক্সিমাম ROI-এর জন্য Meta Ads (Facebook & Instagram) এর নাড়িভুঁড়ি আয়ত্ত করা।",
                 "বিজনেস গ্রোথের জন্য স্ক্র্যাচ থেকে পাওয়ারফুল সোশ্যাল মিডিয়া স্ট্র্যাটেজি দাঁড় করানো।",
@@ -86,6 +92,7 @@ export default function ModulesPage() {
         {
             title: "Business Management Tools (MS Office)",
             pdfLink: "https://drive.google.com/file/d/1BkuiUSbiNHXa1rVTC4KizASlWpQeCHT2/view?usp=drive_link",
+            slug: "business-management-tools",
             bullets: [
                 "ডেটা ট্র্যাকিং, সেলস রিপোর্ট এবং অ্যানালিটিক্সের জন্য MS Excel-এ প্রো হয়ে ওঠা।",
                 "MS Word ব্যবহার করে ফ্ললেস কর্পোরেট ডকুমেন্টেশন এবং প্রপোজাল রেডি করা।",
@@ -96,6 +103,7 @@ export default function ModulesPage() {
         {
             title: "Landing Page & Content Marketing",
             pdfLink: "https://drive.google.com/file/d/1244hXPDXwIxyLZ2omEwuQkmFjjEmnMl0/view?usp=drive_link",
+            slug: "landing-page-content-marketing",
             bullets: [
                 "High-Converting Landing Page ডিজাইন করা যা ভিজিটরকে পেইং কাস্টমারে রূপান্তর করবে।",
                 "100% সত্যতা বজায় রেখে ম্যাগনেটিক Copywriting করা যা ইজিলি সেলস আনাবে।",
@@ -106,6 +114,7 @@ export default function ModulesPage() {
         {
             title: "Business English",
             pdfLink: "https://drive.google.com/file/d/1H2hl8DkQpbkKzQo4jChhcpj__EpoRo2n/view?usp=drive_link",
+            slug: "business-english",
             bullets: [
                 "পাবলিক স্পিকিংয়ের ভয় কাটিয়ে সবার সামনে কনফিডেন্টলি কথা বলা।",
                 "ক্লায়েন্ট মিটিং বা জব ইন্টারভিউতে প্রফেশনাল ইংলিশে স্মার্টলি কমিউনিকেট করা।",
@@ -116,6 +125,7 @@ export default function ModulesPage() {
         {
             title: "Dawah & Business Ethics",
             pdfLink: "https://drive.google.com/file/d/1ddTaQF84xSSswcEixh84F1RS51C6HPkn/view?usp=drive_link",
+            slug: "dawah-business-ethics",
             bullets: [
                 "মার্কেটিংকে শুধুমাত্র প্রমোশন নয়, বরং সত্য ও 'দাওয়াহ' হিসেবে প্রেজেন্ট করা।",
                 "বিজনেসের প্রতিদিনের ডিসিশনে ইখলাস (Sincerity) এবং শতভাগ সততা অ্যাপ্লাই করা।",
@@ -220,32 +230,59 @@ export default function ModulesPage() {
 
                                         {/* See Full Module Button */}
                                         <div className="mt-8 pt-6 border-t border-gray-100">
-                                            <a
-                                                href={module.pdfLink}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`
-                                                    inline-flex items-center justify-center w-full px-4 py-2.5 
-                                                    text-sm font-medium rounded-xl transition-all duration-300 border
-                                                    group/btn relative overflow-hidden
-                                                    ${index === 0
-                                                        ? 'text-[#059669] bg-green-50/50 hover:bg-green-100 border-green-200 shadow-sm'
-                                                        : 'text-gray-600 bg-gray-50/50 hover:bg-emerald-50 hover:text-[#059669] hover:border-emerald-200 border-gray-100'
-                                                    }
-                                                `}
-                                            >
-                                                <span className="relative z-10 font-semibold tracking-wide">
-                                                    See Full Module
-                                                </span>
-                                                <svg
-                                                    className="w-4 h-4 ml-2 mt-[1px] group-hover/btn:translate-x-1 transition-transform relative z-10"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
+                                            {module.slug ? (
+                                                <Link
+                                                    href={`/modules/${module.slug}`}
+                                                    className={`
+                                                        inline-flex items-center justify-center w-full px-4 py-2.5 
+                                                        text-sm font-medium rounded-xl transition-all duration-300 border
+                                                        group/btn relative overflow-hidden
+                                                        ${index === 0
+                                                            ? 'text-[#059669] bg-green-50/50 hover:bg-green-100 border-green-200 shadow-sm'
+                                                            : 'text-gray-600 bg-gray-50/50 hover:bg-emerald-50 hover:text-[#059669] hover:border-emerald-200 border-gray-100'
+                                                        }
+                                                    `}
                                                 >
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                                </svg>
-                                            </a>
+                                                    <span className="relative z-10 font-semibold tracking-wide">
+                                                        See Full Module
+                                                    </span>
+                                                    <svg
+                                                        className="w-4 h-4 ml-2 mt-[1px] group-hover/btn:translate-x-1 transition-transform relative z-10"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                    </svg>
+                                                </Link>
+                                            ) : (
+                                                <a
+                                                    href={module.pdfLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`
+                                                        inline-flex items-center justify-center w-full px-4 py-2.5 
+                                                        text-sm font-medium rounded-xl transition-all duration-300 border
+                                                        group/btn relative overflow-hidden
+                                                        ${index === 0
+                                                            ? 'text-[#059669] bg-green-50/50 hover:bg-green-100 border-green-200 shadow-sm'
+                                                            : 'text-gray-600 bg-gray-50/50 hover:bg-emerald-50 hover:text-[#059669] hover:border-emerald-200 border-gray-100'
+                                                        }
+                                                    `}
+                                                >
+                                                    <span className="relative z-10 font-semibold tracking-wide">
+                                                        See Full Module
+                                                    </span>
+                                                    <svg
+                                                        className="w-4 h-4 ml-2 mt-[1px] group-hover/btn:translate-x-1 transition-transform relative z-10"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                                    </svg>
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
 
