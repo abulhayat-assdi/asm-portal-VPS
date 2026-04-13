@@ -24,6 +24,7 @@ export interface Teacher {
     profileImageUrl?: string;
     isAdmin: boolean;
     order?: number;       // Serial number for sorting
+    leaveTrackingEnabled?: boolean; // Whether this teacher's leave is shown in Leave Tracking page
 }
 
 /**

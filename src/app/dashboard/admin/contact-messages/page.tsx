@@ -11,8 +11,7 @@ import {
     ChatMessage, 
     ChatAttachment
 } from "@/services/contactService";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -103,15 +102,36 @@ export default function ContactManagementPage() {
             const uploadedAttachments: ChatAttachment[] = [];
 
             for (let file of files) {
-                const cleanName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
-                const path = `chat_files/${selectedThread.studentUid}/${Date.now()}_${cleanName}`;
-                const storageRef = ref(storage, path);
-                
-                await uploadBytesResumable(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("category", "chat_files");
+                formData.append("path", selectedThread.studentUid);
+
+                // Ensure fresh auth token
+                const currentUser = auth.currentUser;
+                if (!currentUser) throw new Error("Not authenticated");
+                const token = await currentUser.getIdToken(true);
+
+                const response = await fetch("/api/storage/upload", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to upload file to local storage");
+                }
+
+                const data = await response.json();
 
                 uploadedAttachments.push({
-                    url, name: file.name, path, size: file.size, type: file.type
+                    url: data.fileUrl,
+                    name: file.name,
+                    path: data.storagePath,
+                    size: file.size,
+                    type: file.type
                 });
             }
 
@@ -147,7 +167,7 @@ export default function ContactManagementPage() {
     };
 
     return (
-        <div className="h-[calc(100vh-2rem)] flex flex-col pt-2 animate-in fade-in duration-500">
+        <div className="h-[calc(100vh-5.5rem)] md:h-[calc(100vh-7.5rem)] flex flex-col animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex items-center gap-3 mb-6 shrink-0">
                 <div className="w-1 h-10 bg-[#059669] rounded-full"></div>

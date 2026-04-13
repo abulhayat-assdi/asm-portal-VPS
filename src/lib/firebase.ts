@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // ============================================================
 // 🔐 Environment Variable Validation
@@ -46,6 +47,7 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // Enable auth persistence (Remember Me by default)
 // This keeps users logged in even after closing the browser

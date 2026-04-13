@@ -9,8 +9,7 @@ import {
     ChatAttachment, 
     markChatAsRead 
 } from "@/services/contactService";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import Link from "next/link";
 
 export default function ContactAdminStudent() {
@@ -67,17 +66,34 @@ export default function ContactAdminStudent() {
 
             // Upload files
             for (let file of files) {
-                const cleanName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
-                const path = `chat_files/${userProfile.uid}/${Date.now()}_${cleanName}`;
-                const storageRef = ref(storage, path);
-                
-                await uploadBytesResumable(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("category", "chat_files");
+                formData.append("path", userProfile.uid); // Store inside student's UID folder
+
+                // Ensure fresh auth token
+                const currentUser = auth.currentUser;
+                if (!currentUser) throw new Error("Not authenticated");
+                const token = await currentUser.getIdToken(true);
+
+                const response = await fetch("/api/storage/upload", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to upload file to local storage");
+                }
+
+                const data = await response.json();
 
                 uploadedAttachments.push({
-                    url,
+                    url: data.fileUrl,
                     name: file.name,
-                    path,
+                    path: data.storagePath,
                     size: file.size,
                     type: file.type
                 });

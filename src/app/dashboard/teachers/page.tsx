@@ -48,6 +48,7 @@ export default function TeachersPage() {
         profileImageUrl: "",
         isAdmin: false,
         order: 0,
+        leaveTrackingEnabled: false,
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -63,6 +64,19 @@ export default function TeachersPage() {
             console.error("Failed to load teachers", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Silent refresh: updates teacher list WITHOUT triggering loading spinner
+    // — preserves scroll position after edit/delete/add actions
+    const refreshTeachers = async () => {
+        try {
+            const data = await getTeachersPaginated(PAGE_SIZE, null);
+            setTeachers(data.teachers);
+            setLastDoc(data.nextCursor);
+            setHasMore(data.hasMore);
+        } catch (error) {
+            console.error("Failed to refresh teachers", error);
         }
     };
 
@@ -99,6 +113,7 @@ export default function TeachersPage() {
             profileImageUrl: "",
             isAdmin: false,
             order: 0,
+            leaveTrackingEnabled: false,
         });
         setSelectedFile(null);
         setImagePreview(null);
@@ -148,6 +163,7 @@ export default function TeachersPage() {
             profileImageUrl: teacher.profileImageUrl || "",
             isAdmin: Boolean(teacher.isAdmin),
             order: teacher.order || 0,
+            leaveTrackingEnabled: Boolean(teacher.leaveTrackingEnabled),
         });
         setImagePreview(teacher.profileImageUrl || null);
         setIsEditMode(true);
@@ -257,6 +273,7 @@ export default function TeachersPage() {
                     profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
                     order: Number(formData.order),
+                    leaveTrackingEnabled: formData.leaveTrackingEnabled,
                 });
             } else {
                 // --- ADD MODE ---
@@ -303,10 +320,11 @@ export default function TeachersPage() {
                     profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
                     order: Number(formData.order),
+                    leaveTrackingEnabled: formData.leaveTrackingEnabled,
                 });
             }
 
-            await fetchTeachers();
+            await refreshTeachers();
             setIsModalOpen(false);
             resetForm();
         } catch (error) {
@@ -325,7 +343,7 @@ export default function TeachersPage() {
         setIsDeleting(true);
         try {
             await deleteTeacher(teacherToDelete.id);
-            await fetchTeachers();
+            await refreshTeachers();
             setIsDeleteModalOpen(false);
             setTeacherToDelete(null);
         } catch (error) {
@@ -408,12 +426,13 @@ export default function TeachersPage() {
                         const canDelete = isAdminUser;
 
                         return (
-                            <TeacherCard
-                                key={teacher.id}
-                                teacher={teacher}
-                                onEdit={canEdit ? openEditModal : undefined}
-                                onDelete={canDelete ? openDeleteModal : undefined}
-                            />
+                            <div key={teacher.id} className="relative">
+                                <TeacherCard
+                                    teacher={teacher}
+                                    onEdit={canEdit ? openEditModal : undefined}
+                                    onDelete={canDelete ? openDeleteModal : undefined}
+                                />
+                            </div>
                         );
                     })}
                 </div>
@@ -647,6 +666,25 @@ export default function TeachersPage() {
                                 <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
                                     ⚠️ Only the portal owner can grant or revoke admin access.
                                 </p>
+                            )}
+
+                            {/* Leave Tracking Toggle */}
+                            {isAdminUser && (
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-100 bg-emerald-50">
+                                    <input
+                                        type="checkbox"
+                                        id="leaveTrackingEnabled"
+                                        checked={formData.leaveTrackingEnabled}
+                                        onChange={(e) => setFormData({ ...formData, leaveTrackingEnabled: e.target.checked })}
+                                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                                    />
+                                    <label htmlFor="leaveTrackingEnabled" className="text-sm font-medium text-slate-700 cursor-pointer">
+                                        🌴 লিভ ট্র্যাকিং চালু থাকবে
+                                        <span className="block text-xs font-normal text-slate-500 mt-0.5">
+                                            চেক করলে এই টিচারের ডেটা &quot;Leave Tracking&quot; পেইজে দেখাবে
+                                        </span>
+                                    </label>
+                                </div>
                             )}
 
                             <div>

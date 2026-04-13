@@ -86,8 +86,7 @@ export const deleteContactMessage = async (id: string): Promise<void> => {
 // ============================================================================
 
 import { onSnapshot, setDoc, writeBatch, Timestamp, serverTimestamp } from "firebase/firestore";
-import { ref, deleteObject, listAll } from "firebase/storage";
-import { storage } from "@/lib/firebase"; // Ensure storage is exported from firebase.ts
+// Removed firebase/storage imports since files are now stored in cPanel local storage
 
 export interface ChatAttachment {
     url: string;
@@ -211,7 +210,11 @@ export const markChatAsRead = async (studentUid: string, role: "student" | "admi
         } else {
             await updateDoc(threadRef, { unreadCountStudent: 0 });
         }
-    } catch (err) {
+    } catch (err: any) {
+        if (err.code === 'not-found' || (err.message && err.message.includes("No document to update"))) {
+            // Ignore error if the chat thread hasn't been created yet
+            return;
+        }
         console.error("Error marking chat as read:", err);
     }
 }
@@ -221,31 +224,40 @@ export const markChatAsRead = async (studentUid: string, role: "student" | "admi
  */
 export const deleteChatThread = async (studentUid: string): Promise<void> => {
     try {
-        // 1. Delete all files out of storage for this user's context
-        const storageFolderRef = ref(storage, `chat_files/${studentUid}/`);
-        try {
-            const fileList = await listAll(storageFolderRef);
-            const deletePromises = fileList.items.map(itemRef => deleteObject(itemRef));
-            await Promise.all(deletePromises);
-        } catch (storageErr) {
-            console.warn("Storage deletion warning (might be empty):", storageErr);
-        }
-
-        // 2. Erase all firestore message documents
+        // 1. Gather all messages to find attachments and prepare batch delete
         const messagesCol = collection(db, "admin_chats", studentUid, "messages");
         const snapshot = await getDocs(messagesCol);
         
-        // Use batch deletion
         const batch = writeBatch(db);
-        snapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
+        const attachmentPaths: string[] = [];
+
+        snapshot.docs.forEach((docSnap) => {
+            batch.delete(docSnap.ref);
+            const data = docSnap.data() as ChatMessage;
+            if (data.attachments && Array.isArray(data.attachments)) {
+                data.attachments.forEach(att => {
+                    if (att.path) attachmentPaths.push(att.path);
+                });
+            }
         });
         
-        // 3. Delete parent chat thread structure
+        // 2. Delete parent chat thread structure
         batch.delete(doc(db, "admin_chats", studentUid));
 
         await batch.commit();
 
+        // 3. Delete files out of local cPanel storage
+        if (attachmentPaths.length > 0) {
+            try {
+                const deletePromises = attachmentPaths.map(path => 
+                    fetch(`/api/storage/delete?path=${encodeURIComponent(path)}`, { method: "DELETE" })
+                        .catch(err => console.warn(`Failed to delete local file ${path}`, err))
+                );
+                await Promise.all(deletePromises);
+            } catch (storageErr) {
+                console.warn("Local storage deletion warning:", storageErr);
+            }
+        }
     } catch (err) {
         console.error("Failed executing massive thread deletion:", err);
         throw err;

@@ -54,7 +54,7 @@ export default function Footer({
                             <div className="grid grid-cols-2 gap-8">
                                 {linkGroups.map((group, index) => (
                                     <div key={index}>
-                                        <h4 className="text-sm font-semibold text-gray-200 mb-4">
+                                        <h4 className="no-gradient text-sm font-semibold text-white mb-4">
                                             {group.title}
                                         </h4>
                                         <ul className="space-y-3">

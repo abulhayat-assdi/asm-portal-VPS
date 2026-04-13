@@ -64,8 +64,9 @@ export default function StudentVideoTestimonials() {
     if (!videos || videos.length === 0) return null;
 
     // Scale up the video sizes
-    const slideWidth = isMobile ? 100 : 60; // 60% on desktop instead of 33.333%
-    const offset = isMobile ? activeIndex * 100 : activeIndex * 60;
+    const slideWidth = isMobile ? 85 : 60; // 60% on desktop, 85% on mobile to show adjacent peeks
+    const offset = activeIndex * slideWidth;
+    const centerMargin = videos.length === 1 ? 0 : (100 - slideWidth) / 2;
 
     return (
         <section className="bg-gray-50 overflow-hidden relative py-[15px]">
@@ -115,8 +116,7 @@ export default function StudentVideoTestimonials() {
                             style={{ 
                                 width: '100%',
                                 transform: videos.length === 1 ? 'none' : `translateX(-${offset}%)`,
-                                // 20% centers the active item when slideWidth is 60% ((100 - 60)/2)
-                                ...(videos.length === 1 || isMobile ? {} : { marginLeft: '20%' })
+                                marginLeft: `${centerMargin}%`
                             }}
                         >
                             {videos.map((video, index) => {
