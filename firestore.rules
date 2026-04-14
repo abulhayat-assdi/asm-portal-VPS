@@ -126,7 +126,8 @@ service cloud.firestore {
 
     // Daily Tracker Reports
     match /daily_tracker_reports/{docId} {
-      allow create: if true; // Public can submit reports
+      // FIXED: Must be authenticated to submit a report — prevents unauthenticated DB spam
+      allow create: if isAuth();
       allow read, delete: if isAdmin(); // Only admins can view and delete
     }
 
