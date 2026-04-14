@@ -8,6 +8,7 @@ import {
     uploadResourceFile, deleteResourceFile, Resource
 } from "@/services/resourceService";
 import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 const categories: Resource["category"][] = [
     "Course Module",
@@ -15,6 +16,72 @@ const categories: Resource["category"][] = [
     "Notes",
     "Assignment",
     "Exam / Practice"
+];
+
+const staticCourseModules = [
+    {
+        title: "Sales Mastery",
+        description: "Face-to-Face এবং অনলাইনে কনফিডেন্টলি প্রোডাক্ট সেল করার সাইকোলজি আয়ত্ত করা।",
+        teacherName: "Mohammad Abu Zabar Rezvhe",
+        publishedDate: "13/04/2026",
+        slug: "sales-mastery"
+    },
+    {
+        title: "Career Planning & Branding",
+        description: "Winning CV তৈরি করা যা সহজেই ইন্টারভিউ কল নিয়ে আসবে এবং নিজেকে Personal Brand হিসেবে এস্টাবলিশ করা।",
+        teacherName: "Golam Kibria",
+        publishedDate: "13/04/2026",
+        slug: "career-planning-branding"
+    },
+    {
+        title: "Customer Service Excellence",
+        description: "রাগান্বিত কাস্টমারকেও আপনার ব্র্যান্ডের লয়্যাল ফ্যানে পরিণত করার সাইকোলজিক্যাল টেকনিক।",
+        teacherName: "Maksud Al-Hasan",
+        publishedDate: "13/04/2026",
+        slug: "customer-service-excellence"
+    },
+    {
+        title: "AI for Digital Marketers",
+        description: "লেটেস্ট AI Tools ব্যবহার করে কাজের স্পিড এবং প্রোডাক্টিভিটি 10x বাড়িয়ে ফেলা।",
+        teacherName: "Ehasanul Haque",
+        publishedDate: "13/04/2026",
+        slug: "ai-for-digital-marketers"
+    },
+    {
+        title: "Digital Marketing",
+        description: "ম্যাক্সিমাম ROI-এর জন্য Meta Ads (Facebook & Instagram) এর নাড়িভুঁড়ি আয়ত্ত করা।",
+        teacherName: "Nazmul Hasan",
+        publishedDate: "13/04/2026",
+        slug: "digital-marketing"
+    },
+    {
+        title: "Business Management Tools (MS Office)",
+        description: "ডেটা ট্র্যাকিং, সেলস রিপোর্ট এবং ফ্ললেস কর্পোরেট ডকুমেন্টেশনের জন্য MS Word/Excel-এ প্রো হয়ে ওঠা।",
+        teacherName: "Abul Hayat",
+        publishedDate: "13/04/2026",
+        slug: "business-management-tools"
+    },
+    {
+        title: "Landing Page & Content Marketing",
+        description: "High-Converting Landing Page ডিজাইন করা যা ভিজিটরকে পেইং কাস্টমারে রূপান্তর করবে।",
+        teacherName: "Shahidur Rahman",
+        publishedDate: "13/04/2026",
+        slug: "landing-page-content-marketing"
+    },
+    {
+        title: "Business English",
+        description: "উচ্চারণ ও গ্রামারের ভয় কাটিয়ে প্রফেশনাল ইংলিশে স্মার্টলি কমিউনিকেট করা।",
+        teacherName: "Ataur Rahman",
+        publishedDate: "13/04/2026",
+        slug: "business-english"
+    },
+    {
+        title: "Dawah & Business Ethics",
+        description: "বিজনেসের প্রতিদিনের ডিসিশনে ইখলাস (Sincerity) এবং শতভাগ সততা অ্যাপ্লাই করা।",
+        teacherName: "Talebpur Rahman",
+        publishedDate: "13/04/2026",
+        slug: "dawah-business-ethics"
+    }
 ];
 
 export default function CourseModulesPage() {
@@ -39,7 +106,8 @@ export default function CourseModulesPage() {
     const fetchResources = useCallback(async () => {
         try {
             const data = await getAllResources();
-            setResources(data);
+            // Filter out 'Course Module' since we use hardcoded ones now
+            setResources(data.filter(r => r.category !== "Course Module"));
         } catch (error) {
             console.error("Failed to load resources", error);
         } finally {
@@ -51,10 +119,13 @@ export default function CourseModulesPage() {
         fetchResources();
     }, [fetchResources]);
 
-    const groupedResources = categories.map(category => ({
-        category,
-        resources: resources.filter(r => r.category === category)
-    }));
+    // Group the dynamic resources from DB
+    const dynamicGroupedResources = categories
+        .filter(c => c !== "Course Module")
+        .map(category => ({
+            category,
+            resources: resources.filter(r => r.category === category)
+        }));
 
     const handleAddResource = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -157,15 +228,47 @@ export default function CourseModulesPage() {
                     <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#059669]"></div>
                     <p className="mt-4 text-[#6b7280]">Loading resources...</p>
                 </div>
-            ) : resources.length === 0 ? (
-                <div className="text-center py-20 bg-white rounded-lg shadow-sm">
-                    <div className="text-5xl mb-4">📚</div>
-                    <h3 className="text-lg font-medium text-gray-900">No resources yet</h3>
-                    <p className="text-gray-400 text-sm mt-2">Admin will add course modules and materials here.</p>
-                </div>
             ) : (
                 <div className="space-y-10">
-                    {groupedResources.map(({ category, resources: categoryResources }) => (
+                    
+                    {/* Hardcoded Course Modules Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1 h-8 bg-[#059669] rounded-full"></div>
+                            <h2 className="text-xl font-bold text-[#1f2937]">Course Module</h2>
+                            <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-full font-semibold">
+                                {staticCourseModules.length} items
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {staticCourseModules.map((module) => (
+                                <Card key={module.slug} className="hover:shadow-lg transition-shadow h-full relative group">
+                                    <CardBody className="p-6 flex flex-col h-full">
+                                        <h3 className="text-lg font-semibold text-[#1f2937] mb-3">{module.title}</h3>
+                                        <p className="text-gray-600 text-sm mb-4 leading-relaxed line-clamp-3">
+                                            {module.description}
+                                        </p>
+                                        <div className="space-y-2 mb-4 mt-auto">
+                                            <div className="flex items-center gap-2 text-sm text-[#6b7280]">
+                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg>
+                                                <span>Teacher Name: {module.teacherName}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm text-[#6b7280]">
+                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>
+                                                <span>Date: {module.publishedDate}</span>
+                                            </div>
+                                        </div>
+                                        <Link href={`/dashboard/course-modules/${module.slug}`} className="block w-full text-center px-4 py-3 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors">
+                                            View
+                                        </Link>
+                                    </CardBody>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Dynamic Resources from DB (Filtered) */}
+                    {dynamicGroupedResources.map(({ category, resources: categoryResources }) => (
                         categoryResources.length > 0 && (
                             <div key={category} className="space-y-4">
                                 <div className="flex items-center gap-3">
@@ -231,7 +334,7 @@ export default function CourseModulesPage() {
                             <div>
                                 <label className="block text-sm font-medium text-[#1f2937] mb-2">Category *</label>
                                 <select required value={newResource.category} onChange={e => setNewResource({ ...newResource, category: e.target.value as Resource["category"] })} className="w-full px-4 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669]">
-                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    {categories.filter(c => c !== "Course Module").map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
                             <div>

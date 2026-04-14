@@ -145,7 +145,7 @@ export default function CourseOutlinePage() {
                                     </div>
                                     
                                     <Link
-                                        href={`/modules/${module.slug}`}
+                                        href={`/student-dashboard/course-outline/${module.slug}`}
                                         className="w-full sm:w-auto text-center px-6 py-2 bg-[#059669] text-white rounded-lg hover:bg-[#047857] transition-all font-semibold shadow-sm hover:shadow-md active:scale-[0.98] text-sm flex items-center justify-center gap-2 whitespace-nowrap"
                                     >
                                         <DocumentTextIcon className="w-4 h-4" />

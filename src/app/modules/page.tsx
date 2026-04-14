@@ -237,10 +237,7 @@ export default function ModulesPage() {
                                                         inline-flex items-center justify-center w-full px-4 py-2.5 
                                                         text-sm font-medium rounded-xl transition-all duration-300 border
                                                         group/btn relative overflow-hidden
-                                                        ${index === 0
-                                                            ? 'text-[#059669] bg-green-50/50 hover:bg-green-100 border-green-200 shadow-sm'
-                                                            : 'text-gray-600 bg-gray-50/50 hover:bg-emerald-50 hover:text-[#059669] hover:border-emerald-200 border-gray-100'
-                                                        }
+                                                        text-white bg-[#1e293b] hover:bg-[#0f172a] border-transparent shadow-md hover:shadow-lg
                                                     `}
                                                 >
                                                     <span className="relative z-10 font-semibold tracking-wide">
@@ -264,10 +261,7 @@ export default function ModulesPage() {
                                                         inline-flex items-center justify-center w-full px-4 py-2.5 
                                                         text-sm font-medium rounded-xl transition-all duration-300 border
                                                         group/btn relative overflow-hidden
-                                                        ${index === 0
-                                                            ? 'text-[#059669] bg-green-50/50 hover:bg-green-100 border-green-200 shadow-sm'
-                                                            : 'text-gray-600 bg-gray-50/50 hover:bg-emerald-50 hover:text-[#059669] hover:border-emerald-200 border-gray-100'
-                                                        }
+                                                        text-white bg-[#1e293b] hover:bg-[#0f172a] border-transparent shadow-md hover:shadow-lg
                                                     `}
                                                 >
                                                     <span className="relative z-10 font-semibold tracking-wide">
