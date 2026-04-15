@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllBatchInfo, StudentBatchInfo } from "@/services/batchInfoService";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { StudentBatchInfo } from "@/services/batchInfoService";
 import { submitUpdateRequest } from "@/services/studentUpdateService";
 
 export default function StudentProfilePage() {
@@ -32,11 +34,11 @@ export default function StudentProfilePage() {
         const fetchMyData = async () => {
             if (userProfile?.studentBatchName && userProfile?.studentRoll) {
                 try {
-                    const allData = await getAllBatchInfo();
-                    const match = allData.find(
-                        d => d.batchName === userProfile.studentBatchName && d.roll === userProfile.studentRoll
-                    );
-                    if (match) {
+                    const docId = `${userProfile.studentBatchName.replace(/\s+/g, '_')}_${userProfile.studentRoll}`;
+                    const docRef = doc(db, "batch_info", docId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const match = docSnap.data() as StudentBatchInfo;
                         setStudentData(match);
                         setForm({
                             phone: match.phone || "",
