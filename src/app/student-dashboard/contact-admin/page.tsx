@@ -224,6 +224,7 @@ export default function ContactAdminStudent() {
                 <div className="flex items-end gap-3">
                     <div className="relative flex-1">
                         <textarea
+                            autoFocus
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             onKeyDown={(e) => {

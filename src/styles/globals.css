@@ -70,3 +70,17 @@ body {
     color: #334155 !important; /* Premium Slate-700 color */
   }
 }
+
+@layer utilities {
+  .text-white h1:not(.no-gradient),
+  .text-white h2:not(.no-gradient),
+  .text-white h3:not(.no-gradient),
+  .text-white h4:not(.no-gradient),
+  .text-white h5:not(.no-gradient),
+  .text-white h6:not(.no-gradient) {
+    background-image: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    color: #ffffff !important;
+  }
+}

@@ -1,5 +1,5 @@
 import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 export interface Resource {
     id: string;
@@ -25,40 +25,52 @@ export const uploadResourceFile = (
     category: string,
     onProgress?: (progress: number) => void
 ): Promise<{ fileUrl: string; storagePath: string; fileName: string }> => {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("category", "resource");
-        formData.append("path", category.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40));
-
-        xhr.upload.addEventListener("progress", (event) => {
-            if (event.lengthComputable && onProgress) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                onProgress(Math.round(percentComplete));
+    return new Promise(async (resolve, reject) => {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                reject(new Error("Not authenticated. Please log in again."));
+                return;
             }
-        });
+            const token = await currentUser.getIdToken(true);
 
-        xhr.addEventListener("load", () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    resolve({
-                        fileUrl: response.fileUrl,
-                        storagePath: response.storagePath,
-                        fileName: response.fileName
-                    });
-                } catch (err) {
-                    reject(new Error("Failed to parse upload response"));
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("category", "resource");
+            formData.append("path", category.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40));
+
+            xhr.upload.addEventListener("progress", (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    onProgress(Math.round(percentComplete));
                 }
-            } else {
-                reject(new Error(xhr.responseText || "Upload failed"));
-            }
-        });
+            });
 
-        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
-        xhr.open("POST", "/api/storage/upload");
-        xhr.send(formData);
+            xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        resolve({
+                            fileUrl: response.fileUrl,
+                            storagePath: response.storagePath,
+                            fileName: response.fileName
+                        });
+                    } catch (err) {
+                        reject(new Error("Failed to parse upload response"));
+                    }
+                } else {
+                    reject(new Error(xhr.responseText || "Upload failed"));
+                }
+            });
+
+            xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+            xhr.open("POST", "/api/storage/upload");
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+            xhr.send(formData);
+        } catch (err) {
+            reject(err);
+        }
     });
 };
 

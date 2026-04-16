@@ -658,7 +658,7 @@ export default function HomeworkViewPage() {
                         <div className="bg-gradient-to-r from-emerald-600 to-teal-500 p-5 text-white flex justify-between items-center">
                             <div className="flex items-center gap-2">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                <h3 className="text-lg font-bold">Edit Assignment Folder</h3>
+                                <h3 className="no-gradient text-lg font-bold text-white">Edit Assignment Folder</h3>
                             </div>
                             <button
                                 onClick={() => setAssignmentToEdit(null)}
@@ -739,7 +739,7 @@ export default function HomeworkViewPage() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="bg-gradient-to-r from-[#059669] to-[#10b981] p-5 text-white flex justify-between items-center">
-                            <h3 className="text-lg font-bold">Create New Assignment</h3>
+                            <h3 className="no-gradient text-lg font-bold text-white">Create New Assignment</h3>
                             <button
                                 onClick={() => setIsCreatingAssignment(false)}
                                 disabled={isSubmittingAssignment}

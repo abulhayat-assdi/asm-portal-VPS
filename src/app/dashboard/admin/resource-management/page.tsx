@@ -328,7 +328,7 @@ export default function AdminResourceManagementPage() {
                         <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5484] p-5 text-white rounded-t-2xl">
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <h3 className="text-lg font-bold">{editingResource ? "Edit Resource" : "Upload Resource"}</h3>
+                                    <h3 className="no-gradient text-lg font-bold text-white">{editingResource ? "Edit Resource" : "Upload Resource"}</h3>
                                     <p className="text-blue-200 text-sm mt-0.5">📁 {uploadingForModule?.title}</p>
                                     {uploadingForModule && <p className="text-blue-300 text-xs mt-0.5">👤 {uploadingForModule.teacherName || uploadingForModule.uploadedByName}</p>}
                                 </div>

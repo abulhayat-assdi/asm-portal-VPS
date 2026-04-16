@@ -2,7 +2,7 @@ import {
     collection, getDocs, addDoc, doc, updateDoc, deleteDoc,
     query, orderBy, where, Timestamp
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 
 export type ResourceType = "Presentation" | "Notes" | "Assignment" | "Practice" | "Other";
 
@@ -35,48 +35,60 @@ export const uploadModuleResourceFile = (
     moduleTitle: string,
     onProgress?: (progress: number) => void
 ): Promise<{ fileUrl: string; storagePath: string; fileSize: string; fileType: string }> => {
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("category", "resource");
-        formData.append("path", moduleTitle.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50));
-
-        xhr.upload.addEventListener("progress", (event) => {
-            if (event.lengthComputable && onProgress) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                onProgress(Math.round(percentComplete));
+    return new Promise(async (resolve, reject) => {
+        try {
+            const currentUser = auth.currentUser;
+            if (!currentUser) {
+                reject(new Error("Not authenticated. Please log in again."));
+                return;
             }
-        });
+            const token = await currentUser.getIdToken(true);
 
-        xhr.addEventListener("load", () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    const ext = file.name.split(".").pop()?.toLowerCase() || "other";
-                    const fileType = ["pdf", "pptx", "ppt", "docx", "doc"].includes(ext) ? ext
-                        : ["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? "image"
-                        : "other";
-                    const kb = file.size / 1024;
-                    const fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
-                    
-                    resolve({ 
-                        fileUrl: response.fileUrl, 
-                        storagePath: response.storagePath, 
-                        fileSize, 
-                        fileType 
-                    });
-                } catch (err) {
-                    reject(new Error("Failed to parse upload response"));
+            const xhr = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("category", "resource");
+            formData.append("path", moduleTitle.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 50));
+
+            xhr.upload.addEventListener("progress", (event) => {
+                if (event.lengthComputable && onProgress) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    onProgress(Math.round(percentComplete));
                 }
-            } else {
-                reject(new Error(xhr.responseText || "Upload failed"));
-            }
-        });
+            });
 
-        xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
-        xhr.open("POST", "/api/storage/upload");
-        xhr.send(formData);
+            xhr.addEventListener("load", () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        const ext = file.name.split(".").pop()?.toLowerCase() || "other";
+                        const fileType = ["pdf", "pptx", "ppt", "docx", "doc"].includes(ext) ? ext
+                            : ["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? "image"
+                            : "other";
+                        const kb = file.size / 1024;
+                        const fileSize = kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
+                        
+                        resolve({ 
+                            fileUrl: response.fileUrl, 
+                            storagePath: response.storagePath, 
+                            fileSize, 
+                            fileType 
+                        });
+                    } catch (err) {
+                        reject(new Error("Failed to parse upload response"));
+                    }
+                } else {
+                    reject(new Error(xhr.responseText || "Upload failed"));
+                }
+            });
+
+            xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+            xhr.open("POST", "/api/storage/upload");
+            xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+            xhr.send(formData);
+        } catch (err) {
+            reject(err);
+        }
     });
 };
 

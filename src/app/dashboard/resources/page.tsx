@@ -590,7 +590,7 @@ export default function ResourceManagementPage() {
                         <div className="bg-gradient-to-r from-purple-700 to-purple-500 p-5 text-white rounded-t-2xl">
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <h3 className="text-lg font-bold">{editingFolder ? "Edit Folder" : "Create New Folder"}</h3>
+                                    <h3 className="no-gradient text-lg font-bold text-white">{editingFolder ? "Edit Folder" : "Create New Folder"}</h3>
                                     <p className="text-purple-200 text-sm mt-0.5">📁 {folderForModule?.title}</p>
                                 </div>
                                 <button onClick={() => !isSavingFolder && setFolderModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
@@ -646,7 +646,7 @@ export default function ResourceManagementPage() {
                         <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5484] p-5 text-white rounded-t-2xl">
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <h3 className="text-lg font-bold">{editingResource ? "Edit Resource" : "Upload File"}</h3>
+                                    <h3 className="no-gradient text-lg font-bold text-white">{editingResource ? "Edit Resource" : "Upload File"}</h3>
                                     <p className="text-blue-200 text-sm mt-0.5">
                                         📁 {uploadingForModule?.title}
                                         {uploadingForFolder && <span> → {uploadingForFolder.title}</span>}

@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
         process.env.NEXT_PUBLIC_APP_URL || "",
         "http://localhost:3000",
         "http://localhost:3001",
+        "https://divinetradeint.com",
+        "https://www.divinetradeint.com",
     ].filter(Boolean);
     const isLocalhost = origin.startsWith("http://localhost");
     const isAllowedOrigin = allowedOrigins.some(o => o && origin.startsWith(o));
@@ -43,14 +45,9 @@ export async function POST(request: NextRequest) {
     let userRole: string;
     try {
         const { adminAuth } = getAdminServices();
-        // Branch: cookie needs verifySessionCookie; Bearer header needs verifyIdToken
-        let decodedToken;
-        const isCookieToken = session === request.cookies.get(COOKIES.SESSION)?.value;
-        if (isCookieToken) {
-            decodedToken = await adminAuth.verifySessionCookie(session, true);
-        } else {
-            decodedToken = await adminAuth.verifyIdToken(session);
-        }
+        // The app stores Firebase ID tokens in the __session cookie, while XHR uploads
+        // send the same token as Bearer auth. Accept both paths consistently.
+        const decodedToken = await adminAuth.verifyIdToken(session);
         userUid = decodedToken.uid;
         userRole = decodedToken.role as string;
     } catch (error) {
@@ -71,21 +68,31 @@ export async function POST(request: NextRequest) {
         // Double-check both extension AND MIME type to defeat content-type spoofing.
         const ALLOWED_EXTENSIONS = new Set([
             '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp',
-            '.docx', '.xlsx', '.csv', '.zip', '.mp4', '.mp3'
+            '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx',
+            '.csv', '.txt', '.zip', '.mp4', '.mp3'
         ]);
         const ALLOWED_MIME_TYPES = new Set([
             'application/pdf',
             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/vnd.ms-excel',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'text/csv',
+            'text/plain',
             'application/zip',
+            'application/x-zip-compressed',
             'video/mp4',
             'audio/mpeg'
         ]);
 
         const ext = path.extname(file.name).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.has(ext) || !ALLOWED_MIME_TYPES.has(file.type)) {
+        const hasAllowedExtension = ALLOWED_EXTENSIONS.has(ext);
+        const hasAllowedMime = ALLOWED_MIME_TYPES.has(file.type);
+        const hasGenericMime = file.type === "" || file.type === "application/octet-stream";
+        if (!hasAllowedExtension || (!hasAllowedMime && !hasGenericMime)) {
             console.warn(`[Security] Blocked upload: type=${file.type}, ext=${ext}, uid=${userUid}`);
             return NextResponse.json(
                 { error: "Invalid file type. Only standard documents, images, and media are allowed." },

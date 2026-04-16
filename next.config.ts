@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
     // Prevent firebase-admin from being bundled — it uses Node.js native modules
     // that are incompatible with Next.js edge/server component bundling.
     serverExternalPackages: ['firebase-admin'],
+    experimental: {
+        serverActions: {
+            allowedOrigins: ['divinetradeint.com', 'www.divinetradeint.com', '*.divinetradeint.com'],
+        },
+    },
     images: {
         minimumCacheTTL: 86400, // Cache images for 24 hours
         formats: ['image/avif', 'image/webp'], // Auto-convert to smallest format

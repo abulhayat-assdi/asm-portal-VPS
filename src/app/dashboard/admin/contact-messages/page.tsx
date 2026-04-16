@@ -310,6 +310,8 @@ export default function ContactManagementPage() {
                                 <div className="flex items-end gap-3">
                                     <div className="relative flex-1">
                                         <textarea
+                                            key={selectedThread.studentUid}
+                                            autoFocus
                                             value={text}
                                             onChange={(e) => setText(e.target.value)}
                                             onKeyDown={(e) => {
