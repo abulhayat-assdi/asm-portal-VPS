@@ -7,12 +7,13 @@ const nextConfig: NextConfig = {
     serverExternalPackages: ['firebase-admin'],
     experimental: {
         serverActions: {
-            allowedOrigins: ['divinetradeint.com', 'www.divinetradeint.com', '*.divinetradeint.com'],
-            // Allow up to 50MB for server actions (homework file uploads)
-            bodySizeLimit: '50mb',
+            allowedOrigins: ['tasm-skill.asf.bd', 'www.tasm-skill.asf.bd', '*.tasm-skill.asf.bd'],
+            // Allow up to 100MB for server actions (homework file uploads)
+            bodySizeLimit: '100mb',
         },
     },
     images: {
+        unoptimized: true, // Disable image optimization for cPanel performance
         minimumCacheTTL: 86400, // Cache images for 24 hours
         formats: ['image/avif', 'image/webp'], // Auto-convert to smallest format
         remotePatterns: [
@@ -65,6 +66,18 @@ const nextConfig: NextConfig = {
                 pathname: '/**',
             },
         ],
+    },
+    async rewrites() {
+        return [
+            {
+                source: '/storage/public/:path*',
+                destination: '/:path*',
+            },
+            {
+                source: '/storage/private/homework/:path*',
+                destination: '/homework/:path*',
+            },
+        ];
     },
 };
 

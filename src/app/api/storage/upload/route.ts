@@ -11,14 +11,13 @@ import { COOKIES, AUTH_ROLES } from "@/lib/constants";
  */
 export async function POST(request: NextRequest) {
     // 🔒 CSRF: Reject requests whose Origin doesn't match our own domain.
-    // This prevents malicious sites from tricking an authenticated user into uploading files.
     const origin = request.headers.get("origin") || "";
     const allowedOrigins = [
         process.env.NEXT_PUBLIC_APP_URL || "",
         "http://localhost:3000",
         "http://localhost:3001",
-        "https://divinetradeint.com",
-        "https://www.divinetradeint.com",
+        "https://tasm-skill.asf.bd",
+        "https://www.tasm-skill.asf.bd",
     ].filter(Boolean);
     const isLocalhost = origin.startsWith("http://localhost");
     const isAllowedOrigin = allowedOrigins.some(o => o && origin.startsWith(o));
@@ -27,12 +26,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 🔒 Auth Check: Accept token from Authorization header (XHR uploads) or cookie (fallback)
+    // 🔒 Auth Check
     const authHeader = request.headers.get("Authorization");
     let session: string | undefined;
 
     if (authHeader?.startsWith("Bearer ")) {
-        session = authHeader.substring(7); // Extract token from "Bearer <token>"
+        session = authHeader.substring(7);
     } else {
         session = request.cookies.get(COOKIES.SESSION)?.value;
     }
@@ -45,8 +44,6 @@ export async function POST(request: NextRequest) {
     let userRole: string;
     try {
         const { adminAuth } = getAdminServices();
-        // The app stores Firebase ID tokens in the __session cookie, while XHR uploads
-        // send the same token as Bearer auth. Accept both paths consistently.
         const decodedToken = await adminAuth.verifyIdToken(session);
         userUid = decodedToken.uid;
         userRole = decodedToken.role as string;
@@ -58,14 +55,13 @@ export async function POST(request: NextRequest) {
         const formData = await request.formData();
         const file = formData.get("file") as File;
         const category = (formData.get("category") as string) || "resource";
-        const subPath = formData.get("path") as string; // Optional: module name, batch name etc.
+        const subPath = formData.get("path") as string;
 
         if (!file) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
         }
 
-        // 🔒 SECURITY: Strict allowlist for file types — blocks .php, .exe, .sh, .html, etc.
-        // Double-check both extension AND MIME type to defeat content-type spoofing.
+        // 🔒 SECURITY: Allowed types
         const ALLOWED_EXTENSIONS = new Set([
             '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp',
             '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx',
@@ -89,49 +85,38 @@ export async function POST(request: NextRequest) {
         ]);
 
         const ext = path.extname(file.name).toLowerCase();
-        const hasAllowedExtension = ALLOWED_EXTENSIONS.has(ext);
-        const hasAllowedMime = ALLOWED_MIME_TYPES.has(file.type);
-        const hasGenericMime = file.type === "" || file.type === "application/octet-stream";
-        if (!hasAllowedExtension || (!hasAllowedMime && !hasGenericMime)) {
-            console.warn(`[Security] Blocked upload: type=${file.type}, ext=${ext}, uid=${userUid}`);
-            return NextResponse.json(
-                { error: "Invalid file type. Only standard documents, images, and media are allowed." },
-                { status: 400 }
-            );
+        if (!ALLOWED_EXTENSIONS.has(ext)) {
+            return NextResponse.json({ error: "Invalid file extension" }, { status: 400 });
         }
 
-        // 📏 50 MB Size Limit per file
-        const MAX_SIZE = 50 * 1024 * 1024;
+        // 📏 100 MB Size Limit
+        const MAX_SIZE = 100 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
-            return NextResponse.json({ error: "File too large (Max 50MB per file)" }, { status: 400 });
+            return NextResponse.json({ error: "File too large (Max 100MB)" }, { status: 400 });
         }
 
-        const localStoragePath = process.env.LOCAL_STORAGE_PATH || "../storage";
+        const localStoragePath = "public"; 
         let storagePath = "";
         const timestamp = Date.now();
         const sanitizedFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
-        // 📁 Determine Folder Structure
+        // 📁 Determine Folder Structure (Flat root-only structure)
         if (category === "homework") {
-            // Path: private/homework/USER_UID/timestamp_filename.ext
-            storagePath = `private/homework/${userUid}/${sanitizedFileName}`;
+            storagePath = `homework/${userUid}/${sanitizedFileName}`;
         } else {
-            // Path: public/resources/SUBPATH/timestamp_filename.ext
             const folder = subPath ? subPath.replace(/[^a-zA-Z0-9_]/g, "_") : "";
             storagePath = folder 
-                ? `public/resources/${folder}/${sanitizedFileName}`
-                : `public/resources/${sanitizedFileName}`;
+                ? `resources/${folder}/${sanitizedFileName}`
+                : `resources/${sanitizedFileName}`;
         }
 
         const absolutePath = path.resolve(process.cwd(), localStoragePath, storagePath);
         const dir = path.dirname(absolutePath);
 
-        // 🔧 Ensure Directories Exist
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
 
-        // 💾 Save File
         const buffer = Buffer.from(await file.arrayBuffer());
         fs.writeFileSync(absolutePath, buffer);
 
@@ -139,7 +124,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            fileUrl: `/api/file?path=${encodeURIComponent(storagePath)}`,
+            fileUrl: `/${storagePath}`, // Direct URL because it's in public folder
             storagePath: storagePath,
             fileName: file.name
         });
