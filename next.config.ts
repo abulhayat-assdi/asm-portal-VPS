@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
-process.env.PRISMA_CLIENT_ENGINE_TYPE = 'library';
-
 const nextConfig: NextConfig = {
+
     output: 'standalone',
     // Prevent firebase-admin from being bundled — it uses Node.js native modules
     // that are incompatible with Next.js edge/server component bundling.
