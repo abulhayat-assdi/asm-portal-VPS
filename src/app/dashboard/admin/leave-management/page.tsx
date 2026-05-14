@@ -188,14 +188,6 @@ export default function AdminLeaveManagementPage() {
         getAllTeachers().then(setTeachers);
     }, []);
 
-    useEffect(() => {
-        if (!selectedId) {
-            setLeaves([]);
-            return;
-        }
-        fetchLeaves();
-    }, [selectedId]);
-
     const fetchLeaves = useCallback(async () => {
         if (!selectedId) return;
         setLoading(true);
@@ -209,10 +201,14 @@ export default function AdminLeaveManagementPage() {
         }
     }, [selectedId, teachers]);
 
-    // Refresh leaves whenever teacher changes
     useEffect(() => {
+        if (!selectedId) {
+            setLeaves([]);
+            return;
+        }
         fetchLeaves();
-    }, [fetchLeaves]);
+    }, [selectedId, fetchLeaves]);
+
 
     const handleSubmitLeave = async (e: React.FormEvent) => {
         e.preventDefault();

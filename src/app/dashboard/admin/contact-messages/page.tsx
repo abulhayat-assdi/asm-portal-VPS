@@ -48,7 +48,6 @@ export default function ContactManagementPage() {
         }
     }, [isMobile]);
 
-    // Subscribe to all threads
     useEffect(() => {
         const unsub = subscribeToAllChatThreads((data) => {
             setThreads(data);
@@ -60,7 +59,7 @@ export default function ContactManagementPage() {
             }
         });
         return unsub;
-    }, [selectedThread?.studentUid]);
+    }, [selectedThread]);
 
     // Subscribe to messages for selected thread
     useEffect(() => {
@@ -70,7 +69,8 @@ export default function ContactManagementPage() {
             markChatAsRead(selectedThread.studentUid, "admin");
         });
         return unsub;
-    }, [selectedThread?.studentUid]);
+    }, [selectedThread]);
+
 
     // Auto-scroll to bottom on new messages
     useEffect(() => {

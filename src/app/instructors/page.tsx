@@ -3,7 +3,8 @@ import Footer from "@/components/ui/Footer";
 import InstructorCard from "@/components/ui/InstructorCard";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin as checkIsAdmin } from "@/lib/auth";
+import { getServerSessionUser, isAdmin as checkIsAdmin } from "@/lib/auth";
+
 import { getImageUrl } from "@/lib/getImageUrl";
 
 interface Teacher {
@@ -29,7 +30,8 @@ const TEACHER_IMAGES: Record<string, string> = {
 
 async function getAdminStatus() {
     try {
-        const user = await getSessionUser();
+        const user = await getServerSessionUser();
+
         return !!user && checkIsAdmin(user);
     } catch (e) {
         return false;

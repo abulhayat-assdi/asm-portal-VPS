@@ -100,7 +100,10 @@ interface OverviewStat {
     textColorB?: string;
 }
 
+const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTk", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
+
 export default function AllBatchInfoPage() {
+
     const { userProfile } = useAuth();
     const [allStudents, setAllStudents] = useState<StudentBatchInfo[]>([]);
     const [loading, setLoading] = useState(true);
@@ -127,7 +130,6 @@ export default function AllBatchInfoPage() {
     // Grid Data State (replaces ref — React controls all re-renders)
     const MAX_ROWS = 200;
     const PAGE_SIZE = 50;
-    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTk", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
     const [gridData, setGridData] = useState<Record<string, string>[]>([]);
     const [gridPage, setGridPage] = useState(0);
 

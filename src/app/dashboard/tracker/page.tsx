@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+
 import Script from "next/script";
 import "./tracker.css";
 
@@ -75,7 +76,7 @@ export default function TrackerDashboardPage() {
     }, []);
 
     // ── Load dashboard data (via API) ────────────────
-    const loadDashboardData = async (date: string, batch: string) => {
+    const loadDashboardData = useCallback(async (date: string, batch: string) => {
         if (!date || !batch) return;
         setDashLoading(true);
         setDashEmptyMessage("");
@@ -105,12 +106,12 @@ export default function TrackerDashboardPage() {
         } finally {
             setDashLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (dashBatch) loadDashboardData(dashDate, dashBatch);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dashBatch, dashDate]);
+    }, [dashBatch, dashDate, loadDashboardData]);
+
 
     // ── Export handler (via API) ─────────────────────
     const handleExportDownload = async () => {

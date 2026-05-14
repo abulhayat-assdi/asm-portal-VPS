@@ -1,6 +1,8 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 import { COOKIES } from './constants';
+
 
 export interface JWTPayload {
     id: string;
@@ -59,6 +61,22 @@ export async function getSessionUser(request: NextRequest): Promise<JWTPayload |
         return null;
     }
 }
+
+/**
+ * Server Component version: Extract and verify the session user from cookies().
+ * Use this in React Server Components (RSCs).
+ */
+export async function getServerSessionUser(): Promise<JWTPayload | null> {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get(COOKIES.SESSION)?.value;
+        if (!token) return null;
+        return await verifyJWT(token);
+    } catch {
+        return null;
+    }
+}
+
 
 /**
  * Helper: require a valid session, returning the user or null.

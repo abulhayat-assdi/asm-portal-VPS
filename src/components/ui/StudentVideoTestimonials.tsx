@@ -43,7 +43,8 @@ export default function StudentVideoTestimonials() {
         }, 5000);
 
         return () => clearInterval(interval);
-    }, [videos.length, selectedVideo, isHovered]);
+    }, [videos, selectedVideo, isHovered]);
+
 
     const handleNext = () => {
         setActiveIndex((current) => (current + 1) % videos.length);
