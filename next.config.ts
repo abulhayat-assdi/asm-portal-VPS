@@ -1,71 +1,28 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-
     output: 'standalone',
-    // Prevent firebase-admin from being bundled — it uses Node.js native modules
-    // that are incompatible with Next.js edge/server component bundling.
+    // Prevent firebase-admin from being bundled
     serverExternalPackages: ['firebase-admin', '@prisma/client'],
     experimental: {
         serverActions: {
             allowedOrigins: ['tasm-skill.asf.bd', 'www.tasm-skill.asf.bd', '*.tasm-skill.asf.bd'],
-            // Allow up to 100MB for server actions (homework file uploads)
             bodySizeLimit: '100mb',
         },
     },
     images: {
-        unoptimized: true, // Disable image optimization for cPanel performance
-        minimumCacheTTL: 86400, // Cache images for 24 hours
-        formats: ['image/avif', 'image/webp'], // Auto-convert to smallest format
+        unoptimized: true,
+        minimumCacheTTL: 86400,
+        formats: ['image/avif', 'image/webp'],
         remotePatterns: [
-            {
-                protocol: 'https',
-                hostname: 'firebasestorage.googleapis.com',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'firebasestorage.app',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: '**.firebasestorage.app',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'images.unsplash.com',
-                port: '',
-                pathname: '/photo-**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'images.unsplash.com',
-                port: '',
-                pathname: '/premium_photo-**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'img.youtube.com',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'drive.google.com',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'lh3.googleusercontent.com',
-                port: '',
-                pathname: '/**',
-            },
+            { protocol: 'https', hostname: 'firebasestorage.googleapis.com', pathname: '/**' },
+            { protocol: 'https', hostname: 'firebasestorage.app', pathname: '/**' },
+            { protocol: 'https', hostname: '**.firebasestorage.app', pathname: '/**' },
+            { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/photo-**' },
+            { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/premium_photo-**' },
+            { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
+            { protocol: 'https', hostname: 'drive.google.com', pathname: '/**' },
+            { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
         ],
     },
     async rewrites() {
@@ -80,8 +37,6 @@ const nextConfig: NextConfig = {
             },
         ];
     },
-    },
 };
 
 export default nextConfig;
-
