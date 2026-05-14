@@ -48,5 +48,6 @@ ENV PORT 3000
 # set hostname to localhost
 ENV HOSTNAME "0.0.0.0"
 
-# Run the app
-CMD ["node", "server.js"]
+# Run migrations and then start the app
+CMD ["sh", "-c", "npx prisma db push && node server.js"]
+
