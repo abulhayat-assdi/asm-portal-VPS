@@ -652,15 +652,25 @@ model Routine {
 // ============================================================
 
 model Policy {
-  id          String   @id @default(uuid())
-  title       String
-  content     String
-  category    String?
-  isPublished Boolean  @default(false) @map("is_published")
-  createdBy   String?  @map("created_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  title         String
+  content       String   @default("")
+  category      String?
+  isPublished   Boolean  @default(false) @map("is_published")
+  createdBy     String?  @map("created_by")
+  // Fields for file-based policies and meeting minutes
+  kind          String   @default("policy") // "policy" | "meeting"
+  fileUrl       String   @default("") @map("file_url")
+  storagePath   String   @default("") @map("storage_path")
+  version       String   @default("")
+  meetingNumber String   @default("") @map("meeting_number")
+  date          String   @default("")
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
+  @@index([kind])
+  @@index([sortOrder])
   @@map("policies")
 }
 
@@ -735,4 +745,85 @@ model DailyTrackerReport {
   @@index([batchName])
   @@index([date])
   @@map("daily_tracker_reports")
+}
+
+// ============================================================
+// STUDENT UPDATE REQUESTS
+// ============================================================
+
+model StudentUpdateRequest {
+  id               String    @id @default(uuid())
+  studentUid       String    @map("student_uid")
+  studentName      String    @map("student_name")
+  studentBatchName String    @map("student_batch_name")
+  studentRoll      String    @map("student_roll")
+  proposedChanges  Json      @map("proposed_changes")
+  currentData      Json      @map("current_data")
+  status           String    @default("pending") // pending | approved | rejected
+  adminNote        String?   @map("admin_note")
+  reviewedBy       String?   @map("reviewed_by")
+  reviewedAt       DateTime? @map("reviewed_at")
+  submittedAt      DateTime  @default(now()) @map("submitted_at")
+
+  @@index([studentUid])
+  @@index([status])
+  @@map("student_update_requests")
+}
+
+// ============================================================
+// BATCH ROUTINE ENTRIES
+// ============================================================
+
+model BatchRoutineEntry {
+  id          String   @id @default(uuid())
+  batch       String
+  dayOfWeek   String   @map("day_of_week")
+  startTime   String   @map("start_time")
+  endTime     String   @map("end_time")
+  subject     String
+  teacherName String   @map("teacher_name")
+  room        String   @default("")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([batch])
+  @@map("batch_routine_entries")
+}
+
+// ============================================================
+// STUDENT EXAM BATCH RECORDS (complex multi-exam data)
+// ============================================================
+
+model StudentExamBatchRecord {
+  id        String   @id @default(uuid())
+  batchName String   @map("batch_name")
+  roll      String
+  name      String
+  data      Json     // { customColumns, examRecords, marks, remarks }
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([batchName, roll])
+  @@index([batchName])
+  @@map("student_exam_batch_records")
+}
+
+// ============================================================
+// VIDEO STORIES (Success Stories - YouTube links)
+// ============================================================
+
+model VideoStory {
+  id          String   @id @default(uuid())
+  youtubeUrl  String   @map("youtube_url")
+  videoId     String   @map("video_id")
+  title       String
+  label       String   @default("")
+  studentName String   @map("student_name")
+  batch       String   @default("")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([order])
+  @@map("video_stories")
 }

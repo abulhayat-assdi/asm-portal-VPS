@@ -1,27 +1,22 @@
 import { PrismaClient } from '@prisma/client';
 
-let _prisma: PrismaClient | undefined;
+declare global {
+  // eslint-disable-next-line no-var
+  var _prisma: PrismaClient | undefined;
+}
+
+function createPrismaClient(): PrismaClient {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
+}
 
 /**
- * Build-safe Prisma client initialization.
- * During Next.js build time, DATABASE_URL might be missing.
- * We return a Proxy that only instantiates PrismaClient when a property is accessed,
- * and handles the case where the environment is not ready for a real connection.
+ * Build-safe Prisma singleton.
+ * - Uses globalThis in development to survive hot-reloads without exhausting connections.
+ * - In production, creates a single instance per process.
+ * - During Next.js build time, DATABASE_URL may be a dummy value — that's fine because
+ *   PrismaClient is only *connected* when the first query runs, not on instantiation.
  */
-const getPrisma = (): PrismaClient => {
-  if (typeof window !== 'undefined') return {} as PrismaClient;
-
-  if (!_prisma) {
-    _prisma = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    });
-  }
-  return _prisma;
-};
-
-export const prisma = new Proxy({} as PrismaClient, {
-  get: (target, prop) => {
-    const client = getPrisma();
-    return (client as any)[prop];
-  },
-});
+export const prisma: PrismaClient =
+  globalThis._prisma ?? (globalThis._prisma = createPrismaClient());

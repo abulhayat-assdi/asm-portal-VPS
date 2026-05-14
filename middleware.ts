@@ -11,6 +11,7 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/login',
     '/api/auth/reset-password',
     '/api/feedback',
+    '/api/setup',
 ];
 
 const isPublicAssetPath = (pathname: string) =>

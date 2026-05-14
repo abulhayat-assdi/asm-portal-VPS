@@ -5,9 +5,10 @@ import { verifyJWT } from "@/lib/auth";
 import { COOKIES } from "@/lib/constants";
 
 /**
- * [API Route] Serve files from local cPanel storage
- * GET /api/file?path=public/resources/file.pdf
- * GET /api/file?path=private/homework/USER_UID/file.pdf
+ * [API Route] Serve files from local VPS storage
+ * All uploads save to process.cwd()/public/{storagePath}
+ * GET /api/file?path=homework/{uid}/file.pdf   (private, auth required)
+ * GET /api/file?path=resources/folder/file.pdf  (private, auth required)
  */
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -17,13 +18,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Path is required" }, { status: 400 });
     }
 
-    const localStoragePath = process.env.LOCAL_STORAGE_PATH || "../storage";
-    const absolutePath = path.resolve(process.cwd(), localStoragePath, filePath);
+    // All files are stored under public/ (written by /api/storage/upload)
+    const baseDir = path.resolve(process.cwd(), "public");
+    const absolutePath = path.resolve(baseDir, filePath);
 
-    // 🔒 Security Check: Ensure path is within the storage directory
-    const storageDir = path.resolve(process.cwd(), localStoragePath);
-    if (!absolutePath.startsWith(storageDir)) {
-        console.warn(`[File API] Out of bounds access attempt: ${absolutePath}`);
+    // 🔒 Security: prevent directory traversal
+    if (!absolutePath.startsWith(baseDir)) {
         return NextResponse.json({ error: "Forbidden: Out of bounds" }, { status: 403 });
     }
 
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // 🔒 Authorization for Private Files (Homework)
-    if (filePath.startsWith("private/homework/")) {
+    // 🔒 Authorization: homework files require authentication
+    if (filePath.startsWith("homework/")) {
         const token = request.cookies.get(COOKIES.SESSION)?.value;
         if (!token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,51 +40,40 @@ export async function GET(request: NextRequest) {
 
         try {
             const session = await verifyJWT(token);
-            if (!session) {
-                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-            }
+            const userRole = session.role.toLowerCase();
 
-            const userUid = session.id;
-            const userRole = (session.role || "").toLowerCase();
-
-            // Rules: Admin & Teacher see everything. Student sees only their UID folder.
             if (userRole === "admin" || userRole === "super_admin" || userRole === "teacher") {
-                // Granted — full access
+                // Full access
             } else if (userRole === "student") {
+                // homework/{userId}/filename — student can only access their own
                 const pathSegments = filePath.split("/");
-                // Expected path: private/homework/USER_UID/filename
-                const pathUid = pathSegments[2];
-                // In our new system, we might use displayName or id. 
-                if (userUid !== pathUid && session.displayName !== pathUid) {
-                    console.warn(`[File API] Student ${userUid} tried to access ${pathUid}'s homework`);
+                const pathUid = pathSegments[1];
+                if (session.id !== pathUid) {
                     return NextResponse.json({ error: "Forbidden: Access denied" }, { status: 403 });
                 }
             } else {
-                console.warn(`[File API] Unknown role '${userRole}' for user ${userUid}`);
-                return NextResponse.json({ error: "Forbidden: Unknown role" }, { status: 403 });
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
             }
-
-        } catch (error) {
-            console.error("[File API] Auth Error:", error);
+        } catch {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
     }
 
-    // 📄 Serve the File
+    // 📄 Serve the file
     try {
         const stats = fs.statSync(absolutePath);
         const fileName = path.basename(absolutePath);
         const contentType = getContentType(fileName);
-
-        // Standard node Readable to Web Stream conversion for Next.js
         const stream = fs.createReadStream(absolutePath);
-        
+
         return new Response(stream as any, {
             headers: {
                 "Content-Type": contentType,
                 "Content-Length": stats.size.toString(),
                 "Content-Disposition": `inline; filename="${fileName}"`,
-                "Cache-Control": filePath.startsWith("public/") ? "public, max-age=31536000, immutable" : "private, no-cache",
+                "Cache-Control": filePath.startsWith("homework/")
+                    ? "private, no-cache"
+                    : "public, max-age=31536000, immutable",
             },
         });
     } catch (error) {
@@ -110,6 +99,7 @@ function getContentType(fileName: string): string {
         ".xls": "application/vnd.ms-excel",
         ".txt": "text/plain",
         ".mp4": "video/mp4",
+        ".mp3": "audio/mpeg",
         ".zip": "application/zip",
     };
     return mimeMap[ext] || "application/octet-stream";

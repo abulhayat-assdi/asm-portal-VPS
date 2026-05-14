@@ -49,6 +49,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Run migrations and then start the app
-# Use runtime environment variables provided by Coolify
-CMD ["sh", "-c", "prisma migrate deploy && node server.js"]
+# Sync schema to DB (db push works for fresh and existing DBs without migration files)
+# Then start the app
+CMD ["sh", "-c", "prisma db push --accept-data-loss && node server.js"]

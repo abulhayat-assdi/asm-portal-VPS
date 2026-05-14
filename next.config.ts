@@ -2,8 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     output: 'standalone',
-    // Prevent firebase-admin from being bundled
-    serverExternalPackages: ['firebase-admin', '@prisma/client'],
+    serverExternalPackages: ['@prisma/client'],
     experimental: {
         serverActions: {
             allowedOrigins: ['tasm-skill.asf.bd', 'www.tasm-skill.asf.bd', '*.tasm-skill.asf.bd'],
@@ -15,27 +14,12 @@ const nextConfig: NextConfig = {
         minimumCacheTTL: 86400,
         formats: ['image/avif', 'image/webp'],
         remotePatterns: [
-            { protocol: 'https', hostname: 'firebasestorage.googleapis.com', pathname: '/**' },
-            { protocol: 'https', hostname: 'firebasestorage.app', pathname: '/**' },
-            { protocol: 'https', hostname: '**.firebasestorage.app', pathname: '/**' },
             { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/photo-**' },
             { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/premium_photo-**' },
             { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
             { protocol: 'https', hostname: 'drive.google.com', pathname: '/**' },
             { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
         ],
-    },
-    async rewrites() {
-        return [
-            {
-                source: '/storage/public/:path*',
-                destination: '/:path*',
-            },
-            {
-                source: '/storage/private/homework/:path*',
-                destination: '/homework/:path*',
-            },
-        ];
     },
 };
 

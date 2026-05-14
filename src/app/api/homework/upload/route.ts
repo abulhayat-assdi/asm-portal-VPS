@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { getSessionUser } from "@/lib/auth";
 
 // Allowed MIME types for homework
 const ALLOWED_MIME_TYPES = [
@@ -23,6 +24,11 @@ const ALLOWED_MIME_TYPES = [
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
+    const user = await getSessionUser(request);
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
