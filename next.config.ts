@@ -80,13 +80,8 @@ const nextConfig: NextConfig = {
             },
         ];
     },
-    webpack: (config) => {
-        config.externals.push({
-            'prisma': 'commonjs prisma',
-            '@prisma/client': 'commonjs @prisma/client',
-        });
-        return config;
     },
 };
 
 export default nextConfig;
+
