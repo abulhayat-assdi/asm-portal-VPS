@@ -66,7 +66,7 @@ export async function DELETE(req: NextRequest) {
     const cls = await prisma.class.findUnique({ where: { id } });
     if (!cls) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    if (cls.teacherUid !== user.id && user.role !== "admin" && user.role !== "super_admin") {
+    if (cls.teacherUid !== user.id && user.role !== "admin") {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

@@ -58,3 +58,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+/** DELETE /api/dashboard/notices?id=... */
+export async function DELETE(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    try {
+        await prisma.notice.delete({ where: { id } });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("[Notices DELETE]", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         const user = await getSessionUser(req);
-        if (!user || (user.role !== "admin" && user.role !== "super_admin" && user.role !== "teacher")) {
+        if (!user || (user.role !== "admin" && user.role !== "teacher")) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
@@ -55,6 +55,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(notice);
     } catch (error) {
         console.error("Failed to create student notice:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
+
+/** DELETE /api/dashboard/student-notices?id=... */
+export async function DELETE(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || (user.role !== "admin" && user.role !== "teacher")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    try {
+        await prisma.studentNotice.delete({ where: { id } });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("[Student-notices DELETE]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

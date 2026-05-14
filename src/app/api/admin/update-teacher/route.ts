@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin, isSuperAdmin } from "@/lib/auth";
+import { getSessionUser, isAdmin } from "@/lib/auth";
 import { z } from "zod";
 
 const updateTeacherSchema = z.object({
@@ -15,7 +15,7 @@ const updateTeacherSchema = z.object({
 /**
  * POST /api/admin/update-teacher
  * Updates a teacher's login email and/or admin role.
- * Only super_admin can change the admin flag.
+ * Any admin can change the admin flag.
  */
 export async function POST(req: NextRequest) {
     try {
@@ -32,14 +32,6 @@ export async function POST(req: NextRequest) {
         }
 
         const { teacherDbId, newLoginEmail, isAdmin: grantAdmin, teacherId } = parsed.data;
-
-        // Only super_admin can change the admin flag
-        if (grantAdmin !== undefined && !isSuperAdmin(caller)) {
-            return NextResponse.json(
-                { error: "Forbidden: Only the portal owner (super_admin) can grant or revoke admin access." },
-                { status: 403 }
-            );
-        }
 
         // Find teacher record
         const teacher = await prisma.teacher.findUnique({ where: { id: teacherDbId } });

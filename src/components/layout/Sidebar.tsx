@@ -67,7 +67,7 @@ export default function Sidebar() {
     const filteredNavItems = activeNavItems.filter(item => {
         if (item.adminOnly) {
             // Only show admin items if user is loaded and is admin
-            return !loading && (userProfile?.role === "admin" || userProfile?.role === "super_admin");
+            return !loading && userProfile?.role === "admin";
         }
         return true;
     });

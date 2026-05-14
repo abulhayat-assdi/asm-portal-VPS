@@ -20,6 +20,7 @@ export default function SchedulePage() {
     const [showAll, setShowAll] = useState(false);
     const [expandedPending, setExpandedPending] = useState<string | null>(null);
     const { userProfile, loading: authLoading } = useAuth();
+    const isAdmin = userProfile?.role === "admin";
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     // Add Routine Modal State
@@ -169,7 +170,7 @@ export default function SchedulePage() {
                 // filterCurrentWeek=false so page-level visibleSchedule filter handles week filtering
                 const data = await getClassesByTeacherId(userProfile.teacherId, userProfile.uid, false);
                 setScheduleData(data);
-            } else if (userProfile.role === "admin") {
+            } else if (isAdmin) {
                 // Admin without teacherId: show all classes
                 const data = await getAllClassesSchedules();
                 setScheduleData(data);
@@ -275,7 +276,7 @@ export default function SchedulePage() {
             if (compareDate < teacherPastBoundary) {
                 return false;
             }
-        } else if (userProfile?.role === 'admin') {
+        } else if (isAdmin) {
             // Admin (without a teacher ID): current week only
             if (compareDate < weekBounds.start || compareDate > weekBounds.end) {
                 return false;
@@ -868,7 +869,7 @@ export default function SchedulePage() {
                         <p className="text-[#6b7280] mt-1">
                             {userProfile?.teacherId
                                 ? `Viewing schedule for Teacher ID: ${userProfile.teacherId} (Last 7 Days & Upcoming)`
-                                : userProfile?.role === "admin"
+                                : isAdmin
                                     ? "Viewing all teacher schedules (Current Week)"
                                     : "No Teacher ID linked to this account"}
                         </p>
@@ -881,7 +882,7 @@ export default function SchedulePage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {userProfile?.role === "admin" && (
+                    {isAdmin && (
                         <button 
                             onClick={handleOpenBatchSelection}
                             className="px-4 py-2.5 bg-[#059669] text-white text-sm font-semibold rounded-lg hover:bg-[#10b981] transition-colors shadow-sm flex items-center gap-2"
@@ -893,7 +894,7 @@ export default function SchedulePage() {
                         </button>
                     )}
                     {/* Admin-only: Add Routine */}
-                    {userProfile?.role === "admin" && (
+                    {isAdmin && (
                         <button 
                             onClick={() => setIsRoutineModalOpen(true)}
                             className="px-4 py-2.5 bg-white text-[#059669] border border-[#059669] text-sm font-semibold rounded-lg hover:bg-[#f0fdf4] transition-colors shadow-sm flex items-center gap-2"
@@ -1002,7 +1003,7 @@ export default function SchedulePage() {
                             try {
                                 // Fetch all schedules for this teacher (admin sees all)
                                 let data: ClassSchedule[] = [];
-                                if (userProfile?.role === 'admin') {
+                                if (isAdmin) {
                                     data = await getAllClassesSchedules(false);
                                 } else if (userProfile?.teacherId) {
                                     data = await getClassesByTeacherId(userProfile.teacherId, undefined, false);
@@ -1096,7 +1097,7 @@ export default function SchedulePage() {
                                             </button>
                                         </a>
                                         
-                                        {userProfile?.role === "admin" && (
+                                        {isAdmin && (
                                             <div className="flex gap-2 w-full mt-1">
                                                 <button
                                                     onClick={() => openEditRoutineModal(routine)}
@@ -1137,7 +1138,7 @@ export default function SchedulePage() {
                         </div>
                     </div>
                     
-                    {userProfile?.role === "admin" && (
+                    {isAdmin && (
                         <button
                             onClick={handleOpenManageBatches}
                             className="px-4 py-2 bg-white text-[#1f2937] border border-[#d1d5db] font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-sm flex items-center gap-2"
@@ -1231,10 +1232,10 @@ export default function SchedulePage() {
                         <div className="p-5 border-b border-gray-100 flex justify-between items-center shrink-0 bg-[#1e3a5f] rounded-t-xl">
                             <div>
                                 <h3 className="text-xl font-bold text-white">
-                                    {userProfile?.role === 'admin' ? 'All Class Schedules' : 'Your Full Class Schedule'}
+                                    {isAdmin ? 'All Class Schedules' : 'Your Full Class Schedule'}
                                 </h3>
                                 <p className="text-blue-200 text-sm mt-0.5">
-                                    {userProfile?.role === 'admin' ? 'Read-only view of all schedules' : `All classes for Teacher ID: ${userProfile?.uid}`}
+                                    {isAdmin ? 'Read-only view of all schedules' : `All classes for Teacher ID: ${userProfile?.uid}`}
                                 </p>
                             </div>
                             <button onClick={() => setIsViewAllModalOpen(false)} className="text-blue-200 hover:text-white transition-colors">
@@ -1273,7 +1274,7 @@ export default function SchedulePage() {
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[130px]">Subject</th>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Time</th>
                                             <th className="px-4 py-3 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Status</th>
-                                            {userProfile?.role === 'admin' && (
+                                            {isAdmin && (
                                                 <>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Teacher ID</th>
                                                     <th className="px-4 py-3 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[130px]">Teacher Name</th>
@@ -1300,7 +1301,7 @@ export default function SchedulePage() {
                                                         {sch.status}
                                                     </span>
                                                 </td>
-                                                {userProfile?.role === 'admin' && (
+                                                {isAdmin && (
                                                     <>
                                                         <td className="px-4 py-2.5 text-sm text-[#059669] border border-gray-200 font-mono">{sch.teacherId}</td>
                                                         <td className="px-4 py-2.5 text-sm text-gray-700 border border-gray-200">{sch.teacherName}</td>

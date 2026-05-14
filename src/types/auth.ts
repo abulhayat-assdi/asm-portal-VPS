@@ -2,7 +2,7 @@
 // Auth Types — No Firebase dependency
 // ============================================================
 
-export type UserRole = "super_admin" | "admin" | "teacher" | "student";
+export type UserRole = "admin" | "teacher" | "student";
 
 export interface UserProfile {
     id: string;

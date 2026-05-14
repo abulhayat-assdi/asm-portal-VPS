@@ -96,3 +96,21 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+/** DELETE /api/batch-info?id=... */
+export async function DELETE(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || !isTeacherOrAdmin(user)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    try {
+        await prisma.batchStudent.delete({ where: { id } });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("[Batch-info DELETE]", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}

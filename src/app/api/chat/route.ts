@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getSessionUser, isAdmin } from "@/lib/auth";
 
 // ============================================================
 // 🛡️ In-memory IP-based Rate Limiter
@@ -165,6 +167,53 @@ interface ChatMessage {
 }
 
 export async function POST(request: NextRequest) {
+    const body = await request.json();
+
+    // Admin-student chat: payload has studentUid
+    if (body.studentUid !== undefined) {
+        const user = await getSessionUser(request);
+        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+        const { studentUid, sender, text, attachments = [], studentProfileInfo } = body;
+
+        // Upsert chat thread
+        await prisma.chatThread.upsert({
+            where: { studentUid },
+            update: {
+                lastMessageText: text,
+                lastMessageTime: new Date(),
+                ...(sender === "admin"
+                    ? { unreadCountStudent: { increment: 1 } }
+                    : { unreadCountAdmin: { increment: 1 } }),
+            },
+            create: {
+                studentUid,
+                studentName: studentProfileInfo?.name || "Unknown",
+                studentEmail: studentProfileInfo?.email || "",
+                studentBatchName: studentProfileInfo?.batch || "",
+                studentRoll: studentProfileInfo?.roll || "",
+                lastMessageText: text,
+                lastMessageTime: new Date(),
+                unreadCountAdmin: sender === "student" ? 1 : 0,
+                unreadCountStudent: sender === "admin" ? 1 : 0,
+            },
+        });
+
+        const thread = await prisma.chatThread.findUnique({ where: { studentUid } });
+        const message = await prisma.chatMessage.create({
+            data: {
+                threadId: thread!.id,
+                senderId: user.id,
+                sender,
+                text,
+                attachments,
+            },
+        });
+
+        return NextResponse.json({ success: true, id: message.id });
+    }
+
+    // AI chatbot: payload has message
     if (!process.env.GEMINI_API_KEY) {
         return NextResponse.json({ error: "AI Assistant is currently disabled." }, { status: 503 });
     }
@@ -182,7 +231,6 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const body = await request.json();
         const { message, history } = body as { message: unknown; history?: unknown };
 
         // ── Input validation ──────────────────────────────────
@@ -287,5 +335,28 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Chat API error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    }
+}
+
+/** DELETE /api/chat?studentUid=... — delete chat thread + all messages */
+export async function DELETE(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const { searchParams } = new URL(req.url);
+    const studentUid = searchParams.get("studentUid");
+    if (!studentUid) return NextResponse.json({ error: "studentUid required" }, { status: 400 });
+    try {
+        const thread = await prisma.chatThread.findUnique({ where: { studentUid } });
+        if (!thread) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        await prisma.$transaction(async (tx: any) => {
+            await tx.chatMessage.deleteMany({ where: { threadId: thread.id } });
+            await tx.chatThread.delete({ where: { id: thread.id } });
+        });
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("[Chat DELETE]", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

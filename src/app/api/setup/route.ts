@@ -22,13 +22,13 @@ export async function GET() {
             where: { email },
             update: {
                 passwordHash: hashedPassword,
-                role: 'super_admin',
+                role: 'admin',
                 displayName: 'Abul Hayat'
             },
             create: {
                 email,
                 passwordHash: hashedPassword,
-                role: 'super_admin',
+                role: 'admin',
                 displayName: 'Abul Hayat'
             }
         });

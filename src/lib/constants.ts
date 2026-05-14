@@ -3,7 +3,6 @@
  */
 
 export const AUTH_ROLES = {
-    SUPER_ADMIN: 'super_admin',
     ADMIN: 'admin',
     TEACHER: 'teacher',
     STUDENT: 'student',

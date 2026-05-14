@@ -30,6 +30,7 @@ async function uploadPdfFile(file: File, subPath: string): Promise<string> {
 
 export default function PoliciesPage() {
     const { user, userProfile } = useAuth();
+    const isAdmin = userProfile?.role === "admin";
     const [policies, setPolicies] = useState<Policy[]>([]);
     const [meetings, setMeetings] = useState<MeetingMinute[]>([]);
     const [loading, setLoading] = useState(true);
@@ -256,7 +257,7 @@ export default function PoliciesPage() {
                         </p>
                     </div>
                 </div>
-                {userProfile?.role === "admin" && (
+                {isAdmin && (
                     <div className="flex gap-2">
                         <button
                             onClick={() => setIsMeetingModalOpen(true)}
@@ -303,7 +304,7 @@ export default function PoliciesPage() {
                                             </div>
 
                                             {/* Admin Controls (Top-Right) */}
-                                            {userProfile?.role === "admin" && (
+                                            {isAdmin && (
                                                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <button
                                                         onClick={(e) => { e.preventDefault(); handleEditMeetingClick(meeting); }}
@@ -393,7 +394,7 @@ export default function PoliciesPage() {
                                             </div>
 
                                             {/* Admin Controls (Top-Right) */}
-                                            {userProfile?.role === "admin" && (
+                                            {isAdmin && (
                                                 <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <button
                                                         onClick={(e) => { e.preventDefault(); handleEditPolicyClick(policy); }}

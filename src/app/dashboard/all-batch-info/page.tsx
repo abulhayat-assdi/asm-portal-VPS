@@ -105,6 +105,7 @@ const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category"
 export default function AllBatchInfoPage() {
 
     const { userProfile } = useAuth();
+    const isAdmin = userProfile?.role === "admin";
     const [allStudents, setAllStudents] = useState<StudentBatchInfo[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -544,7 +545,7 @@ export default function AllBatchInfoPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {userProfile?.role === "admin" && (
+                    {isAdmin && (
                         <button
                             onClick={() => setIsSelectionModalOpen(true)}
                             className="px-4 py-2.5 bg-[#059669] text-white text-sm font-semibold rounded-lg hover:bg-[#10b981] transition-colors shadow-sm flex items-center gap-2"

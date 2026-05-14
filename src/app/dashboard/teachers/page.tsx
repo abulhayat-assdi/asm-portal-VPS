@@ -20,8 +20,8 @@ export default function TeachersPage() {
     const PAGE_SIZE = 10;
 
     // Role checks
-    const isAdminUser = userProfile?.role === "admin" || userProfile?.role === "super_admin";
-    const isPortalOwner = userProfile?.role === "super_admin";
+    const isAdminUser = userProfile?.role === "admin";
+    const isPortalOwner = userProfile?.role === "admin"; // any admin can grant/revoke admin
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);

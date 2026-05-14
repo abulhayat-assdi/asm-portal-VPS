@@ -22,7 +22,7 @@ const createTeacherSchema = z.object({
 
 export async function POST(req: NextRequest) {
     try {
-        // 1. Auth check — only admins/super_admins can create teachers
+        // Auth check — only admins can create teachers
         const caller = await getSessionUser(req);
         if (!caller || !isAdmin(caller)) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
@@ -36,14 +36,6 @@ export async function POST(req: NextRequest) {
         }
 
         const { teacherId, loginEmail, displayEmail, password, name, phone, designation, about, isAdmin: grantAdmin, order } = parsed.data;
-
-        // 2. Only super_admin can grant admin role
-        if (grantAdmin && caller.role !== "super_admin") {
-            return NextResponse.json(
-                { error: "Forbidden: Only the portal owner (super_admin) can grant admin access." },
-                { status: 403 }
-            );
-        }
 
         const normalizedLoginEmail = loginEmail.toLowerCase().trim();
 

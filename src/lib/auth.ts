@@ -105,13 +105,11 @@ export async function getSessionUserFromRequestOrBearer(request: NextRequest): P
 }
 
 /**
- * Role check helpers
+ * Role check helpers.
+ * admin role includes all teacher permissions.
  */
 export const isAdmin = (user: JWTPayload) =>
-    user.role === 'admin' || user.role === 'super_admin';
-
-export const isSuperAdmin = (user: JWTPayload) =>
-    user.role === 'super_admin';
+    user.role === 'admin';
 
 export const isTeacherOrAdmin = (user: JWTPayload) =>
-    user.role === 'teacher' || user.role === 'admin' || user.role === 'super_admin';
+    user.role === 'teacher' || user.role === 'admin';

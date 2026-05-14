@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
             const session = await verifyJWT(token);
             const userRole = session.role.toLowerCase();
 
-            if (userRole === "admin" || userRole === "super_admin" || userRole === "teacher") {
+            if (userRole === "admin" || userRole === "teacher") {
                 // Full access
             } else if (userRole === "student") {
                 // homework/{userId}/filename — student can only access their own
