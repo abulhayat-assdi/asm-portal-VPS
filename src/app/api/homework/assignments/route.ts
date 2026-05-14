@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ id: assignment.id, ...assignment }, { status: 201 });
+        return NextResponse.json(assignment, { status: 201 });
     } catch (error) {
         console.error("[Assignments POST]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
