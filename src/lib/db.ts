@@ -6,10 +6,16 @@ const getPrisma = () => {
   if (typeof window !== 'undefined') return {} as PrismaClient;
   
   if (!_prisma) {
-    _prisma = new PrismaClient({
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-    });
+    try {
+      _prisma = new PrismaClient({
+        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      });
+    } catch (e) {
+      console.error('Failed to initialize PrismaClient:', e);
+      return {} as PrismaClient;
+    }
   }
+
   return _prisma;
 };
 
