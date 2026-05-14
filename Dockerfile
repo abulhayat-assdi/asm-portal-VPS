@@ -40,8 +40,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Explicitly copy the generated prisma client and engines
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+RUN npm install -g prisma@6
 
 USER nextjs
 
@@ -49,6 +50,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Sync schema to DB (db push works for fresh and existing DBs without migration files)
-# Then start the app
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js db push --accept-data-loss && node server.js"]
+CMD ["sh", "-c", "prisma db push --accept-data-loss && node server.js"]
