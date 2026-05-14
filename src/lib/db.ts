@@ -11,19 +11,6 @@ let _prisma: PrismaClient | undefined;
 const getPrisma = (): PrismaClient => {
   if (typeof window !== 'undefined') return {} as PrismaClient;
 
-  // If we are in a build environment without DATABASE_URL, return a dummy object
-  // to prevent Prisma from throwing validation errors during static analysis.
-  if (!process.env.DATABASE_URL && process.env.NODE_ENV === 'production') {
-    return new Proxy({} as PrismaClient, {
-      get: () => {
-        return () => {
-          console.warn('⚠️ Prisma accessed during build time without DATABASE_URL.');
-          return Promise.resolve(null);
-        };
-      },
-    });
-  }
-
   if (!_prisma) {
     _prisma = new PrismaClient({
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
