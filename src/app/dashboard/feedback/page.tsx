@@ -28,7 +28,7 @@ export default function FeedbackPage() {
     // Fetch Feedback
     useEffect(() => {
         // Wait until userProfile is loaded before fetching (avoids initial fetch as non-admin if admin)
-        if (userProfile === null) return;
+        if (!userProfile) return;
         
         const loadFeedback = async () => {
             setLoading(true);
@@ -45,7 +45,7 @@ export default function FeedbackPage() {
     const handleApprove = async (id: string) => {
         if (!user) return;
         try {
-            await feedbackService.approveFeedback(id, user.uid);
+            await feedbackService.approveFeedback(id, user.id);
             // Optimistic update
             setFeedbackList((prev) =>
                 prev.map((f) => (f.id === id ? { ...f, status: "APPROVED" } : f))
@@ -59,7 +59,7 @@ export default function FeedbackPage() {
         if (!user) return;
         setDeleting(true);
         try {
-            await feedbackService.deleteFeedback(id, user.uid);
+            await feedbackService.deleteFeedback(id, user.id);
             setFeedbackList((prev) => prev.filter((f) => f.id !== id));
             setConfirmDeleteId(null);
         } catch (error) {
@@ -185,7 +185,7 @@ export default function FeedbackPage() {
                                                     ))}
                                                 </div>
                                                 <span className="text-sm text-[#6b7280]">
-                                                    📅 {feedback.createdAt ? formatDateShort(feedback.createdAt.toDate().toISOString()) : "N/A"}
+                                                    📅 {feedback.createdAt ? formatDateShort(new Date(feedback.createdAt as any).toISOString()) : "N/A"}
                                                 </span>
                                                 <span
                                                     className={`px-3 py-1 text-xs font-semibold rounded-full ${feedback.status === "APPROVED"

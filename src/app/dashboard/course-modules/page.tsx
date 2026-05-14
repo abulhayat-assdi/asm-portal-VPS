@@ -151,7 +151,7 @@ export default function CourseModulesPage() {
             const resourceData = {
                 title: newResource.title,
                 category: newResource.category,
-                uploadedByUid: editingResource ? editingResource.uploadedByUid : user.uid,
+                uploadedByUid: editingResource ? editingResource.uploadedByUid : user.id,
                 uploadedByName: editingResource ? editingResource.uploadedByName : (userProfile?.displayName || user.displayName || "Unknown Teacher"),
                 teacherName: newResource.teacherName?.trim() || undefined,
                 fileUrl,

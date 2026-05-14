@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getAdminServices } from "@/lib/firebase-admin";
-import { COOKIES, AUTH_ROLES } from "@/lib/constants";
+import { verifyJWT } from "@/lib/auth";
+import { COOKIES } from "@/lib/constants";
 
 /**
  * [API Route] Serve files from local cPanel storage
@@ -33,28 +33,29 @@ export async function GET(request: NextRequest) {
 
     // 🔒 Authorization for Private Files (Homework)
     if (filePath.startsWith("private/homework/")) {
-        const session = request.cookies.get(COOKIES.SESSION)?.value;
-        if (!session) {
+        const token = request.cookies.get(COOKIES.SESSION)?.value;
+        if (!token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         try {
-            const { adminAuth, adminDb } = getAdminServices();
-            const decodedToken = await adminAuth.verifyIdToken(session);
-            const userUid = decodedToken.uid;
+            const session = await verifyJWT(token);
+            if (!session) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
 
-            // Role is stored in Firestore (users collection), not as a Firebase Auth custom claim
-            const userDoc = await adminDb.collection("users").doc(userUid).get();
-            const userRole = ((userDoc.data()?.role as string) || "").toLowerCase();
+            const userUid = session.id;
+            const userRole = (session.role || "").toLowerCase();
 
             // Rules: Admin & Teacher see everything. Student sees only their UID folder.
-            if (userRole === AUTH_ROLES.ADMIN || userRole === AUTH_ROLES.TEACHER) {
+            if (userRole === "admin" || userRole === "super_admin" || userRole === "teacher") {
                 // Granted — full access
-            } else if (userRole === AUTH_ROLES.STUDENT) {
+            } else if (userRole === "student") {
                 const pathSegments = filePath.split("/");
                 // Expected path: private/homework/USER_UID/filename
                 const pathUid = pathSegments[2];
-                if (userUid !== pathUid) {
+                // In our new system, we might use displayName or id. 
+                if (userUid !== pathUid && session.displayName !== pathUid) {
                     console.warn(`[File API] Student ${userUid} tried to access ${pathUid}'s homework`);
                     return NextResponse.json({ error: "Forbidden: Access denied" }, { status: 403 });
                 }

@@ -1,14 +1,6 @@
-import {
-    collection,
-    addDoc,
-    serverTimestamp,
-    query,
-    orderBy,
-    limit,
-    getDocs,
-    Timestamp
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// ============================================================
+// activityService — All Firestore calls replaced with API calls
+// ============================================================
 
 export interface ActivityLog {
     id: string;
@@ -18,12 +10,9 @@ export interface ActivityLog {
     targetType: string;
     targetId: string;
     description: string;
-    createdAt: Timestamp;
+    createdAt: string | Date;
 }
 
-/**
- * Log an activity to Firestore
- */
 export const logActivity = async (
     actorUid: string,
     actorRole: "ADMIN" | "TEACHER",
@@ -31,35 +20,23 @@ export const logActivity = async (
     targetType: string,
     targetId: string,
     description: string
-) => {
+): Promise<void> => {
     try {
-        await addDoc(collection(db, "activity_logs"), {
-            actorUid,
-            actorRole,
-            actionType,
-            targetType,
-            targetId,
-            description,
-            createdAt: serverTimestamp()
+        await fetch("/api/activity", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ actorUid, actorRole, actionType, targetType, targetId, description }),
         });
     } catch (error) {
         console.error("Failed to log activity:", error);
     }
 };
 
-/**
- * Fetch Recent Activities
- */
 export const getRecentActivity = async (): Promise<ActivityLog[]> => {
     try {
-        const activityColl = collection(db, "activity_logs");
-        const q = query(activityColl, orderBy("createdAt", "desc"), limit(5));
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as ActivityLog));
+        const res = await fetch("/api/activity?limit=5", { cache: "no-store" });
+        if (!res.ok) return [];
+        return res.json();
     } catch (error) {
         console.error("Error fetching activity logs:", error);
         return [];

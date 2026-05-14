@@ -102,8 +102,8 @@ export default function ResourceManagementPage() {
         try {
             const [resourceData, foldersData, allTeacherFiles] = await Promise.all([
                 getAllResources(),
-                getModuleFoldersByTeacher(user.uid),
-                getModuleResourcesByTeacher(user.uid),
+                getModuleFoldersByTeacher(user.id),
+                getModuleResourcesByTeacher(user.id),
             ]);
             
             setCourseModules(resourceData.filter(r => r.category === "Course Module"));
@@ -172,7 +172,7 @@ export default function ResourceManagementPage() {
             const payload = {
                 moduleId: folderForModule.id,
                 moduleTitle: folderForModule.title,
-                teacherUid: user.uid,
+                teacherUid: user.id,
                 teacherName: userProfile?.displayName || "",
                 title: folderForm.title,
                 description: folderForm.description,
@@ -275,7 +275,7 @@ export default function ResourceManagementPage() {
                 if (editingResource.folderId) {
                     await refreshFolderResources(editingResource.folderId);
                 } else {
-                    const rootFiles = await getModuleResourcesByTeacher(user.uid);
+                    const rootFiles = await getModuleResourcesByTeacher(user.id);
                     setMyRootResources(rootFiles.filter(r => !r.folderId));
                 }
             } else {
@@ -284,7 +284,7 @@ export default function ResourceManagementPage() {
                     moduleId: uploadingForModule.id,
                     moduleTitle: uploadingForModule.title,
                     teacherName: uploadingForModule.teacherName || uploadingForModule.uploadedByName,
-                    teacherUid: user.uid,
+                    teacherUid: user.id,
                     folderId: uploadingForFolder?.id || null,
                     title: uploadForm.title,
                     description: uploadForm.description,
@@ -298,7 +298,7 @@ export default function ResourceManagementPage() {
                 if (uploadingForFolder) {
                     await refreshFolderResources(uploadingForFolder.id);
                 } else {
-                    const rootFiles = await getModuleResourcesByTeacher(user.uid);
+                    const rootFiles = await getModuleResourcesByTeacher(user.id);
                     setMyRootResources(rootFiles.filter(r => !r.folderId));
                 }
             }

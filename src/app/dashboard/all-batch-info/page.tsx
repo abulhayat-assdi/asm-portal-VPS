@@ -127,7 +127,7 @@ export default function AllBatchInfoPage() {
     // Grid Data State (replaces ref — React controls all re-renders)
     const MAX_ROWS = 200;
     const PAGE_SIZE = 50;
-    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTK", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
+    const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTk", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
     const [gridData, setGridData] = useState<Record<string, string>[]>([]);
     const [gridPage, setGridPage] = useState(0);
 
@@ -262,7 +262,7 @@ export default function AllBatchInfoPage() {
                     educationalDegree: student.educationalDegree || "",
                     category: student.category || "",
                     bloodGroup: student.bloodGroup || "",
-                    totalPaidTK: student.totalPaidTK ? student.totalPaidTK.toString() : "",
+                    totalPaidTk: student.totalPaidTk ? student.totalPaidTk.toString() : "",
                     address: student.address || "",
                     courseStatus: student.courseStatus || "",
                     currentlyDoing: student.currentlyDoing || "",
@@ -360,7 +360,7 @@ export default function AllBatchInfoPage() {
                 educationalDegree: row.educationalDegree || "",
                 category: (row.category || "") as StudentBatchInfo['category'],
                 bloodGroup: row.bloodGroup || "",
-                totalPaidTK: row.totalPaidTK || "",
+                totalPaidTk: row.totalPaidTk || "",
                 address: row.address || "",
                 courseStatus: (row.courseStatus || "") as StudentBatchInfo['courseStatus'],
                 currentlyDoing: (row.currentlyDoing || "") as StudentBatchInfo['currentlyDoing'],
@@ -417,7 +417,7 @@ export default function AllBatchInfoPage() {
                         educationalDegree: row.educationalDegree || "",
                         category: (row.category || "") as StudentBatchInfo['category'],
                         bloodGroup: row.bloodGroup || "",
-                        totalPaidTK: row.totalPaidTK || "",
+                        totalPaidTk: row.totalPaidTk || "",
                         address: row.address || "",
                         courseStatus: (updatedStatus || "") as StudentBatchInfo['courseStatus'],
                         currentlyDoing: (row.currentlyDoing || "") as StudentBatchInfo['currentlyDoing'],
@@ -490,7 +490,7 @@ export default function AllBatchInfoPage() {
                     s.educationalDegree || "-",
                     s.category || "-",
                     s.bloodGroup || "-",
-                    s.totalPaidTK || "-",
+                    s.totalPaidTk || "-",
                     s.address || "-",
                     s.courseStatus || "-",
                     s.currentlyDoing === 'Nothing' ? 'Studying Further' : (s.currentlyDoing || "-"),
@@ -852,14 +852,14 @@ export default function AllBatchInfoPage() {
                                                 <span className="font-bold text-red-600">{student.bloodGroup || "-"}</span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200 text-center">
-                                                <span className="font-semibold text-emerald-600">{student.totalPaidTK || "-"}</span>
+                                                <span className="font-semibold text-emerald-600">{student.totalPaidTk || "-"}</span>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200 max-w-[200px]">
                                                 <div className="flex items-center gap-1.5">
                                                     <span className="truncate block flex-1">{student.address || "-"}</span>
                                                     {student.address && (
                                                         <button
-                                                            onClick={() => setViewingAddress({ name: student.name, address: student.address })}
+                                                            onClick={() => setViewingAddress({ name: student.name, address: student.address! })}
                                                             title="View full address"
                                                             className="shrink-0 text-gray-400 hover:text-[#059669] transition-colors"
                                                         >

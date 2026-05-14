@@ -64,7 +64,7 @@ export default function LeaveTrackingPage() {
             setLoading(true);
             setSyncing(true);
             try {
-                if (teacher) await syncAutoWeeklyLeaves(teacher);
+                if (teacher) await syncAutoWeeklyLeaves(teacher.id);
                 const data = await getLeavesByTeacher(selectedTeacherId);
                 setLeaves(data);
             } finally {
@@ -79,7 +79,7 @@ export default function LeaveTrackingPage() {
     const totalDays = leaves.reduce((s, l) => s + l.days, 0);
     const casualDays = leaves.filter(l => l.type === "Casual").reduce((s, l) => s + l.days, 0);
     const sickDays = leaves.filter(l => l.type === "Sick").reduce((s, l) => s + l.days, 0);
-    const weeklyDays = leaves.filter(l => l.type === "Weekly Holiday").reduce((s, l) => s + l.days, 0);
+    const weeklyDays = leaves.filter(l => l.type === "WeeklyHoliday").reduce((s, l) => s + l.days, 0);
 
     // Group by month
     const byMonth: Record<string, Leave[]> = {};
@@ -90,7 +90,7 @@ export default function LeaveTrackingPage() {
     const sortedMonths = Object.keys(byMonth).sort((a, b) => b.localeCompare(a));
 
     const typeColors: Record<string, string> = {
-        "Weekly Holiday": "bg-indigo-50 text-indigo-700 border border-indigo-200",
+        "WeeklyHoliday": "bg-indigo-50 text-indigo-700 border border-indigo-200",
         "Sick": "bg-amber-50 text-amber-700 border border-amber-200",
         "Casual": "bg-emerald-50 text-emerald-700 border border-emerald-200",
         "Other": "bg-slate-100 text-slate-600 border border-slate-200",

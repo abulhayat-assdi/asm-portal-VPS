@@ -11,7 +11,7 @@ import {
 import { getAllBatchInfo } from "@/services/batchInfoService";
 
 export default function ManageHomeworkPage() {
-    const { userProfile, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
 
     const [homework, setHomework] = useState<HomeworkSubmission[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,10 +38,10 @@ export default function ManageHomeworkPage() {
         setSelectedFolder(null);
     }, [filterTeacher, filterBatch, searchQuery]);
 
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = user?.role === "admin";
 
     const fetchData = useCallback(async () => {
-        if (!userProfile || !isAdmin) return;
+        if (!user || !isAdmin) return;
         setLoading(true);
         try {
             const batchData = await getAllBatchInfo();
@@ -51,7 +51,7 @@ export default function ManageHomeworkPage() {
             const batchMap = new Map<string, { batchType?: string; createdAt?: Date }>();
             batchData.forEach(s => {
                 if (!batchMap.has(s.batchName)) {
-                    batchMap.set(s.batchName, { batchType: s.batchType, createdAt: s.createdAt });
+                    batchMap.set(s.batchName, { batchType: s.batchType, createdAt: s.createdAt ? new Date(s.createdAt) : undefined });
                 }
             });
             batchMap.forEach((info, batchName) => {
@@ -61,8 +61,12 @@ export default function ManageHomeworkPage() {
             });
 
             if (completedBatches.length > 0) {
-                const deleted = await cleanupCompletedBatchHomework(completedBatches);
-                if (deleted > 0) setCleanupCount(deleted);
+                let totalDeleted = 0;
+                for (const batch of completedBatches) {
+                    const res = await cleanupCompletedBatchHomework(batch.batchName);
+                    totalDeleted += res.deleted;
+                }
+                if (totalDeleted > 0) setCleanupCount(totalDeleted);
             }
 
             // Fetch all homework based for admin
@@ -73,13 +77,13 @@ export default function ManageHomeworkPage() {
         } finally {
             setLoading(false);
         }
-    }, [userProfile, isAdmin]);
+    }, [user, isAdmin]);
 
     useEffect(() => {
-        if (!authLoading && userProfile) {
+        if (!authLoading && user) {
             fetchData();
         }
-    }, [authLoading, userProfile, fetchData]);
+    }, [authLoading, user, fetchData]);
 
     // Filtered results
     const filteredHomework = homework.filter(hw => {
@@ -128,7 +132,8 @@ export default function ManageHomeworkPage() {
         if (!confirm(`Delete homework "${hw.subject}" by ${hw.studentName}?`)) return;
         setDeletingId(hw.id);
         try {
-            await deleteHomework(hw.id, hw.storagePath);
+            const paths = hw.files ? hw.files.map(f => f.storagePath) : (hw.storagePath ? [hw.storagePath] : []);
+            await deleteHomework(hw.id, paths);
             setHomework(prev => prev.filter(h => h.id !== hw.id));
             if (viewingSubmission?.id === hw.id) setViewingSubmission(null);
         } catch (err) {

@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { StudentBatchInfo } from "@/services/batchInfoService";
 import { getAllStudentNotices, StudentNotice } from "@/services/dashboardService";
 import Link from "next/link";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { getStudentProfile, BatchStudent } from "@/services/studentService";
 
 const AcademicCapIcon = ({ className }: { className: string }) => (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -32,43 +30,22 @@ const MapPinIcon = ({ className }: { className: string }) => (
 
 export default function StudentDashboardOverview() {
     const { userProfile, loading } = useAuth();
-    const [studentData, setStudentData] = useState<StudentBatchInfo | null>(null);
+    const [studentData, setStudentData] = useState<BatchStudent | null>(null);
     const [fetching, setFetching] = useState(true);
     const [studentNotices, setStudentNotices] = useState<StudentNotice[]>([]);
 
     useEffect(() => {
         const fetchMyData = async () => {
-            if (userProfile?.studentBatchName && userProfile?.studentRoll) {
-                try {
-                    const noticesPromise = getAllStudentNotices();
-                    const docId = `${userProfile.studentBatchName.replace(/\\s+/g, '_')}_${userProfile.studentRoll}`;
-                    const docRef = doc(db, "batch_info", docId);
-                    const docSnapPromise = getDoc(docRef);
-                    
-                    const [notices, docSnap] = await Promise.all([
-                        noticesPromise,
-                        docSnapPromise
-                    ]);
-                    
-                    if (docSnap.exists()) {
-                        setStudentData(docSnap.data() as StudentBatchInfo);
-                    } else {
-                        setStudentData(null);
-                    }
-                    setStudentNotices(notices);
-                } catch (err) {
-                    console.error("Failed to fetch student data:", err);
-                } finally {
-                    setFetching(false);
-                }
-            } else {
-                // still fetch notices even without mapping
-                try {
-                    const notices = await getAllStudentNotices();
-                    setStudentNotices(notices);
-                } catch (err) {
-                    console.error("Failed to fetch student notices:", err);
-                }
+            try {
+                const [profile, notices] = await Promise.all([
+                    getStudentProfile(),
+                    getAllStudentNotices()
+                ]);
+                setStudentData(profile);
+                setStudentNotices(notices);
+            } catch (err) {
+                console.error("Failed to fetch student dashboard data:", err);
+            } finally {
                 setFetching(false);
             }
         };

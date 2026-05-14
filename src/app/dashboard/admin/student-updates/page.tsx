@@ -140,7 +140,7 @@ export default function StudentUpdatesPage() {
                                 <div className="flex items-center gap-3">
                                     {statusBadge(req.status)}
                                     <span className="text-xs text-gray-400">
-                                        {req.submittedAt?.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                                        {req.submittedAt && new Date(req.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                                     </span>
                                 </div>
                             </div>

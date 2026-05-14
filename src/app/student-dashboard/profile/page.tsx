@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { StudentBatchInfo } from "@/services/batchInfoService";
 import { submitUpdateRequest } from "@/services/studentUpdateService";
 
@@ -32,34 +30,28 @@ export default function StudentProfilePage() {
 
     useEffect(() => {
         const fetchMyData = async () => {
-            if (userProfile?.studentBatchName && userProfile?.studentRoll) {
-                try {
-                    const docId = `${userProfile.studentBatchName.replace(/\s+/g, '_')}_${userProfile.studentRoll}`;
-                    const docRef = doc(db, "batch_info", docId);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const match = docSnap.data() as StudentBatchInfo;
-                        setStudentData(match);
-                        setForm({
-                            phone: match.phone || "",
-                            dob: match.dob || "",
-                            educationalDegree: match.educationalDegree || "",
-                            category: match.category || "",
-                            bloodGroup: match.bloodGroup || "",
-                            address: match.address || "",
-                            courseStatus: match.courseStatus || "",
-                            currentlyDoing: match.currentlyDoing || "",
-                            companyName: match.companyName || "",
-                            businessName: match.businessName || "",
-                            salary: match.salary ? String(match.salary) : "",
-                        });
-                    }
-                } catch (err) {
-                    console.error("Failed to fetch profile data:", err);
-                } finally {
-                    setFetching(false);
+            try {
+                const res = await fetch("/api/student/profile");
+                if (res.ok) {
+                    const match = await res.json() as StudentBatchInfo;
+                    setStudentData(match);
+                    setForm({
+                        phone: match.phone || "",
+                        dob: match.dob || "",
+                        educationalDegree: match.educationalDegree || "",
+                        category: (match.category as string) || "",
+                        bloodGroup: match.bloodGroup || "",
+                        address: match.address || "",
+                        courseStatus: (match.courseStatus as string) || "",
+                        currentlyDoing: (match.currentlyDoing as string) || "",
+                        companyName: match.companyName || "",
+                        businessName: match.businessName || "",
+                        salary: match.salary ? String(match.salary) : "",
+                    });
                 }
-            } else {
+            } catch (err) {
+                console.error("Failed to fetch profile data:", err);
+            } finally {
                 setFetching(false);
             }
         };
@@ -96,12 +88,21 @@ export default function StudentProfilePage() {
                 return;
             }
 
+            const uid = userProfile?.uid;
+            const displayName = userProfile?.displayName;
+            const batchName = userProfile?.studentBatchName;
+            const roll = userProfile?.studentRoll;
+
+            if (!uid || !displayName || !batchName || !roll) {
+                throw new Error("Missing profile information.");
+            }
+
             await submitUpdateRequest(
-                userProfile!.uid,
-                userProfile!.displayName,
-                userProfile!.studentBatchName!,
-                userProfile!.studentRoll!,
-                proposedChanges,
+                uid,
+                displayName,
+                batchName,
+                roll,
+                proposedChanges as any,
                 {
                     phone: studentData?.phone,
                     dob: studentData?.dob,

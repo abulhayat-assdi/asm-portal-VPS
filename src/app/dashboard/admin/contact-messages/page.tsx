@@ -11,10 +11,11 @@ import {
     ChatMessage,
     ChatAttachment
 } from "@/services/contactService";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 
 export default function ContactManagementPage() {
+    const { user } = useAuth();
     const [threads, setThreads] = useState<AdminChatThread[]>([]);
     const [selectedThread, setSelectedThread] = useState<AdminChatThread | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -98,7 +99,7 @@ export default function ContactManagementPage() {
 
     const formatTime = (ts: any) => {
         if (!ts) return "";
-        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const d = new Date(ts);
         return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     };
 
@@ -115,12 +116,9 @@ export default function ContactManagementPage() {
                 fd.append("file", file);
                 fd.append("category", "chat_files");
                 fd.append("path", selectedThread.studentUid);
-                const user = auth.currentUser;
                 if (!user) throw new Error("Not authenticated");
-                const token = await user.getIdToken(true);
                 const res = await fetch("/api/storage/upload", {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
                     body: fd,
                 });
                 if (!res.ok) throw new Error("Upload failed");

@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
         // Gemini expects alternating user/model turns, so we push all
         // history turns first, then the current user message.
         const contents = [
-            ...safeHistory.map((msg) => ({
+            ...safeHistory.map((msg: any) => ({
                 role: msg.role,
                 parts: [{ text: msg.parts }],
             })),

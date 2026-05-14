@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getAdminServices } from "@/lib/firebase-admin";
-import { COOKIES, AUTH_ROLES } from "@/lib/constants";
+import { getSessionUserFromRequestOrBearer } from "@/lib/auth";
 
 /**
- * [API Route] Handle file uploads to local cPanel storage
+ * [API Route] Handle file uploads to local VPS storage
  * POST /api/storage/upload
  * FormData: { file, category (homework|resource), path (optional) }
  */
@@ -26,28 +25,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 🔒 Auth Check
-    const authHeader = request.headers.get("Authorization");
-    let session: string | undefined;
-
-    if (authHeader?.startsWith("Bearer ")) {
-        session = authHeader.substring(7);
-    } else {
-        session = request.cookies.get(COOKIES.SESSION)?.value;
-    }
-
-    if (!session) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    let userUid: string;
-    let userRole: string;
-    try {
-        const { adminAuth } = getAdminServices();
-        const decodedToken = await adminAuth.verifyIdToken(session);
-        userUid = decodedToken.uid;
-        userRole = decodedToken.role as string;
-    } catch (error) {
+    // 🔒 Auth Check — accepts both cookie and Authorization: Bearer header (for XHR uploads)
+    const sessionUser = await getSessionUserFromRequestOrBearer(request);
+    if (!sessionUser) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -67,22 +47,6 @@ export async function POST(request: NextRequest) {
             '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx',
             '.csv', '.txt', '.zip', '.mp4', '.mp3'
         ]);
-        const ALLOWED_MIME_TYPES = new Set([
-            'application/pdf',
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'text/csv',
-            'text/plain',
-            'application/zip',
-            'application/x-zip-compressed',
-            'video/mp4',
-            'audio/mpeg'
-        ]);
 
         const ext = path.extname(file.name).toLowerCase();
         if (!ALLOWED_EXTENSIONS.has(ext)) {
@@ -95,17 +59,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "File too large (Max 100MB)" }, { status: 400 });
         }
 
-        const localStoragePath = "public"; 
+        const localStoragePath = "public";
         let storagePath = "";
         const timestamp = Date.now();
         const sanitizedFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
-        // 📁 Determine Folder Structure (Flat root-only structure)
+        // 📁 Determine Folder Structure
         if (category === "homework") {
-            storagePath = `homework/${userUid}/${sanitizedFileName}`;
+            storagePath = `homework/${sessionUser.id}/${sanitizedFileName}`;
         } else {
             const folder = subPath ? subPath.replace(/[^a-zA-Z0-9_]/g, "_") : "";
-            storagePath = folder 
+            storagePath = folder
                 ? `resources/${folder}/${sanitizedFileName}`
                 : `resources/${sanitizedFileName}`;
         }
@@ -124,7 +88,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            fileUrl: `/${storagePath}`, // Direct URL because it's in public folder
+            fileUrl: `/${storagePath}`,
             storagePath: storagePath,
             fileName: file.name
         });

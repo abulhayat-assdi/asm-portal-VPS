@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Timestamp } from "firebase/firestore";
 import Card, { CardBody } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -110,7 +109,7 @@ export default function BlogAdminPage() {
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-4 text-center border border-[#e5e7eb]">
-                                                    {formatDateShort(post.createdAt instanceof Timestamp ? new Date(post.createdAt.toMillis()).toISOString() : post.createdAt instanceof Date ? post.createdAt.toISOString() : String(post.createdAt))}
+                                                    {formatDateShort(post.createdAt instanceof Date ? post.createdAt.toISOString() : String(post.createdAt))}
                                                 </td>
                                                 <td className="px-6 py-4 text-right border border-[#e5e7eb]">
                                                     <div className="flex items-center justify-end gap-2">

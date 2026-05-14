@@ -8,13 +8,6 @@ import * as teacherService from "@/services/teacherService";
 import * as feedbackService from "@/services/feedbackService";
 import { getClassesByTeacherId } from "@/services/scheduleService";
 import { formatDateShort } from "@/lib/utils";
-import {
-    collection,
-    serverTimestamp,
-    writeBatch,
-    doc
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminPage() {
@@ -169,66 +162,15 @@ export default function AdminPage() {
         if (!user) return;
         setLoading(true);
         try {
-            if (cls.id.startsWith('sheet_')) {
-                // Handle Virtual Sheet Class Completion
-                const batch = writeBatch(db);
-                const newClassRef = doc(collection(db, "classes"));
-
-                batch.set(newClassRef, {
-                    teacherUid: cls.teacherUid,
-                    teacherName: cls.teacherName,
-                    date: cls.date,
-                    startTime: cls.startTime,
-                    endTime: cls.endTime,
-                    timeRange: cls.timeRange || "",
-                    batch: cls.batch,
-                    subject: cls.subject,
-                    status: "COMPLETED",
-                    completedByUid: user.uid,
-                    completedAt: serverTimestamp(),
-                    createdAt: serverTimestamp()
-                });
-
-                const logRef = doc(collection(db, "activity_logs"));
-                batch.set(logRef, {
-                    actorUid: user.uid,
-                    actorRole: "ADMIN",
-                    actionType: "CLASS_COMPLETED",
-                    targetType: "class",
-                    targetId: newClassRef.id,
-                    description: `Admin marked Pending Sheet class '${cls.subject}' for '${cls.batch}' as completed`,
-                    createdAt: serverTimestamp()
-                });
-
-                await batch.commit();
-
-                // Webhook / API Sync
-                try {
-                    await fetch('/api/schedule', {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            teacherId: cls.teacherUid,
-                            date: cls.date,
-                            time: cls.timeRange || cls.timeRange, // Should match Sheet logic
-                            status: "Completed"
-                        }),
-                    });
-                } catch (e) {
-                    console.warn("Sheet sync failed", e);
-                }
-            } else {
-                // Standard Firestore Class
-                await adminService.markClassComplete(cls.id, user.uid);
-            }
-
-            await loadData();
-            setSelectedClasses([]);
+            await adminService.markClassComplete(cls.id, user.id, cls);
+            alert("Class marked as complete");
+            loadData(); // Refresh stats and lists
         } catch (error) {
             console.error(error);
-            alert("Failed to mark class complete.");
+            alert("Failed to mark class as complete");
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleBulkComplete = async () => {
@@ -257,7 +199,7 @@ export default function AdminPage() {
                     // It might flicker. But it works.
                     await handleMarkComplete(cls);
                 } else {
-                    await adminService.markClassComplete(cls.id, user.uid);
+                    await adminService.markClassComplete(cls.id, user.id);
                 }
             }));
 
@@ -387,7 +329,7 @@ export default function AdminPage() {
                                                 </p>
                                             </div>
                                             <span className="text-xs text-gray-400">
-                                                {log.createdAt ? formatDateShort(log.createdAt.toDate().toISOString()) : 'Just now'}
+                                                {log.createdAt ? formatDateShort(new Date(log.createdAt as any).toISOString()) : 'Just now'}
                                             </span>
                                         </div>
                                     ))
@@ -570,7 +512,7 @@ export default function AdminPage() {
                                                             {fb.batch}
                                                         </span>
                                                         <span className="text-xs text-gray-500">
-                                                            {fb.createdAt ? formatDateShort(fb.createdAt.toDate().toISOString()) : "Just now"}
+                                                            {fb.createdAt ? formatDateShort(new Date(fb.createdAt as any).toISOString()) : "Just now"}
                                                         </span>
                                                     </div>
                                                     <p className="text-gray-700 text-sm leading-relaxed">{fb.message}</p>
@@ -580,7 +522,7 @@ export default function AdminPage() {
                                                         onClick={async () => {
                                                             if (!user) return;
                                                             try {
-                                                                await feedbackService.approveFeedback(fb.id, user.uid);
+                                                                await feedbackService.approveFeedback(fb.id, user.id);
                                                                 setPendingFeedbacks(prev => prev.filter(f => f.id !== fb.id));
                                                             } catch {
                                                                 alert("Failed to approve feedback");
@@ -595,7 +537,7 @@ export default function AdminPage() {
                                                             if (!user) return;
                                                             if (confirm("Are you sure you want to delete this feedback?")) {
                                                                 try {
-                                                                    await feedbackService.deleteFeedback(fb.id, user.uid);
+                                                                    await feedbackService.deleteFeedback(fb.id, user.id);
                                                                     setPendingFeedbacks(prev => prev.filter(f => f.id !== fb.id));
                                                                 } catch {
                                                                     alert("Failed to delete feedback");

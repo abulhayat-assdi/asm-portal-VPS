@@ -2,8 +2,8 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import InstructorCard from "@/components/ui/InstructorCard";
 import Link from "next/link";
-import { getAdminServices } from "@/lib/firebase-admin";
-import { cookies } from "next/headers";
+import { prisma } from "@/lib/db";
+import { getSessionUser, isAdmin as checkIsAdmin } from "@/lib/auth";
 import { getImageUrl } from "@/lib/getImageUrl";
 
 interface Teacher {
@@ -28,15 +28,9 @@ const TEACHER_IMAGES: Record<string, string> = {
 };
 
 async function getAdminStatus() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("__session")?.value;
-    if (!token) return false;
-
     try {
-        const { adminAuth, adminDb } = getAdminServices();
-        const decodedToken = await adminAuth.verifyIdToken(token);
-        const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-        return userDoc.exists && userDoc.data()?.role === "admin";
+        const user = await getSessionUser();
+        return !!user && checkIsAdmin(user);
     } catch (e) {
         return false;
     }
@@ -44,39 +38,24 @@ async function getAdminStatus() {
 
 async function getTeachers(): Promise<Teacher[]> {
     try {
-        const { adminDb } = getAdminServices();
-        const snapshot = await adminDb
-            .collection("teachers")
-            .orderBy("order", "asc")
-            .get();
+        const teachers = await prisma.teacher.findMany({
+            orderBy: { order: "asc" }
+        });
 
-        return snapshot.docs.map((doc) => {
-            const data = doc.data();
+        return teachers.map((data) => {
+            let profileImageUrl = data.profileImageUrl || "";
             // Fallback to public images if profileImageUrl is missing
-            if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
-                data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
+            if (!profileImageUrl && TEACHER_IMAGES[data.name]) {
+                profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
             }
             return {
-                id: doc.id,
                 ...data,
-            } as Teacher;
+                profileImageUrl,
+            } as unknown as Teacher;
         });
     } catch (error) {
-        console.error("Error fetching teachers with ordering:", error);
-        // Fallback without ordering if index missing
-        try {
-            const { adminDb } = getAdminServices();
-            const snapshot = await adminDb.collection("teachers").get();
-            return snapshot.docs.map((doc) => {
-                const data = doc.data();
-                if (!data.profileImageUrl && TEACHER_IMAGES[data.name]) {
-                    data.profileImageUrl = getImageUrl(TEACHER_IMAGES[data.name]);
-                }
-                return { id: doc.id, ...data } as Teacher;
-            });
-        } catch {
-            return [];
-        }
+        console.error("Error fetching teachers from Prisma:", error);
+        return [];
     }
 }
 
@@ -150,7 +129,7 @@ export default async function InstructorsPage() {
                 <section className="w-full pb-16 md:pb-24 flex-grow relative z-20">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {instructors.map((instructor: Teacher, index: number) => (
+                            {instructors.map((instructor: Teacher) => (
                                 <InstructorCard
                                     key={instructor.id}
                                     name={instructor.name}

@@ -1,28 +1,30 @@
-import { User } from "firebase/auth";
+// ============================================================
+// Auth Types — No Firebase dependency
+// ============================================================
 
 export type UserRole = "super_admin" | "admin" | "teacher" | "student";
 
 export interface UserProfile {
-    uid: string;
+    id: string;
+    uid?: string; // Backward compatibility for Firebase
     email: string;
     displayName: string;
     role: UserRole;
-    teacherId?: string; // Teacher ID for verifying class schedule (e.g. "102")
-    studentBatchName?: string; // Only mapped if student
-    studentRoll?: string; // Only mapped if student
-    profileImageUrl?: string; // User's avatar or profile picture
-    createdAt: Date;
-    lastLogin: Date;
+    teacherId?: string;
+    studentBatchName?: string;
+    studentRoll?: string;
+    profileImageUrl?: string;
+    createdAt: Date | string;
+    lastLoginAt?: Date | string;
 }
 
 export interface AuthContextType {
-    user: User | null;
-    userProfile: UserProfile | null;
+    user: UserProfile | null;
+    userProfile?: UserProfile | null; // Backward compatibility alias
     loading: boolean;
-    loginWithEmail: (email: string, password: string) => Promise<User>;
-    registerWithEmail: (email: string, password: string, name: string, batchName: string, roll: string) => Promise<User>;
-    loginWithGoogle: () => Promise<User>;
+    loginWithEmail: (email: string, password: string) => Promise<UserProfile>;
+    registerWithEmail: (email: string, password: string, name: string, batchName: string, roll: string) => Promise<UserProfile>;
     logout: () => Promise<void>;
     sendPasswordReset: (email: string) => Promise<void>;
-    refreshProfile: () => Promise<void>; // Added to refresh after linking
+    refreshProfile: () => Promise<void>;
 }

@@ -1,76 +1,65 @@
-import { doc, getDoc, setDoc, DocumentData } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { 
-  defaultHomePageContent, 
-  defaultAboutPageContent, 
-  defaultModulesPageContent, 
-  defaultSuccessStoriesPageContent, 
-  defaultContactPageContent, 
-  defaultBlogPageContent,
-  defaultInstructorsPageContent
+import {
+    defaultHomePageContent,
+    defaultAboutPageContent,
+    defaultModulesPageContent,
+    defaultSuccessStoriesPageContent,
+    defaultContactPageContent,
+    defaultBlogPageContent,
+    defaultInstructorsPageContent
 } from "@/lib/defaultCmsContent";
 
-const PAGE_COLLECTION = "public_pages";
+// ============================================================
+// cmsService — All Firestore calls replaced with API calls
+// ============================================================
 
-export const getPageContent = async (pageId: string) => {
-  try {
-    const docRef = doc(db, PAGE_COLLECTION, pageId);
-    const docSnap = await getDoc(docRef);
-
-    let defaultContent = {};
-    switch (pageId) {
-      case "home_page": defaultContent = defaultHomePageContent; break;
-      case "about_page": defaultContent = defaultAboutPageContent; break;
-      case "modules_page": defaultContent = defaultModulesPageContent; break;
-      case "instructors_page": defaultContent = defaultInstructorsPageContent; break;
-      case "success_stories_page": defaultContent = defaultSuccessStoriesPageContent; break;
-      case "contact_page": defaultContent = defaultContactPageContent; break;
-      case "blog_page": defaultContent = defaultBlogPageContent; break;
-    }
-
-    if (docSnap.exists()) {
-      const data = docSnap.data() || {};
-      const def = defaultContent as any;
-      
-      // Safe merge of sections
-      return {
-        ...def,
-        ...data,
-        // Deep merge for specific common sections to avoid nested undefined
-        hero: { ...(def.hero || {}), ...(data.hero || {}) },
-        header: { ...(def.header || {}), ...(data.header || {}) },
-        targetAudience: { ...(def.targetAudience || {}), ...(data.targetAudience || {}) },
-        learningOutcomes: { ...(def.learningOutcomes || {}), ...(data.learningOutcomes || {}) },
-        socialHeader: { ...(def.socialHeader || {}), ...(data.socialHeader || {}) },
-        aboutSection: { ...(def.aboutSection || {}), ...(data.aboutSection || {}) },
-        whySection: { ...(def.whySection || {}), ...(data.whySection || {}) },
-        ctaSection: { ...(def.ctaSection || {}), ...(data.ctaSection || {}) },
-      };
-    } else {
-      return defaultContent;
-    }
-  } catch (error) {
-    console.error(`Error fetching page content for ${pageId}:`, error);
-    switch (pageId) {
-      case "home_page": return defaultHomePageContent;
-      case "about_page": return defaultAboutPageContent;
-      case "modules_page": return defaultModulesPageContent;
-      case "instructors_page": return defaultInstructorsPageContent;
-      case "success_stories_page": return defaultSuccessStoriesPageContent;
-      case "contact_page": return defaultContactPageContent;
-      case "blog_page": return defaultBlogPageContent;
-      default: return {};
-    }
-  }
+const PAGE_DEFAULTS: Record<string, object> = {
+    home_page: defaultHomePageContent,
+    about_page: defaultAboutPageContent,
+    modules_page: defaultModulesPageContent,
+    instructors_page: defaultInstructorsPageContent,
+    success_stories_page: defaultSuccessStoriesPageContent,
+    contact_page: defaultContactPageContent,
+    blog_page: defaultBlogPageContent,
 };
 
-export const updatePageContent = async (pageId: string, data: DocumentData) => {
-  try {
-    const docRef = doc(db, PAGE_COLLECTION, pageId);
-    await setDoc(docRef, data, { merge: true });
+export const getPageContent = async (pageId: string): Promise<object> => {
+    try {
+        const res = await fetch(`/api/cms?pageId=${encodeURIComponent(pageId)}`, { next: { revalidate: 60 } });
+        const def = PAGE_DEFAULTS[pageId] || {};
+
+        if (!res.ok) return def;
+
+        const data = await res.json();
+        const d = def as any;
+
+        // Safe merge of sections — same logic as before
+        return {
+            ...d,
+            ...data,
+            hero: { ...(d.hero || {}), ...(data.hero || {}) },
+            header: { ...(d.header || {}), ...(data.header || {}) },
+            targetAudience: { ...(d.targetAudience || {}), ...(data.targetAudience || {}) },
+            learningOutcomes: { ...(d.learningOutcomes || {}), ...(data.learningOutcomes || {}) },
+            socialHeader: { ...(d.socialHeader || {}), ...(data.socialHeader || {}) },
+            aboutSection: { ...(d.aboutSection || {}), ...(data.aboutSection || {}) },
+            whySection: { ...(d.whySection || {}), ...(data.whySection || {}) },
+            ctaSection: { ...(d.ctaSection || {}), ...(data.ctaSection || {}) },
+        };
+    } catch (error) {
+        console.error(`Error fetching page content for ${pageId}:`, error);
+        return PAGE_DEFAULTS[pageId] || {};
+    }
+};
+
+export const updatePageContent = async (pageId: string, data: object): Promise<{ success: boolean }> => {
+    const res = await fetch("/api/admin/cms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId, content: data }),
+    });
+    if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || "Failed to update page content.");
+    }
     return { success: true };
-  } catch (error) {
-    console.error(`Error updating page content for ${pageId}:`, error);
-    throw error;
-  }
 };

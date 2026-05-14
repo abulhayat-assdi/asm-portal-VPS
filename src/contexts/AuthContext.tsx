@@ -1,10 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { AuthContextType, UserProfile } from "@/types/auth";
-import * as authService from "@/services/authService";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -17,155 +14,122 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            // If no user, we can immediately stop loading
-            if (!firebaseUser) {
-                setUser(null);
-                setUserProfile(null);
-                // Clear session cookie via secure server-side API
-                await fetch("/api/auth/session", { method: "DELETE" }).catch(() => { });
-                setLoading(false);
-                return;
+    // Fetch the current session profile from server
+    const fetchProfile = useCallback(async (): Promise<UserProfile | null> => {
+        try {
+            const res = await fetch("/api/auth/profile");
+            if (res.ok) {
+                const profile = await res.json();
+                profile.uid = profile.id; // Backward compat
+                return profile;
             }
+            return null;
+        } catch {
+            return null;
+        }
+    }, []);
 
-            // If we have a user, set it but KEEP loading = true
-            setUser(firebaseUser);
-
-            try {
-                // 1. Sync session cookie via secure server-side API (HttpOnly)
-                const token = await firebaseUser.getIdToken();
-                await fetch("/api/auth/session", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ idToken: token }),
-                });
-
-                // 2. Fetch enriched profile via Server API
-                const profileRes = await fetch("/api/auth/profile");
-                if (profileRes.ok) {
-                    const profile = await profileRes.json();
-                    setUserProfile(profile);
-                } else {
-                    // Fallback to client-side fetch if API fails (unlikely)
-                    const profile = await authService.getUserProfile(firebaseUser.uid);
-                    setUserProfile(profile);
-                }
-            } catch (err) {
-                console.error("[AuthContext] Sync failed:", err);
-                // Fallback to client-side fetch on error
-                try {
-                    const profile = await authService.getUserProfile(firebaseUser.uid);
-                    setUserProfile(profile);
-                } catch (fallbackErr) {
-                    console.error("[AuthContext] Fallback profile fetch failed:", fallbackErr);
-                }
-            } finally {
-                // ONLY set loading to false after all profile attempts are finished
+    // Initialize: load session from cookie on mount
+    useEffect(() => {
+        let mounted = true;
+        fetchProfile().then((profile) => {
+            if (mounted) {
+                setUser(profile);
                 setLoading(false);
             }
         });
+        return () => { mounted = false; };
+    }, [fetchProfile]);
 
-        const refreshToken = async () => {
-            if (auth.currentUser && document.visibilityState === 'visible') {
-                try {
-                    const token = await auth.currentUser.getIdToken(true);
-                    await fetch("/api/auth/session", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ idToken: token }),
-                    });
-                    console.log("[AuthContext] Token refreshed automatically");
-                } catch (err) {
-                    console.error("[AuthContext] Token refresh failed:", err);
-                }
+    const loginWithEmail = async (email: string, password: string): Promise<UserProfile> => {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Login failed.");
             }
-        };
 
-        // Periodic token refresh (every 10 minutes)
-        const refreshInterval = setInterval(refreshToken, 10 * 60 * 1000);
-
-        // Also refresh when user comes back to the tab
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') refreshToken();
-        };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            unsubscribe();
-            clearInterval(refreshInterval);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, []);
-
-    const loginWithEmail = async (email: string, password: string) => {
-        setLoading(true);
-        try {
-            return await authService.loginWithEmail(email, password);
-        } catch (error) {
+            data.user.uid = data.user.id;
+            setUser(data.user);
+            return data.user;
+        } finally {
             setLoading(false);
-            throw error;
         }
     };
 
-    const registerWithEmail = async (email: string, password: string, name: string, batchName: string, roll: string) => {
+    const registerWithEmail = async (
+        email: string,
+        password: string,
+        name: string,
+        batchName: string,
+        roll: string
+    ): Promise<UserProfile> => {
         setLoading(true);
         try {
-            await authService.registerWithEmail(email, password, name, batchName, roll);
-            // After successful registration and local login via authService.registerWithEmail
-            if (!auth.currentUser) throw new Error("Registration succeeded but user not found.");
-            return auth.currentUser;
-        } catch (error) {
-            setLoading(false);
-            throw error;
-        }
-    };
+            const res = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password, name, batchName, roll }),
+            });
 
-    const refreshProfile = async () => {
-        if (user) {
-            const profileRes = await fetch("/api/auth/profile");
-            if (profileRes.ok) {
-                const profile = await profileRes.json();
-                setUserProfile(profile);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || "Registration failed.");
             }
+
+            data.user.uid = data.user.id;
+            setUser(data.user);
+            return data.user;
+        } finally {
+            setLoading(false);
         }
     };
 
-    const loginWithGoogle = async () => {
+    const logout = async (): Promise<void> => {
         setLoading(true);
         try {
-            return await authService.loginWithGoogle();
-        } catch (error) {
+            await fetch("/api/auth/logout", { method: "DELETE" });
+            setUser(null);
+        } finally {
             setLoading(false);
-            throw error;
         }
     };
 
-    const logout = async () => {
-        setLoading(true);
-        try {
-            await authService.logout();
-        } catch (error) {
-            setLoading(false);
-            throw error;
+    const sendPasswordReset = async (email: string): Promise<void> => {
+        const res = await fetch("/api/auth/reset-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to send password reset email.");
         }
     };
 
-    const sendPasswordReset = async (email: string) => {
-        await authService.sendPasswordReset(email);
+    const refreshProfile = async (): Promise<void> => {
+        const profile = await fetchProfile();
+        setUser(profile);
     };
 
     const value: AuthContextType = {
         user,
-        userProfile,
+        userProfile: user,
         loading,
         loginWithEmail,
         registerWithEmail,
-        loginWithGoogle,
         logout,
         sendPasswordReset,
         refreshProfile,

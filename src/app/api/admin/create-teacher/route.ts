@@ -1,125 +1,97 @@
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminServices } from "@/lib/firebase-admin";
+import { prisma } from "@/lib/db";
+import { getSessionUser, isAdmin } from "@/lib/auth";
+import { AUTH_ROLES } from "@/lib/constants";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+const createTeacherSchema = z.object({
+    teacherId: z.string().min(1, "Teacher ID is required"),
+    loginEmail: z.string().email("Invalid login email"),
+    displayEmail: z.string().email("Invalid display email").optional(),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    name: z.string().min(1, "Name is required"),
+    phone: z.string().optional(),
+    designation: z.string().optional(),
+    about: z.string().optional(),
+    isAdmin: z.boolean().optional(),
+    order: z.number().optional(),
+});
 
 export async function POST(req: NextRequest) {
     try {
-        const { adminAuth, adminDb } = getAdminServices();
-
-        // 1. Get Token from Cookie or Authorization Header
-        let token = req.cookies.get("__session")?.value;
-        const authHeader = req.headers.get("Authorization");
-
-        if (!token && authHeader?.startsWith("Bearer ")) {
-            token = authHeader.split("Bearer ")[1];
-        }
-
-        if (!token) {
-            return NextResponse.json(
-                { error: "Forbidden: Missing authentication token" },
-                { status: 403 }
-            );
-        }
-
-        let decodedToken;
-        try {
-            if (token === req.cookies.get("__session")?.value) {
-                // If it's a session cookie, verify as session cookie
-                decodedToken = await adminAuth.verifySessionCookie(token, true);
-            } else {
-                // If it's from Authorization: Bearer header, verify as ID token
-                decodedToken = await adminAuth.verifyIdToken(token);
-            }
-        } catch (authError: unknown) {
-            console.error("Auth verification failed in create-teacher:", authError);
-            const message = authError instanceof Error ? authError.message : String(authError);
-            return NextResponse.json(
-                { error: `Forbidden: Invalid session! (${message})` },
-                { status: 403 }
-            );
-        }
-
-        // 2. Check caller is admin or super_admin
-        const callerDoc = await adminDb
-            .collection("users")
-            .doc(decodedToken.uid)
-            .get();
-
-        const callerRole = callerDoc.data()?.role;
-        if (!callerDoc.exists || (callerRole !== "admin" && callerRole !== "super_admin")) {
-            return NextResponse.json(
-                { error: "Forbidden: Admin access required" },
-                { status: 403 }
-            );
+        // 1. Auth check — only admins/super_admins can create teachers
+        const caller = await getSessionUser(req);
+        if (!caller || !isAdmin(caller)) {
+            return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 
         const body = await req.json();
-        const { teacherId, loginEmail, displayEmail, password, name, phone, isAdmin, order } = body;
+        const parsed = createTeacherSchema.safeParse(body);
 
-        if (!loginEmail || !password || !name) {
+        if (!parsed.success) {
+            return NextResponse.json({ error: parsed.error.message }, { status: 400 });
+        }
+
+        const { teacherId, loginEmail, displayEmail, password, name, phone, designation, about, isAdmin: grantAdmin, order } = parsed.data;
+
+        // 2. Only super_admin can grant admin role
+        if (grantAdmin && caller.role !== "super_admin") {
             return NextResponse.json(
-                { error: "Missing required fields (loginEmail, password, name)" },
-                { status: 400 }
+                { error: "Forbidden: Only the portal owner (super_admin) can grant admin access." },
+                { status: 403 }
             );
         }
 
-        // 3. If granting admin, check caller has super_admin role (via Custom Claims)
-        if (isAdmin) {
-            const callerClaimRole = decodedToken.role || callerRole;
-            if (callerClaimRole !== "super_admin") {
-                return NextResponse.json(
-                    { error: "Forbidden: Only the portal owner (super_admin) can grant admin access." },
-                    { status: 403 }
-                );
-            }
+        const normalizedLoginEmail = loginEmail.toLowerCase().trim();
+
+        // 3. Check for existing user
+        const existing = await prisma.user.findUnique({ where: { email: normalizedLoginEmail } });
+        if (existing) {
+            return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
         }
 
-        // 4. Validate and format phone number for E.164 if necessary
-        let formattedPhone = phone || undefined;
-        if (formattedPhone && formattedPhone.startsWith("01") && formattedPhone.length === 11) {
-            formattedPhone = "+88" + formattedPhone;
-        }
+        // 4. Hash password
+        const passwordHash = await bcrypt.hash(password, 12);
+        const role = grantAdmin ? AUTH_ROLES.ADMIN : AUTH_ROLES.TEACHER;
 
-        // 5. Create User in Firebase Authentication using loginEmail
-        const userRecord = await adminAuth.createUser({
-            email: loginEmail,
-            password,
-            displayName: name,
-            ...(formattedPhone ? { phoneNumber: formattedPhone } : {}),
+        // 5. Create user and teacher records in a transaction
+        const result = await prisma.$transaction(async (tx: any) => {
+            const user = await tx.user.create({
+                data: {
+                    email: normalizedLoginEmail,
+                    passwordHash,
+                    displayName: name,
+                    role,
+                    teacherId,
+                },
+            });
+
+            const teacher = await tx.teacher.create({
+                data: {
+                    teacherId,
+                    name,
+                    designation: designation || "",
+                    about: about || "",
+                    phone: phone || "",
+                    email: displayEmail || normalizedLoginEmail,
+                    loginEmail: normalizedLoginEmail,
+                    isAdmin: grantAdmin || false,
+                    order: order || 0,
+                },
+            });
+
+            return { user, teacher };
         });
 
-        try {
-            // 6. Set custom claims
-            const role = isAdmin ? "admin" : "teacher";
-            await adminAuth.setCustomUserClaims(userRecord.uid, {
-                role,
-                admin: isAdmin === true,
-                teacher: isAdmin !== true,
-            });
-
-            // 7. Create the user profile in Firestore (uses loginEmail)
-            await adminDb.collection("users").doc(userRecord.uid).set({
-                uid: userRecord.uid,
-                email: loginEmail,
-                displayName: name,
-                role,
-                teacherId: teacherId || null,
-                order: Number(order) || 0,
-                createdAt: new Date(),
-            });
-        } catch (dbError: unknown) {
-            // Rollback: Delete the dangling auth user if DB operations fail
-            console.error("Database operation failed, rolling back user creation:", dbError);
-            await adminAuth.deleteUser(userRecord.uid);
-            const message = dbError instanceof Error ? dbError.message : String(dbError);
-            return NextResponse.json({ error: `Database error: ${message}` }, { status: 500 });
-        }
-
         return NextResponse.json(
-            { success: true, uid: userRecord.uid, message: "Teacher created successfully." },
+            { success: true, uid: result.user.id, message: "Teacher created successfully." },
             { status: 201 }
         );
     } catch (error: unknown) {
-        console.error("Error creating teacher:", error);
+        console.error("[Create Teacher API] Error:", error);
         const message = error instanceof Error ? error.message : "Failed to create teacher account.";
         return NextResponse.json({ error: message }, { status: 500 });
     }

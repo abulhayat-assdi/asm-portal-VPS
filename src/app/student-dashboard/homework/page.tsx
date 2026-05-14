@@ -197,7 +197,8 @@ export default function HomeworkSubmissionPage() {
             setSubmitError(`মোট ফাইল সাইজ ${MAX_TOTAL_SIZE_MB}MB এর বেশি হতে পারবে না।`);
             return;
         }
-        if (!userProfile) return;
+        const uid = userProfile?.uid;
+        if (!uid) return;
 
         setIsSubmitting(true);
         setSubmitError("");
@@ -210,8 +211,7 @@ export default function HomeworkSubmissionPage() {
             if (selectedFiles.length > 0) {
                 uploadedFiles = await uploadMultipleHomeworkFiles(
                     selectedFiles,
-                    userProfile.studentBatchName || "unknown",
-                    (progress) => setUploadProgress(progress)
+                    (idx, progress) => setUploadProgress(progress)
                 );
             }
 
@@ -221,7 +221,7 @@ export default function HomeworkSubmissionPage() {
             const firstFile = uploadedFiles[0];
 
             await submitHomework({
-                studentUid: userProfile.uid,
+                studentUid: uid,
                 studentName: userProfile.displayName || "Unknown",
                 studentRoll: userProfile.studentRoll || "N/A",
                 studentBatchName: userProfile.studentBatchName || "N/A",
@@ -229,7 +229,7 @@ export default function HomeworkSubmissionPage() {
                 subject: subject,
                 assignmentId: selectedAssignmentId,
                 // Legacy single-file fields (first file for backwards compat)
-                fileUrl: firstFile?.fileUrl,
+                fileUrl: firstFile?.url,
                 storagePath: firstFile?.storagePath,
                 fileName: firstFile?.fileName,
                 // New multi-file array
@@ -242,7 +242,7 @@ export default function HomeworkSubmissionPage() {
             resetForm();
 
             // Refresh history
-            const updated = await getHomeworkByStudent(userProfile.uid);
+            const updated = await getHomeworkByStudent(uid);
             setMySubmissions(updated);
 
             setTimeout(() => setSubmitSuccess(false), 4000);
@@ -558,7 +558,7 @@ export default function HomeworkSubmissionPage() {
                                     const filesToShow = hw.files && hw.files.length > 0
                                         ? hw.files
                                         : hw.fileName
-                                            ? [{ fileName: hw.fileName, fileUrl: hw.fileUrl ?? "", storagePath: hw.storagePath ?? "", fileSize: 0 }]
+                                            ? [{ fileName: hw.fileName, url: hw.fileUrl ?? "", storagePath: hw.storagePath ?? "", size: 0 }]
                                             : [];
 
                                     return (
@@ -581,20 +581,17 @@ export default function HomeworkSubmissionPage() {
                                                 <div className="mt-2 space-y-1">
                                                     {filesToShow.map((f, i) => (
                                                         <div key={i} className="flex items-center gap-1.5 text-xs">
-                                                            <svg className="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                                                            </svg>
-                                                            <a
-                                                                href={f.fileUrl}
+                                                                            <a
+                                                                href={f.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="text-blue-600 hover:underline truncate"
                                                             >
                                                                 {f.fileName}
                                                             </a>
-                                                            {f.fileSize > 0 && (
+                                                            {f.size && f.size > 0 && (
                                                                 <span className="text-gray-400 shrink-0">
-                                                                    ({(f.fileSize / 1024 / 1024).toFixed(1)}MB)
+                                                                    ({(f.size / 1024 / 1024).toFixed(1)}MB)
                                                                 </span>
                                                             )}
                                                         </div>

@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Script from "next/script";
 import "./tracker.css";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 function getTodayDateString() {
     const d = new Date();
@@ -53,25 +51,19 @@ export default function TrackerDashboardPage() {
     const [exportBatch, setExportBatch] = useState("");
     const [isExporting, setIsExporting] = useState(false);
 
-    // ── Load unique batches from Firestore ────────────────────
+    // ── Load unique batches from API ────────────────────
     useEffect(() => {
         const loadBatches = async () => {
             setBatchesLoading(true);
             try {
-                const snapshot = await getDocs(collection(db, "daily_tracker_reports"));
-                const names = new Set<string>();
-                snapshot.docs.forEach(doc => {
-                    const bn = doc.data().batchName;
-                    if (bn) {
-                        // Normalize: replace underscores with spaces
-                        names.add(String(bn).replace(/_/g, " "));
+                const res = await fetch("/api/tracker");
+                const data = await res.json();
+                if (data.success) {
+                    setAvailableBatches(data.batches);
+                    if (data.batches.length > 0) {
+                        setDashBatch(data.batches[0]);
+                        setExportBatch(data.batches[0]);
                     }
-                });
-                const sorted = Array.from(names).sort();
-                setAvailableBatches(sorted);
-                if (sorted.length > 0) {
-                    setDashBatch(sorted[0]);
-                    setExportBatch(sorted[0]);
                 }
             } catch (err) {
                 console.error("Failed to load batches:", err);
@@ -82,40 +74,30 @@ export default function TrackerDashboardPage() {
         loadBatches();
     }, []);
 
-    // ── Load dashboard data (direct Firestore) ────────────────
+    // ── Load dashboard data (via API) ────────────────
     const loadDashboardData = async (date: string, batch: string) => {
         if (!date || !batch) return;
         setDashLoading(true);
         setDashEmptyMessage("");
         setDashReports([]);
         try {
-            // Fetch ALL reports (no filter) to handle batch name inconsistencies
-            // e.g., "Batch_08" vs "Batch 08" stored by different submissions
-            const snapshot = await getDocs(collection(db, "daily_tracker_reports"));
-            const normalizedBatch = batch.replace(/_/g, " ").trim().toLowerCase();
-
-            const reports = snapshot.docs
-                .map(doc => ({ id: doc.id, ...doc.data() } as any))
-                .filter((d: any) => {
-                    const docBatch = String(d.batchName || "").replace(/_/g, " ").trim().toLowerCase();
-                    return d.date === date && docBatch === normalizedBatch;
+            const res = await fetch("/api/tracker", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "getDashboardData",
+                    payload: { date, batch }
                 })
-                .map((d: any) => ({
-                    id: d.id,
-                    captain: d.studentName,
-                    score: d.score,
-                    items: (d.tasks || []).map((t: any, idx: number) => ({
-                        number: idx + 1,
-                        label: t.question,
-                        status: t.status,
-                        reason: t.reason
-                    }))
-                }));
-
-            if (reports.length > 0) {
-                setDashReports(reports);
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.reports.length > 0) {
+                    setDashReports(data.reports);
+                } else {
+                    setDashEmptyMessage(`"${batch}" ব্যাচে ${date} তারিখে কোনো রিপোর্ট জমা হয়নি।`);
+                }
             } else {
-                setDashEmptyMessage(`"${batch}" ব্যাচে ${date} তারিখে কোনো রিপোর্ট জমা হয়নি।`);
+                setDashEmptyMessage(`⚠️ সার্ভার এরর: ${data.message || "সংযোগ সমস্যা।"}`);
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "সংযোগ সমস্যা।";
@@ -128,9 +110,9 @@ export default function TrackerDashboardPage() {
     useEffect(() => {
         if (dashBatch) loadDashboardData(dashDate, dashBatch);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dashBatch]);
+    }, [dashBatch, dashDate]);
 
-    // ── Export handler (direct Firestore) ─────────────────────
+    // ── Export handler (via API) ─────────────────────
     const handleExportDownload = async () => {
         if (!exportBatch) { showToast("❗ ব্যাচ সিলেক্ট করুন।", "error"); return; }
 
@@ -154,50 +136,40 @@ export default function TrackerDashboardPage() {
 
         setIsExporting(true);
         try {
-            const normalizedExportBatch = exportBatch.replace(/_/g, " ").trim().toLowerCase();
-            const snapshot = await getDocs(collection(db, "daily_tracker_reports"));
-
-            const docsInRange = snapshot.docs
-                .map(doc => doc.data() as any)
-                .filter(d => {
-                    const docBatch = String(d.batchName || "").replace(/_/g, " ").trim().toLowerCase();
-                    return d.date >= fromDateStr && d.date <= toDateStr && docBatch === normalizedExportBatch;
+            const res = await fetch("/api/tracker", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "getExportData",
+                    payload: { batch: exportBatch, from: fromDateStr, to: toDateStr }
                 })
-                .sort((a, b) => a.date.localeCompare(b.date));
-
-            if (docsInRange.length === 0) {
-                showToast("📭 এই সময়কালে কোনো ডেটা পাওয়া পাওয়া যায়নি।", "error");
+            });
+            const data = await res.json();
+            
+            if (!data.success || !data.rows || data.rows.length === 0) {
+                showToast(data.message || "📭 এই সময়কালে কোনো ডেটা পাওয়া পাওয়া যায়নি।", "error");
                 return;
             }
 
             const xlsx = (window as any).XLSX;
             if (!xlsx) { showToast("❌ Excel library not loaded. Please try again.", "error"); return; }
 
-            // Build headers from first doc's tasks
-            const firstTasks = docsInRange[0].tasks || [];
-            const headers = ["Date", "Captains Name", "Batch", "Score", ...firstTasks.map((t: any) => t.question)];
-
-            const rows = docsInRange.map(d => {
-                const row = [d.date, d.studentName, d.batchName, d.score];
-                (d.tasks || []).forEach((t: any) => row.push(t.status || ""));
-                return row;
-            });
-
-            const wsData = [headers, ...rows];
+            const wsData = [data.headers, ...data.rows];
             const ws = xlsx.utils.aoa_to_sheet(wsData);
             const wb = xlsx.utils.book_new();
             xlsx.utils.book_append_sheet(wb, ws, exportBatch);
 
-            const colWidths = headers.map((h: any, ci: number) => {
+            // Column width adjustment
+            const colWidths = data.headers.map((h: any, ci: number) => {
                 let maxLen = String(h).length;
-                rows.forEach((r: any) => { const l = String(r[ci] || "").length; if (l > maxLen) maxLen = l; });
+                data.rows.forEach((r: any) => { const l = String(r[ci] || "").length; if (l > maxLen) maxLen = l; });
                 return { wch: Math.min(maxLen + 2, 40) };
             });
             ws["!cols"] = colWidths;
 
             const fileName = `${exportBatch.replace(/\s+/g, "_")}_${fromDateStr}_to_${toDateStr}.xlsx`;
             xlsx.writeFile(wb, fileName);
-            showToast(`✅ ${docsInRange.length} টি রিপোর্ট ডাউনলোড হয়েছে!`, "success");
+            showToast(`✅ ${data.rows.length} টি রিপোর্ট ডাউনলোড হয়েছে!`, "success");
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "সংযোগ সমস্যা।";
             showToast(`❌ ডাউনলোড ব্যর্থ: ${errorMessage}`, "error");
@@ -246,7 +218,7 @@ export default function TrackerDashboardPage() {
                 </div>
             </div>
 
-            {/* ── Dashboard Section (styled like old script) ── */}
+            {/* ── Dashboard Section ── */}
             <div id="tracker-app" style={{
                 background: '#f0f2ff',
                 borderRadius: '14px',

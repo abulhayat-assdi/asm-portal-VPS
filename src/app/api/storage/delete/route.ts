@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getAdminServices } from "@/lib/firebase-admin";
-import { COOKIES, AUTH_ROLES } from "@/lib/constants";
+import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
+import { AUTH_ROLES } from "@/lib/constants";
 
 /**
- * [API Route] Physically delete a file from local cPanel storage
+ * [API Route] Physically delete a file from local VPS storage
  * DELETE /api/storage/delete?path=...
  */
 export async function DELETE(request: NextRequest) {
@@ -17,68 +17,54 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 🔒 Auth Check
-    const session = request.cookies.get(COOKIES.SESSION)?.value;
-    if (!session) {
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    try {
-        const { adminAuth, adminDb } = getAdminServices();
-        const decodedToken = await adminAuth.verifyIdToken(session);
-        
-        // Use custom claim 'role' if it exists, otherwise fallback to Firestore
-        let userRole = decodedToken.role as string;
-        
-        if (!userRole) {
-            const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-            userRole = userDoc.data()?.role;
-        }
+    const localStoragePath = "public";
+    const absolutePath = path.resolve(process.cwd(), localStoragePath, filePath);
 
-        const userUid = decodedToken.uid;
+    // 🔒 Security Check: Out-of-bounds protection
+    const storageDir = path.resolve(process.cwd(), localStoragePath);
+    if (!absolutePath.startsWith(storageDir)) {
+        return NextResponse.json({ error: "Forbidden: Out of bounds" }, { status: 403 });
+    }
 
-        const localStoragePath = process.env.LOCAL_STORAGE_PATH || "../storage";
-        const absolutePath = path.resolve(process.cwd(), localStoragePath, filePath);
+    // ⚖️ Authorization Rules
+    let isAuthorized = false;
 
-        // 🔒 Security Check: Out-of-bounds protection
-        const storageDir = path.resolve(process.cwd(), localStoragePath);
-        if (!absolutePath.startsWith(storageDir)) {
-            return NextResponse.json({ error: "Forbidden: Out of bounds" }, { status: 403 });
-        }
-
-        // ⚖️ Authorization Rules
-        let isAuthorized = false;
-
-        // Admins and Teachers have global delete permissions
-        if (userRole === AUTH_ROLES.ADMIN || userRole === AUTH_ROLES.TEACHER) {
+    // Admins and Teachers have global delete permissions
+    if (isTeacherOrAdmin(sessionUser)) {
+        isAuthorized = true;
+    }
+    // Students can only delete files in their own homework folder
+    else if (sessionUser.role === AUTH_ROLES.STUDENT && filePath.startsWith("homework/")) {
+        const pathSegments = filePath.split("/");
+        const pathUid = pathSegments[1]; // homework/{userId}/...
+        if (sessionUser.id === pathUid) {
             isAuthorized = true;
-        } 
-        // Students can only delete files in their own homework folder
-        else if (userRole === AUTH_ROLES.STUDENT && filePath.startsWith("private/homework/")) {
-            const pathSegments = filePath.split("/");
-            const pathUid = pathSegments[2];
-            if (userUid === pathUid) {
-                isAuthorized = true;
-            }
         }
+    }
 
-        if (!isAuthorized) {
-            console.warn(`[Delete API] Forbidden attempt by ${userUid} to delete ${filePath}`);
-            return NextResponse.json({ error: "Forbidden: You do not have permission to delete this file" }, { status: 403 });
-        }
+    if (!isAuthorized) {
+        console.warn(`[Delete API] Forbidden attempt by ${sessionUser.id} to delete ${filePath}`);
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-        // 🗑️ Delete the File
+    // 🗑️ Delete the File
+    try {
         if (fs.existsSync(absolutePath)) {
             fs.unlinkSync(absolutePath);
             console.log(`[Delete API] File deleted: ${filePath}`);
             return NextResponse.json({ success: true, message: "File deleted" });
         } else {
-            // If file doesn't exist, we return success anyway to keep DB in sync
+            // File not on disk — return success to keep DB in sync
             console.warn(`[Delete API] File not found on disk: ${filePath}`);
             return NextResponse.json({ success: true, message: "File not found on disk" });
         }
-
     } catch (error) {
-        console.error("[Delete API] Auth/Delete Error:", error);
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        console.error("[Delete API] Delete Error:", error);
+        return NextResponse.json({ error: "Failed to delete file" }, { status: 500 });
     }
 }

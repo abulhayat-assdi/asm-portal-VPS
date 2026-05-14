@@ -5,7 +5,6 @@ import TeacherCard from "@/components/ui/TeacherCard";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { getAllTeachers, getTeachersPaginated, addTeacher, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
-import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function TeachersPage() {
@@ -15,7 +14,7 @@ export default function TeachersPage() {
     const [searchQuery, setSearchQuery] = useState("");
     
     // Pagination states
-    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+    const [lastDoc, setLastDoc] = useState<string | undefined>(undefined);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const PAGE_SIZE = 10;
@@ -56,7 +55,7 @@ export default function TeachersPage() {
     const fetchTeachers = async () => {
         setLoading(true);
         try {
-            const data = await getTeachersPaginated(PAGE_SIZE, null);
+            const data = await getTeachersPaginated(PAGE_SIZE, undefined);
             setTeachers(data.teachers);
             setLastDoc(data.nextCursor);
             setHasMore(data.hasMore);
@@ -71,7 +70,7 @@ export default function TeachersPage() {
     // — preserves scroll position after edit/delete/add actions
     const refreshTeachers = async () => {
         try {
-            const data = await getTeachersPaginated(PAGE_SIZE, null);
+            const data = await getTeachersPaginated(PAGE_SIZE, undefined);
             setTeachers(data.teachers);
             setLastDoc(data.nextCursor);
             setHasMore(data.hasMore);
@@ -232,9 +231,6 @@ export default function TeachersPage() {
             if (isEditMode && editingTeacher) {
                 // --- EDIT MODE ---
 
-                // Get fresh token for admin API calls
-                const freshToken = user ? await user.getIdToken(true) : "";
-
                 const oldLoginEmail = editingTeacher.loginEmail || editingTeacher.email;
                 const newLoginEmail = formData.loginEmail;
                 const adminChanged = formData.isAdmin !== Boolean(editingTeacher.isAdmin);
@@ -242,7 +238,7 @@ export default function TeachersPage() {
 
                 // If login email or admin status changed, call server-side API
                 if (loginEmailChanged || adminChanged) {
-                    const updateBody: any = { firestoreDocId: editingTeacher.id, teacherId: formData.teacherId };
+                    const updateBody: any = { teacherDbId: editingTeacher.id, teacherId: formData.teacherId };
                     if (loginEmailChanged) updateBody.newLoginEmail = newLoginEmail;
                     if (adminChanged) updateBody.isAdmin = formData.isAdmin;
 
@@ -250,7 +246,6 @@ export default function TeachersPage() {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${freshToken}`,
                         },
                         body: JSON.stringify(updateBody),
                     });
@@ -260,6 +255,8 @@ export default function TeachersPage() {
                         throw new Error(result.error || "Failed to update teacher auth/role.");
                     }
                 }
+
+
 
                 // Always update Firestore teacher doc directly
                 await updateTeacher(editingTeacher.id, {
@@ -278,18 +275,11 @@ export default function TeachersPage() {
             } else {
                 // --- ADD MODE ---
 
-                // Get fresh token
-                let freshToken = "";
-                if (user) {
-                    freshToken = await user.getIdToken(true);
-                }
-
                 // Create Firebase Auth user via secure backend (uses loginEmail)
                 const response = await fetch("/api/admin/create-teacher", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${freshToken}`,
                     },
                     body: JSON.stringify({
                         teacherId: formData.teacherId,

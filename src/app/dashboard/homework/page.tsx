@@ -65,7 +65,7 @@ export default function HomeworkViewPage() {
                  const batchMap = new Map<string, { batchType?: string; createdAt?: Date }>();
                  batchData.forEach(s => {
                      if (!batchMap.has(s.batchName)) {
-                         batchMap.set(s.batchName, { batchType: s.batchType, createdAt: s.createdAt });
+                         batchMap.set(s.batchName, { batchType: s.batchType, createdAt: s.createdAt ? new Date(s.createdAt) : undefined });
                      }
                  });
                  batchMap.forEach((info, batchName) => {
@@ -75,8 +75,8 @@ export default function HomeworkViewPage() {
                  });
 
                  if (completedBatches.length > 0) {
-                     const deleted = await cleanupCompletedBatchHomework(completedBatches);
-                     if (deleted > 0) setCleanupCount(deleted);
+                     const res = await cleanupCompletedBatchHomework(completedBatches);
+                     if (res.deleted > 0) setCleanupCount(res.deleted);
                  }
             }
 
@@ -113,7 +113,7 @@ export default function HomeworkViewPage() {
         setIsSubmittingAssignment(true);
         try {
             await createHomeworkAssignment({
-                teacherUid: userProfile.uid,
+                teacherUid: userProfile.uid!,
                 teacherName: userProfile.displayName || "Unknown",
                 title: assignmentTitle,
                 batchName: assignmentBatch,
@@ -141,7 +141,8 @@ export default function HomeworkViewPage() {
             
             // Delete all corresponding homework files and documents
             for (const hw of subs) {
-                await deleteHomework(hw.id, hw.storagePath);
+                const paths = hw.files ? hw.files.map(f => f.storagePath) : (hw.storagePath ? [hw.storagePath] : []);
+                await deleteHomework(hw.id, paths);
             }
             
             // Delete the assignment folder
@@ -165,7 +166,8 @@ export default function HomeworkViewPage() {
         if (!confirm(`Delete homework "${hw.subject}" by ${hw.studentName}?`)) return;
         setDeletingId(hw.id);
         try {
-            await deleteHomework(hw.id, hw.storagePath);
+            const paths = hw.files ? hw.files.map(f => f.storagePath) : (hw.storagePath ? [hw.storagePath] : []);
+            await deleteHomework(hw.id, paths);
             setHomework(prev => prev.filter(h => h.id !== hw.id));
             if (viewingSubmission?.id === hw.id) setViewingSubmission(null);
         } catch (err) {
@@ -442,14 +444,14 @@ export default function HomeworkViewPage() {
                                             const filesToShow: UploadedFile[] = hw.files && hw.files.length > 0
                                                 ? hw.files
                                                 : hw.fileName
-                                                    ? [{ fileName: hw.fileName, fileUrl: hw.fileUrl ?? "", storagePath: hw.storagePath ?? "", fileSize: 0 }]
+                                                    ? [{ fileName: hw.fileName, url: hw.fileUrl ?? "", storagePath: hw.storagePath ?? "", size: 0 }]
                                                     : [];
                                             return filesToShow.length > 0 ? (
                                                 <div className="mb-3 space-y-1.5 min-w-0">
                                                     {filesToShow.map((f, i) => (
                                                         <a
                                                             key={i}
-                                                            href={f.fileUrl}
+                                                            href={f.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="flex items-center gap-2 px-3 py-2 bg-blue-50/80 border border-blue-100 rounded-lg text-sm text-blue-800 hover:bg-blue-100 transition-colors group/link w-full min-w-0"
@@ -458,8 +460,8 @@ export default function HomeworkViewPage() {
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                                             </svg>
                                                             <span className="truncate font-semibold group-hover/link:underline flex-1 min-w-0">{f.fileName}</span>
-                                                            {f.fileSize > 0 && (
-                                                                <span className="text-xs text-blue-400 shrink-0">({(f.fileSize/1024/1024).toFixed(1)}MB)</span>
+                                                            {f.size! > 0 && (
+                                                                <span className="text-xs text-blue-400 shrink-0">({(f.size!/1024/1024).toFixed(1)}MB)</span>
                                                             )}
                                                         </a>
                                                     ))}
@@ -550,7 +552,7 @@ export default function HomeworkViewPage() {
                                 const filesToShow: UploadedFile[] = viewingSubmission.files && viewingSubmission.files.length > 0
                                     ? viewingSubmission.files
                                     : viewingSubmission.fileName
-                                        ? [{ fileName: viewingSubmission.fileName, fileUrl: viewingSubmission.fileUrl ?? "", storagePath: viewingSubmission.storagePath ?? "", fileSize: 0 }]
+                                        ? [{ fileName: viewingSubmission.fileName, url: viewingSubmission.fileUrl ?? "", storagePath: viewingSubmission.storagePath ?? "", size: 0 }]
                                         : [];
                                 return filesToShow.length > 0 ? (
                                     <div>
@@ -561,7 +563,7 @@ export default function HomeworkViewPage() {
                                             {filesToShow.map((f, i) => (
                                                 <a
                                                     key={i}
-                                                    href={f.fileUrl}
+                                                    href={f.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center gap-3 px-5 py-3 bg-blue-50/50 rounded-xl text-sm text-blue-700 hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm"
@@ -570,8 +572,8 @@ export default function HomeworkViewPage() {
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                                     </svg>
                                                     <span className="font-bold truncate flex-1">{f.fileName}</span>
-                                                    {f.fileSize > 0 && (
-                                                        <span className="text-xs text-blue-400">{(f.fileSize/1024/1024).toFixed(1)}MB</span>
+                                                    {f.size! > 0 && (
+                                                        <span className="text-xs text-blue-400">{(f.size!/1024/1024).toFixed(1)}MB</span>
                                                     )}
                                                     <span className="text-xs text-white bg-blue-500 px-3 py-1 rounded-full font-bold whitespace-nowrap shadow-sm">Download</span>
                                                 </a>

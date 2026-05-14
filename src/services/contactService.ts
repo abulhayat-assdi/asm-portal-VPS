@@ -1,5 +1,6 @@
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+// ============================================================
+// contactService — All Firestore/onSnapshot replaced with API + SSE
+// ============================================================
 
 export interface ContactMessage {
     id: string;
@@ -11,87 +12,59 @@ export interface ContactMessage {
     studentBatchName: string;
     studentRoll: string;
     status: "unread" | "read" | "resolved";
-    createdAt: any;
+    createdAt: string;
     date: string;
     adminReply?: string;
 }
 
-/**
- * Submit a contact message from a student
- */
-export const submitContactMessage = async (
-    data: Omit<ContactMessage, "id">
-): Promise<string> => {
-    try {
-        const docRef = await addDoc(collection(db, "contact_messages"), data);
-        return docRef.id;
-    } catch (error) {
-        console.error("Error submitting contact message:", error);
-        throw error;
-    }
+export const submitContactMessage = async (data: Omit<ContactMessage, "id">): Promise<string> => {
+    const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || "Failed to submit contact message.");
+    return result.id;
 };
 
-/**
- * Fetch all contact messages (admin only)
- */
 export const getAllContactMessages = async (): Promise<ContactMessage[]> => {
-    try {
-        const q = query(collection(db, "contact_messages"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ContactMessage));
-    } catch (error) {
-        console.error("Error fetching contact messages:", error);
-        return [];
-    }
+    const res = await fetch("/api/contact", { cache: "no-store" });
+    if (!res.ok) return [];
+    return res.json();
 };
 
-/**
- * Mark a message as read
- */
 export const markMessageAsRead = async (id: string): Promise<void> => {
-    try {
-        await updateDoc(doc(db, "contact_messages", id), { status: "read" });
-    } catch (error) {
-        console.error("Error marking message as read:", error);
-        throw error;
-    }
+    const res = await fetch("/api/contact", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "read" }),
+    });
+    if (!res.ok) throw new Error("Failed to mark message as read.");
 };
 
-/**
- * Mark a message as resolved
- */
 export const markMessageAsResolved = async (id: string): Promise<void> => {
-    try {
-        await updateDoc(doc(db, "contact_messages", id), { status: "resolved" });
-    } catch (error) {
-        console.error("Error marking message as resolved:", error);
-        throw error;
-    }
+    const res = await fetch("/api/contact", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "resolved" }),
+    });
+    if (!res.ok) throw new Error("Failed to mark message as resolved.");
 };
 
-/**
- * Delete a contact message
- */
 export const deleteContactMessage = async (id: string): Promise<void> => {
-    try {
-        await deleteDoc(doc(db, "contact_messages", id));
-    } catch (error) {
-        console.error("Error deleting contact message:", error);
-        throw error;
-    }
+    const res = await fetch(`/api/contact?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete contact message.");
 };
 
 // ============================================================================
-// NEW REAL-TIME CHAT SYSTEM
+// CHAT SYSTEM — SSE-based (replaces Firestore onSnapshot)
 // ============================================================================
-
-import { onSnapshot, setDoc, writeBatch, Timestamp, serverTimestamp } from "firebase/firestore";
-// Removed firebase/storage imports since files are now stored in cPanel local storage
 
 export interface ChatAttachment {
     url: string;
     name: string;
-    path: string; // Required for deleting from storage
+    path: string;
     size: number;
     type: string;
 }
@@ -101,7 +74,7 @@ export interface ChatMessage {
     sender: "student" | "admin";
     text: string;
     attachments: ChatAttachment[];
-    createdAt: any;
+    createdAt: string;
 }
 
 export interface AdminChatThread {
@@ -111,155 +84,92 @@ export interface AdminChatThread {
     studentBatchName: string;
     studentRoll: string;
     lastMessageText: string;
-    lastMessageTime: any;
+    lastMessageTime: string;
     unreadCountAdmin: number;
     unreadCountStudent: number;
 }
 
-/**
- * Send a message (student or admin)
- */
 export const sendChatMessage = async (
     studentUid: string,
     sender: "student" | "admin",
     text: string,
     attachments: ChatAttachment[],
-    studentProfileInfo?: { name: string, email: string, batch: string, roll: string }
-) => {
-    try {
-        const threadRef = doc(db, "admin_chats", studentUid);
-        const messagesRef = collection(db, "admin_chats", studentUid, "messages");
-
-        const lastMessageText = text.trim() || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : "");
-
-        const messageObj = {
-            sender,
-            text,
-            attachments,
-            createdAt: Timestamp.now()
-        };
-
-        const updateObj: any = {
-            lastMessageText,
-            lastMessageTime: Timestamp.now()
-        };
-
-        if (sender === "student") {
-            updateObj.unreadCountAdmin = 1; // Increment ideally, but for simplicity set to 1 or you can use FieldValue.increment(1). But setting to 1 makes it simpler if we just treat any > 0 as unread. Let's use 1 to mark it unread.
-            // Actually, we should just mark unread=true. But we used unreadCountAdmin: number.
-            updateObj.unreadCountStudent = 0;
-            // Provide profile info on creation if it doesn't exist
-            if (studentProfileInfo) {
-                updateObj.studentName = studentProfileInfo.name;
-                updateObj.studentEmail = studentProfileInfo.email;
-                updateObj.studentBatchName = studentProfileInfo.batch;
-                updateObj.studentRoll = studentProfileInfo.roll;
-            }
-        } else {
-            updateObj.unreadCountStudent = 1;
-            updateObj.unreadCountAdmin = 0;
-        }
-
-        const messageDocRef = doc(messagesRef);
-        
-        // Execute sequentially instead of batch to bypass Firebase internal assertion caching bug
-        await setDoc(threadRef, updateObj, { merge: true });
-        await setDoc(messageDocRef, messageObj);
-    } catch (err) {
-        console.error("Error sending chat message:", err);
-        throw err;
-    }
-}
-
-/**
- * Subscribe to all chat threads (Admin)
- */
-export const subscribeToAllChatThreads = (callback: (threads: AdminChatThread[]) => void) => {
-    const q = query(collection(db, "admin_chats"), orderBy("lastMessageTime", "desc"));
-    return onSnapshot(q, (snapshot) => {
-        const threads = snapshot.docs.map(doc => ({
-            studentUid: doc.id,
-            ...doc.data()
-        } as AdminChatThread));
-        callback(threads);
+    studentProfileInfo?: { name: string; email: string; batch: string; roll: string }
+): Promise<void> => {
+    const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentUid, sender, text, attachments, studentProfileInfo }),
     });
-}
-
-/**
- * Subscribe to single chat messages
- */
-export const subscribeToChatMessages = (studentUid: string, callback: (messages: ChatMessage[]) => void) => {
-    const q = query(collection(db, "admin_chats", studentUid, "messages"), orderBy("createdAt", "asc"));
-    return onSnapshot(q, (snapshot) => {
-        const msgs = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as ChatMessage));
-        callback(msgs);
-    });
-}
-
-/**
- * Mark thread as read for role
- */
-export const markChatAsRead = async (studentUid: string, role: "student" | "admin") => {
-    try {
-        const threadRef = doc(db, "admin_chats", studentUid);
-        if (role === "admin") {
-            await updateDoc(threadRef, { unreadCountAdmin: 0 });
-        } else {
-            await updateDoc(threadRef, { unreadCountStudent: 0 });
-        }
-    } catch (err: any) {
-        if (err.code === 'not-found' || (err.message && err.message.includes("No document to update"))) {
-            // Ignore error if the chat thread hasn't been created yet
-            return;
-        }
-        console.error("Error marking chat as read:", err);
+    if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send message.");
     }
-}
+};
 
 /**
- * Fully delete a discussion thread and ALL its storage attachments
+ * SSE subscription for admin: all chat threads (replaces onSnapshot on 'admin_chats')
  */
-export const deleteChatThread = async (studentUid: string): Promise<void> => {
-    try {
-        // 1. Gather all messages to find attachments and prepare batch delete
-        const messagesCol = collection(db, "admin_chats", studentUid, "messages");
-        const snapshot = await getDocs(messagesCol);
-        
-        const batch = writeBatch(db);
-        const attachmentPaths: string[] = [];
+export const subscribeToAllChatThreads = (callback: (threads: AdminChatThread[]) => void): (() => void) => {
+    const controller = new AbortController();
 
-        snapshot.docs.forEach((docSnap) => {
-            batch.delete(docSnap.ref);
-            const data = docSnap.data() as ChatMessage;
-            if (data.attachments && Array.isArray(data.attachments)) {
-                data.attachments.forEach(att => {
-                    if (att.path) attachmentPaths.push(att.path);
-                });
-            }
-        });
-        
-        // 2. Delete parent chat thread structure
-        batch.delete(doc(db, "admin_chats", studentUid));
+    const connect = () => {
+        const es = new EventSource("/api/sse/chat/threads");
 
-        await batch.commit();
-
-        // 3. Delete files out of local cPanel storage
-        if (attachmentPaths.length > 0) {
+        es.addEventListener("threads", (e) => {
             try {
-                const deletePromises = attachmentPaths.map(path => 
-                    fetch(`/api/storage/delete?path=${encodeURIComponent(path)}`, { method: "DELETE" })
-                        .catch(err => console.warn(`Failed to delete local file ${path}`, err))
-                );
-                await Promise.all(deletePromises);
-            } catch (storageErr) {
-                console.warn("Local storage deletion warning:", storageErr);
-            }
-        }
-    } catch (err) {
-        console.error("Failed executing massive thread deletion:", err);
-        throw err;
-    }
-}
+                callback(JSON.parse(e.data));
+            } catch { /* ignore */ }
+        });
+
+        es.onerror = () => {
+            es.close();
+            if (!controller.signal.aborted) setTimeout(connect, 5000);
+        };
+
+        controller.signal.addEventListener("abort", () => es.close());
+    };
+
+    connect();
+    return () => controller.abort();
+};
+
+/**
+ * SSE subscription for messages in a specific chat thread
+ */
+export const subscribeToChatMessages = (studentUid: string, callback: (messages: ChatMessage[]) => void): (() => void) => {
+    const controller = new AbortController();
+
+    const connect = () => {
+        const es = new EventSource(`/api/sse/chat/${encodeURIComponent(studentUid)}`);
+
+        es.addEventListener("messages", (e) => {
+            try {
+                callback(JSON.parse(e.data));
+            } catch { /* ignore */ }
+        });
+
+        es.onerror = () => {
+            es.close();
+            if (!controller.signal.aborted) setTimeout(connect, 5000);
+        };
+
+        controller.signal.addEventListener("abort", () => es.close());
+    };
+
+    connect();
+    return () => controller.abort();
+};
+
+export const markChatAsRead = async (studentUid: string, role: "student" | "admin"): Promise<void> => {
+    await fetch("/api/chat/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentUid, role }),
+    });
+};
+
+export const deleteChatThread = async (studentUid: string): Promise<void> => {
+    const res = await fetch(`/api/chat?studentUid=${encodeURIComponent(studentUid)}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Failed to delete chat thread.");
+};

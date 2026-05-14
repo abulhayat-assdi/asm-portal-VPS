@@ -90,7 +90,7 @@ export default function Navbar() {
     };
 
     // Resolve profile image from: Firestore -> Google Auth -> Static Mapping
-    const rawProfileImage = userProfile?.profileImageUrl || user?.photoURL || (displayName && TEACHER_IMAGE_MAPPING[displayName]);
+    const rawProfileImage = userProfile?.profileImageUrl || user?.profileImageUrl || (displayName && TEACHER_IMAGE_MAPPING[displayName]);
     
     // Final image URL (handles local paths like instructors/abul-hayat.jpg and Google Drive)
     const profileImage = rawProfileImage ? libGetImageUrl(getGoogleDriveThumbnailUrl(rawProfileImage)) : null;

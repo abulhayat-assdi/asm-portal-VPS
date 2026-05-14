@@ -1,0 +1,737 @@
+// ============================================================
+// ASM Internal Portal - PostgreSQL Schema
+// Replaces: Firebase Firestore + Firebase Auth
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  super_admin
+  admin
+  teacher
+  student
+}
+
+enum ClassStatus {
+  PENDING
+  REQUEST_TO_COMPLETE
+  COMPLETED
+  UPCOMING
+}
+
+enum ScheduleStatus {
+  Scheduled
+  Completed
+  Upcoming
+  Pending
+  Today
+  Requested
+}
+
+enum BatchType {
+  Running
+  Completed
+}
+
+enum BatchStatus {
+  active
+  archived
+}
+
+enum CourseStatus {
+  Running
+  Completed
+  Incomplete
+  Expelled
+}
+
+enum CurrentlyDoing {
+  Job
+  Business
+  StudyingFurther
+  Nothing
+}
+
+enum StudentCategory {
+  Alim
+  General
+}
+
+enum FeedbackStatus {
+  APPROVED
+  PENDING
+}
+
+enum MessageStatus {
+  unread
+  read
+  resolved
+}
+
+enum PostStatus {
+  draft
+  published
+}
+
+enum LeaveType {
+  Casual
+  Sick
+  WeeklyHoliday
+  Other
+}
+
+enum ResourceType {
+  Presentation
+  Notes
+  Assignment
+  Practice
+  Other
+}
+
+enum ActorRole {
+  ADMIN
+  TEACHER
+}
+
+// ============================================================
+// AUTHENTICATION
+// ============================================================
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  passwordHash     String    @map("password_hash")
+  displayName      String    @map("display_name")
+  role             UserRole  @default(student)
+  teacherId        String?   @map("teacher_id")
+  studentBatchName String?   @map("student_batch_name")
+  studentRoll      String?   @map("student_roll")
+  profileImageUrl  String?   @map("profile_image_url")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  lastLoginAt      DateTime? @map("last_login_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  passwordResetTokens PasswordResetToken[]
+  activityLogs        ActivityLog[]
+  chatMessages        ChatMessage[]
+
+  @@index([email])
+  @@index([role])
+  @@index([studentBatchName, studentRoll])
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ============================================================
+// TEACHERS
+// ============================================================
+
+model Teacher {
+  id                   String   @id @default(uuid())
+  teacherId            String   @unique @map("teacher_id")
+  name                 String
+  designation          String   @default("")
+  about                String   @default("")
+  phone                String   @default("")
+  email                String   @default("")
+  loginEmail           String   @default("") @map("login_email")
+  profileImageUrl      String?  @map("profile_image_url")
+  isAdmin              Boolean  @default(false) @map("is_admin")
+  order                Int      @default(0)
+  leaveTrackingEnabled Boolean  @default(false) @map("leave_tracking_enabled")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  leaves       Leave[]
+  leaveSettings LeaveSettings?
+
+  @@index([teacherId])
+  @@index([order])
+  @@map("teachers")
+}
+
+// ============================================================
+// CLASSES & SCHEDULES
+// ============================================================
+
+model Class {
+  id             String      @id @default(uuid())
+  teacherUid     String      @map("teacher_uid")
+  teacherName    String      @map("teacher_name")
+  date           String
+  startTime      String      @default("") @map("start_time")
+  endTime        String      @default("") @map("end_time")
+  timeRange      String?     @map("time_range")
+  batch          String
+  subject        String
+  status         ClassStatus @default(PENDING)
+  completedByUid String?     @map("completed_by_uid")
+  completedAt    DateTime?   @map("completed_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@index([teacherUid])
+  @@index([status])
+  @@index([date])
+  @@index([batch])
+  @@map("classes")
+}
+
+model ClassSchedule {
+  id          String         @id @default(uuid())
+  teacherId   String         @map("teacher_id")
+  teacherName String         @map("teacher_name")
+  date        String
+  day         String         @default("")
+  batch       String
+  subject     String
+  time        String         @default("")
+  status      ScheduleStatus @default(Scheduled)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@index([teacherId])
+  @@index([date])
+  @@index([batch])
+  @@map("class_schedules")
+}
+
+// ============================================================
+// BATCHES
+// ============================================================
+
+model Batch {
+  id        String      @id @default(uuid())
+  name      String      @unique
+  status    BatchStatus @default(active)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  students BatchStudent[]
+
+  @@index([status])
+  @@map("batches")
+}
+
+model BatchStudent {
+  id                 String          @id @default(uuid())
+  batchId            String          @map("batch_id")
+  batchName          String          @map("batch_name")
+  roll               String
+  name               String
+  phone              String          @default("")
+  address            String          @default("")
+  dob                String?
+  educationalDegree  String?         @map("educational_degree")
+  category           StudentCategory?
+  bloodGroup         String?         @map("blood_group")
+  totalPaidTk        String?         @map("total_paid_tk")
+  courseStatus       CourseStatus    @default(Running) @map("course_status")
+  currentlyDoing     CurrentlyDoing? @map("currently_doing")
+  companyName        String          @default("") @map("company_name")
+  businessName       String          @default("") @map("business_name")
+  salary             Float           @default(0)
+  batchType          BatchType       @default(Running) @map("batch_type")
+  isPublic           Boolean         @default(true) @map("is_public")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  completedAt        DateTime?       @map("completed_at")
+
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchName, roll])
+  @@index([batchName])
+  @@index([batchType])
+  @@index([courseStatus])
+  @@map("batch_students")
+}
+
+// ============================================================
+// NOTICES
+// ============================================================
+
+model Notice {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  date          String
+  priority      String   @default("normal")
+  createdBy     String?  @map("created_by")
+  createdByName String?  @map("created_by_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@map("notices")
+}
+
+model StudentNotice {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  date          String
+  priority      String   @default("normal")
+  createdBy     String?  @map("created_by")
+  createdByName String?  @map("created_by_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@map("student_notices")
+}
+
+// ============================================================
+// HOMEWORK
+// ============================================================
+
+model HomeworkSubmission {
+  id               String   @id @default(uuid())
+  studentUid       String   @map("student_uid")
+  studentName      String   @map("student_name")
+  studentRoll      String   @map("student_roll")
+  studentBatchName String   @map("student_batch_name")
+  teacherName      String   @map("teacher_name")
+  subject          String
+  // Legacy single-file fields (backward compat)
+  fileUrl          String?  @map("file_url")
+  storagePath      String?  @map("storage_path")
+  fileName         String?  @map("file_name")
+  // Multi-file support as JSON
+  files            Json?
+  textContent      String?  @map("text_content")
+  submissionDate   String   @map("submission_date")
+  assignmentId     String?  @map("assignment_id")
+  submittedAt      DateTime @default(now()) @map("submitted_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  @@index([studentUid])
+  @@index([teacherName])
+  @@index([studentBatchName])
+  @@index([submittedAt])
+  @@map("homework_submissions")
+}
+
+model HomeworkAssignment {
+  id          String   @id @default(uuid())
+  teacherUid  String   @map("teacher_uid")
+  teacherName String   @map("teacher_name")
+  title       String
+  deadlineDate String  @map("deadline_date")
+  batchName   String   @map("batch_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([teacherUid])
+  @@index([batchName])
+  @@index([deadlineDate])
+  @@map("homework_assignments")
+}
+
+// ============================================================
+// FEEDBACK
+// ============================================================
+
+model Feedback {
+  id            String         @id @default(uuid())
+  studentName   String         @map("student_name")
+  batch         String
+  role          String         @default("")
+  company       String         @default("")
+  message       String
+  rating        Int            @default(5)
+  status        FeedbackStatus @default(PENDING)
+  submittedFrom String         @default("PUBLIC_FORM") @map("submitted_from")
+  approvedByUid String?        @map("approved_by_uid")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("feedback")
+}
+
+// ============================================================
+// CONTACT & CHAT
+// ============================================================
+
+model ContactMessage {
+  id               String        @id @default(uuid())
+  subject          String
+  message          String
+  studentUid       String        @map("student_uid")
+  studentName      String        @map("student_name")
+  studentEmail     String        @map("student_email")
+  studentBatchName String        @map("student_batch_name")
+  studentRoll      String        @map("student_roll")
+  status           MessageStatus @default(unread)
+  adminReply       String?       @map("admin_reply")
+  date             String
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  @@index([studentUid])
+  @@index([status])
+  @@map("contact_messages")
+}
+
+model ChatThread {
+  id               String    @id @default(uuid())
+  studentUid       String    @unique @map("student_uid")
+  studentName      String    @map("student_name")
+  studentEmail     String    @map("student_email")
+  studentBatchName String    @map("student_batch_name")
+  studentRoll      String    @map("student_roll")
+  lastMessageText  String    @default("") @map("last_message_text")
+  lastMessageTime  DateTime  @default(now()) @map("last_message_time")
+  unreadCountAdmin Int       @default(0) @map("unread_count_admin")
+  unreadCountStudent Int     @default(0) @map("unread_count_student")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  messages ChatMessage[]
+
+  @@index([lastMessageTime])
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id          String   @id @default(uuid())
+  threadId    String   @map("thread_id")
+  senderId    String?  @map("sender_id")
+  sender      String   // 'student' | 'admin'
+  text        String   @default("")
+  attachments Json     @default("[]")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User?      @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([threadId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+// ============================================================
+// ACTIVITY LOGS
+// ============================================================
+
+model ActivityLog {
+  id          String    @id @default(uuid())
+  actorUid    String    @map("actor_uid")
+  actorRole   ActorRole @map("actor_role")
+  actionType  String    @map("action_type")
+  targetType  String    @map("target_type")
+  targetId    String    @map("target_id")
+  description String
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorUid], references: [id], onDelete: SetNull)
+
+  @@index([actorUid])
+  @@index([createdAt])
+  @@index([actionType])
+  @@map("activity_logs")
+}
+
+// ============================================================
+// LEAVES
+// ============================================================
+
+model Leave {
+  id          String    @id @default(uuid())
+  teacherId   String    @map("teacher_id")
+  teacherName String    @map("teacher_name")
+  startDate   String    @map("start_date")
+  endDate     String    @map("end_date")
+  days        Int       @default(1)
+  type        LeaveType @default(Casual)
+  reason      String?
+  monthYear   String    @map("month_year")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  teacher Teacher? @relation(fields: [teacherId], references: [teacherId], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@index([monthYear])
+  @@index([type])
+  @@map("leaves")
+}
+
+model LeaveSettings {
+  id                   String   @id @default(uuid())
+  teacherId            String   @unique @map("teacher_id")
+  teacherName          String   @map("teacher_name")
+  weeklyHolidays       Json     @default("[]") @map("weekly_holidays")
+  joinDate             String   @map("join_date")
+  lastAutoGeneratedDate String? @map("last_auto_generated_date")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  teacher Teacher @relation(fields: [teacherId], references: [teacherId], onDelete: Cascade)
+
+  @@map("leave_settings")
+}
+
+// ============================================================
+// RESOURCES
+// ============================================================
+
+model Resource {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  fileType    String   @map("file_type")
+  fileName    String   @map("file_name")
+  fileUrl     String   @map("file_url")
+  storagePath String   @map("storage_path")
+  fileSize    String?  @map("file_size")
+  uploadedBy  String?  @map("uploaded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([createdAt])
+  @@map("resources")
+}
+
+model ModuleFolder {
+  id          String   @id @default(uuid())
+  moduleId    String   @map("module_id")
+  moduleTitle String   @map("module_title")
+  name        String
+  description String?
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  resources ModuleResource[]
+
+  @@index([moduleTitle])
+  @@map("module_folders")
+}
+
+model ModuleResource {
+  id                 String       @id @default(uuid())
+  moduleId           String       @map("module_id")
+  moduleTitle        String       @map("module_title")
+  teacherName        String       @map("teacher_name")
+  teacherUid         String       @map("teacher_uid")
+  folderId           String?      @map("folder_id")
+  title              String
+  description        String?
+  fileType           String       @map("file_type")
+  fileName           String       @map("file_name")
+  fileUrl            String       @map("file_url")
+  storagePath        String       @map("storage_path")
+  fileSize           String?      @map("file_size")
+  resourceType       ResourceType @default(Other) @map("resource_type")
+  visibleForBatches  Json         @default("[\"all\"]") @map("visible_for_batches")
+  isHidden           Boolean      @default(false) @map("is_hidden")
+  uploadedAt         DateTime     @default(now()) @map("uploaded_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  folder ModuleFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  @@index([moduleTitle])
+  @@index([teacherUid])
+  @@index([folderId])
+  @@map("module_resources")
+}
+
+// ============================================================
+// BLOG
+// ============================================================
+
+model Post {
+  id              String     @id @default(uuid())
+  title           String
+  slug            String     @unique
+  excerpt         String     @default("")
+  featuredImage   String?    @map("featured_image")
+  content         String
+  category        String?
+  metaTitle       String?    @map("meta_title")
+  metaDescription String?    @map("meta_description")
+  keywords        String?
+  status          PostStatus @default(draft)
+  publishedAt     DateTime?  @map("published_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  comments BlogComment[]
+
+  @@index([status])
+  @@index([slug])
+  @@index([createdAt])
+  @@map("posts")
+}
+
+model BlogComment {
+  id        String   @id @default(uuid())
+  postId    String   @map("post_id")
+  name      String
+  email     String?
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("blog_comments")
+}
+
+// ============================================================
+// EXAM RESULTS
+// ============================================================
+
+model ExamResult {
+  id               String   @id @default(uuid())
+  studentUid       String   @map("student_uid")
+  studentName      String   @map("student_name")
+  studentRoll      String   @map("student_roll")
+  studentBatchName String   @map("student_batch_name")
+  subject          String
+  score            Float
+  totalMarks       Float    @map("total_marks")
+  grade            String?
+  examDate         String?  @map("exam_date")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([studentUid])
+  @@index([studentBatchName])
+  @@map("exam_results")
+}
+
+// ============================================================
+// ROUTINES
+// ============================================================
+
+model Routine {
+  id          String   @id @default(uuid())
+  batchName   String   @map("batch_name")
+  fileUrl     String   @map("file_url")
+  storagePath String   @map("storage_path")
+  fileName    String   @map("file_name")
+  uploadedBy  String?  @map("uploaded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([batchName])
+  @@map("routines")
+}
+
+// ============================================================
+// POLICIES
+// ============================================================
+
+model Policy {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  category    String?
+  isPublished Boolean  @default(false) @map("is_published")
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("policies")
+}
+
+// ============================================================
+// CMS
+// ============================================================
+
+model CmsContent {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedBy String?  @map("updated_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("cms_content")
+}
+
+// ============================================================
+// SUCCESS STORIES
+// ============================================================
+
+model SuccessStory {
+  id            String   @id @default(uuid())
+  name          String
+  batch         String
+  role          String   @default("")
+  company       String   @default("")
+  story         String
+  imageUrl      String?  @map("image_url")
+  isPublished   Boolean  @default(false) @map("is_published")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([isPublished])
+  @@map("success_stories")
+}
+
+// ============================================================
+// VIDEO TESTIMONIALS
+// ============================================================
+
+model VideoTestimonial {
+  id          String   @id @default(uuid())
+  title       String
+  videoUrl    String   @map("video_url")
+  thumbnailUrl String? @map("thumbnail_url")
+  description String?
+  isPublished Boolean  @default(false) @map("is_published")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([isPublished])
+  @@index([order])
+  @@map("video_testimonials")
+}
+
+// ============================================================
+// DAILY TRACKER
+// ============================================================
+
+model DailyTrackerReport {
+  id          String   @id @default(uuid())
+  batchName   String   @map("batch_name")
+  date        String
+  reportData  Json     @map("report_data")
+  submittedBy String?  @map("submitted_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([batchName])
+  @@index([date])
+  @@map("daily_tracker_reports")
+}

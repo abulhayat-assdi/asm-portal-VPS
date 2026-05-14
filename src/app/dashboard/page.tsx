@@ -25,7 +25,7 @@ import {
     StudentNotice
 } from "@/services/dashboardService";
 import Button from "@/components/ui/Button";
-import { serverTimestamp } from "firebase/firestore";
+
 
 export default function DashboardPage() {
     const { userProfile } = useAuth();
@@ -115,9 +115,9 @@ export default function DashboardPage() {
                     description: newNoticeDescription,
                     priority: newNoticePriority,
                     date: new Date().toISOString().split('T')[0],
-                    createdBy: userProfile?.uid,
+                    createdBy: userProfile?.uid || "unknown",
                     createdByName: userProfile?.displayName || "Unknown",
-                    createdAt: serverTimestamp()
+                    createdAt: new Date().toISOString()
                 };
                 await addNotice(newNotice);
             }
@@ -203,9 +203,9 @@ export default function DashboardPage() {
                     description: studentNoticeDescription,
                     priority: studentNoticePriority,
                     date: new Date().toISOString().split('T')[0],
-                    createdBy: userProfile?.uid,
+                    createdBy: userProfile?.uid || "unknown",
                     createdByName: userProfile?.displayName || "Unknown",
-                    createdAt: serverTimestamp()
+                    createdAt: new Date().toISOString()
                 });
             }
             setStudentNotices(await getAllStudentNotices());

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Timestamp } from "firebase/firestore";
 import Card, { CardBody } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -281,9 +280,9 @@ function EditBlogContent() {
                                     <p className="text-sm text-gray-500">
                                         Status: <span className="font-medium text-gray-900 capitalize">{originalPost?.status}</span>
                                     </p>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        Created: {originalPost?.createdAt && originalPost.createdAt instanceof Timestamp ? new Date(originalPost.createdAt.toMillis()).toLocaleDateString() : originalPost?.createdAt instanceof Date ? new Date(originalPost.createdAt).toLocaleDateString() : "Unknown"}
-                                    </p>
+                                     <p className="text-sm text-gray-500 mt-1">
+                                         Created: {originalPost?.createdAt ? new Date(originalPost.createdAt).toLocaleDateString() : "Unknown"}
+                                     </p>
                                 </div>
                             </CardBody>
                         </Card>

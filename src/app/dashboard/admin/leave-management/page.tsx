@@ -57,7 +57,7 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
     useEffect(() => {
         getLeaveSettings(teacher.id).then((s) => {
             if (s) {
-                setSettings({ weeklyHolidays: s.weeklyHolidays || [], joinDate: s.joinDate || "" });
+                setSettings({ weeklyHolidays: (s.weeklyHolidays || []).map(Number), joinDate: s.joinDate || "" });
             }
             setLoaded(true);
         });
@@ -75,10 +75,10 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
     const handleSave = async () => {
         setSaving(true);
         try {
-            await saveLeaveSettings(teacher.id, {
+            await saveLeaveSettings({
                 teacherId: teacher.id,
                 teacherName: teacher.name,
-                weeklyHolidays: settings.weeklyHolidays,
+                weeklyHolidays: settings.weeklyHolidays.map(String),
                 joinDate: settings.joinDate,
             });
             setSaved(true);
@@ -201,7 +201,7 @@ export default function AdminLeaveManagementPage() {
         setLoading(true);
         try {
             const teacher = teachers.find((t) => t.id === selectedId);
-            if (teacher) await syncAutoWeeklyLeaves(teacher);
+            if (teacher) await syncAutoWeeklyLeaves(teacher.id);
             const data = await getLeavesByTeacher(selectedId);
             setLeaves(data);
         } finally {

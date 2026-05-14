@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { COOKIES, APP_PATHS } from '@/lib/constants';
-import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { verifyJWT } from '@/lib/auth';
 
 const PUBLIC_API_ROUTES = [
     '/api/chat',
     '/api/auth/register',
     '/api/auth/session',
     '/api/auth/batches',
+    '/api/auth/login',
+    '/api/auth/reset-password',
     '/api/feedback',
 ];
 
@@ -16,18 +18,10 @@ const isPublicAssetPath = (pathname: string) =>
     pathname.startsWith('/images') ||
     pathname === '/favicon.ico';
 
-// Fetch Google's public keys
-// Replace YOUR_PROJECT_ID with your actual Firebase project ID if available in env
-const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'asm-internal-portal';
-const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com'));
-
-const verifyAndGetRole = async (token: string) => {
+const verifyAndGetRole = async (token: string): Promise<string | undefined> => {
     try {
-        const { payload } = await jwtVerify(token, JWKS, {
-            issuer: `https://securetoken.google.com/${PROJECT_ID}`,
-            audience: PROJECT_ID,
-        });
-        return payload.role as string | undefined;
+        const payload = await verifyJWT(token);
+        return payload.role;
     } catch {
         return undefined;
     }
@@ -46,17 +40,18 @@ export async function middleware(request: NextRequest) {
     const isApiRequest = pathname.startsWith('/api');
 
     const session = request.cookies.get(COOKIES.SESSION)?.value;
-    const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 100;
-    const role = hasSession ? await verifyAndGetRole(session) : undefined;
+    // A valid JWT has exactly 3 dot-separated parts
+    const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 50;
+    const role = hasSession ? await verifyAndGetRole(session!) : undefined;
 
-    if (isAuthPage && hasSession) {
+    if (isAuthPage && hasSession && role) {
         if (role === 'student') {
             return NextResponse.redirect(new URL(APP_PATHS.STUDENT_DASHBOARD, request.url));
         }
         return NextResponse.redirect(new URL(APP_PATHS.DASHBOARD, request.url));
     }
 
-    if (!hasSession) {
+    if (!hasSession || !role) {
         if (isApiRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

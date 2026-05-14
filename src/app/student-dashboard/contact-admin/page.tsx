@@ -9,7 +9,7 @@ import {
     ChatAttachment, 
     markChatAsRead 
 } from "@/services/contactService";
-import { auth } from "@/lib/firebase";
+
 import Link from "next/link";
 
 export default function ContactAdminStudent() {
@@ -21,10 +21,11 @@ export default function ContactAdminStudent() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!userProfile?.uid) return;
-        const unsubscribe = subscribeToChatMessages(userProfile.uid, (msgs) => {
+        const uid = userProfile?.uid;
+        if (!uid) return;
+        const unsubscribe = subscribeToChatMessages(uid, (msgs) => {
             setMessages(msgs);
-            markChatAsRead(userProfile.uid, "student");
+            markChatAsRead(uid, "student");
         });
         return () => unsubscribe();
     }, [userProfile?.uid]);
@@ -52,12 +53,13 @@ export default function ContactAdminStudent() {
 
     const formatTime = (timestamp: any) => {
         if (!timestamp) return "";
-        const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const d = new Date(timestamp);
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     const handleSend = async () => {
-        if (!userProfile?.uid) return;
+        const uid = userProfile?.uid;
+        if (!uid) return;
         if (!text.trim() && files.length === 0) return;
 
         setIsSending(true);
@@ -69,18 +71,10 @@ export default function ContactAdminStudent() {
                 const formData = new FormData();
                 formData.append("file", file);
                 formData.append("category", "chat_files");
-                formData.append("path", userProfile.uid); // Store inside student's UID folder
-
-                // Ensure fresh auth token
-                const currentUser = auth.currentUser;
-                if (!currentUser) throw new Error("Not authenticated");
-                const token = await currentUser.getIdToken(true);
+                formData.append("path", uid); // Store inside student's UID folder
 
                 const response = await fetch("/api/storage/upload", {
                     method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    },
                     body: formData
                 });
 
@@ -108,7 +102,7 @@ export default function ContactAdminStudent() {
             };
 
             await sendChatMessage(
-                userProfile.uid,
+                uid,
                 "student",
                 text,
                 uploadedAttachments,

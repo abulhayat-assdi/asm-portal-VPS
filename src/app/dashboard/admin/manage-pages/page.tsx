@@ -59,12 +59,10 @@ export default function ManagePages() {
         setMessage(null);
 
         try {
-            const freshToken = await user.getIdToken(true);
             const response = await fetch("/api/admin/cms", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${freshToken}`
                 },
                 body: JSON.stringify({
                     pageId: selectedPage,

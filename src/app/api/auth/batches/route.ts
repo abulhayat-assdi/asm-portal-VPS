@@ -1,108 +1,70 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAdminServices } from "@/lib/firebase-admin";
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 /**
  * GET /api/auth/batches
- * Public API route that proxies minimal batch/student data for registration.
- * Returns only non-sensitive fields (batchName, roll, name, batchType).
- * This replaces direct unauthenticated Firestore access to public_batch_students.
+ * Public endpoint — returns batch and student data for student registration.
+ * No auth required (used in the public registration form).
  *
  * Query params:
- *   - batchName (optional): filter by specific batch name
- *   - mode: "batches" (list unique batch names) | "students" (list students in batch)
+ *   - mode: "batches" | "students" | "raw"
+ *   - batchName: (required when mode=students)
  */
 export async function GET(req: NextRequest) {
     try {
-        const { adminDb } = getAdminServices();
         const { searchParams } = new URL(req.url);
-        const mode = searchParams.get("mode") || "batches";
-        const batchName = searchParams.get("batchName");
+        const mode = searchParams.get('mode') || 'batches';
+        const batchName = searchParams.get('batchName');
 
-        const collectionRef = adminDb.collection("public_batch_students");
-
-        if (mode === "batches") {
-            // Return unique batch names only — no PII
-            const snapshot = await collectionRef.get();
-            const uniqueBatches = new Set<string>();
-
-            snapshot.docs.forEach((doc) => {
-                const data = doc.data();
-                if (data.batchName) {
-                    uniqueBatches.add(data.batchName);
-                }
+        if (mode === 'batches') {
+            // Return unique batch names (Running batches first)
+            const students = await prisma.batchStudent.findMany({
+                select: { batchName: true },
+                distinct: ['batchName'],
+                orderBy: { batchName: 'asc' },
             });
-
             return NextResponse.json({
-                batches: Array.from(uniqueBatches).sort(),
+                batches: students.map((s: any) => s.batchName).sort(),
             });
         }
 
-        if (mode === "students" && batchName) {
+        if (mode === 'students' && batchName) {
             // Return only minimal student info for registration dropdown
-            const snapshot = await collectionRef.orderBy("roll", "asc").get();
-            const students = snapshot.docs
-                .map((doc) => {
-                    const data = doc.data();
-                    return {
-                        batchName: data.batchName,
-                        roll: data.roll,
-                        name: data.name,
-                        batchType: data.batchType || "",
-                    };
-                })
-                .filter((s) => s.batchName === batchName);
-
+            const students = await prisma.batchStudent.findMany({
+                where: { batchName, isPublic: true },
+                select: { batchName: true, roll: true, name: true, batchType: true },
+                orderBy: { roll: 'asc' },
+            });
             return NextResponse.json({ students });
         }
 
-        // mode === "raw" — return batch metadata (name + status) for public pages
-        const batchMap = new Map<string, { name: string; status: string }>();
-
-        // Fetch from 'batches' collection
-        try {
-            const batchSnap = await adminDb.collection("batches").get();
-            batchSnap.docs.forEach((doc) => {
-                const data = doc.data();
-                if (data.name) {
-                    batchMap.set(data.name, {
-                        name: data.name,
-                        status: data.status || "",
-                    });
-                }
-            });
-        } catch (e) {
-            console.error("Error fetching batches:", e);
-        }
-
-        // Supplement from public_batch_students
-        try {
-            const studentSnap = await collectionRef.get();
-            studentSnap.docs.forEach((doc) => {
-                const data = doc.data();
-                if (data.batchName && !batchMap.has(data.batchName)) {
-                    batchMap.set(data.batchName, {
-                        name: data.batchName,
-                        status: data.batchType || "",
-                    });
-                } else if (data.batchName && data.batchType) {
-                    const existing = batchMap.get(data.batchName)!;
-                    if (data.batchType === "Running") {
-                        existing.status = "Running";
-                    }
-                }
-            });
-        } catch (e) {
-            console.error("Error fetching public students:", e);
-        }
-
-        return NextResponse.json({
-            batches: Array.from(batchMap.values()),
+        // mode === 'raw' — return batch metadata (name + status) for public pages
+        const batches = await prisma.batch.findMany({
+            select: { name: true, status: true },
+            orderBy: { name: 'asc' },
         });
-    } catch (error) {
-        console.error("[Batches API] Error:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
+
+        // Supplement: find any batch names in batch_students not in batches table
+        const studentBatches = await prisma.batchStudent.findMany({
+            select: { batchName: true, batchType: true },
+            distinct: ['batchName'],
+        });
+
+        const batchMap = new Map<string, { name: string; status: string }>(
+            batches.map((b: any) => [b.name, { name: b.name, status: b.status }])
         );
+
+        studentBatches.forEach((s: any) => {
+            if (!batchMap.has(s.batchName)) {
+                batchMap.set(s.batchName, { name: s.batchName, status: s.batchType });
+            }
+        });
+
+        return NextResponse.json({ batches: Array.from(batchMap.values()) });
+    } catch (error) {
+        console.error('[Batches API] Error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

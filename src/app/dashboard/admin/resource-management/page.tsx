@@ -111,7 +111,7 @@ export default function AdminResourceManagementPage() {
                 await addModuleResource({
                     moduleId: uploadingForModule.id, moduleTitle: uploadingForModule.title,
                     teacherName: uploadingForModule.teacherName || uploadingForModule.uploadedByName,
-                    teacherUid: user.uid, title: uploadForm.title, description: uploadForm.description,
+                    teacherUid: user.id, title: uploadForm.title, description: uploadForm.description,
                     resourceType: uploadForm.resourceType, visibleForBatches: batches,
                     isHidden: uploadForm.isHidden, fileUrl, storagePath, fileSize, fileType, fileName: file.name,
                 });

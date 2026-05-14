@@ -1,10 +1,12 @@
 import type { NextConfig } from "next";
 
+process.env.PRISMA_CLIENT_ENGINE_TYPE = 'library';
+
 const nextConfig: NextConfig = {
     output: 'standalone',
     // Prevent firebase-admin from being bundled — it uses Node.js native modules
     // that are incompatible with Next.js edge/server component bundling.
-    serverExternalPackages: ['firebase-admin'],
+    serverExternalPackages: ['firebase-admin', '@prisma/client'],
     experimental: {
         serverActions: {
             allowedOrigins: ['tasm-skill.asf.bd', 'www.tasm-skill.asf.bd', '*.tasm-skill.asf.bd'],
@@ -78,6 +80,13 @@ const nextConfig: NextConfig = {
                 destination: '/homework/:path*',
             },
         ];
+    },
+    webpack: (config) => {
+        config.externals.push({
+            'prisma': 'commonjs prisma',
+            '@prisma/client': 'commonjs @prisma/client',
+        });
+        return config;
     },
 };
 

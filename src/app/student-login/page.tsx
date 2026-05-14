@@ -119,7 +119,6 @@ export default function StudentLoginPage() {
         try {
             if (!validateEmail(email)) throw new Error("Please enter a valid email address");
 
-            let user;
             if (isRegistering) {
                 if (!batchName) throw new Error("Please select your Batch");
                 if (!roll) throw new Error("Please select your Roll Number");
@@ -127,22 +126,10 @@ export default function StudentLoginPage() {
                 if (password.length < 6) throw new Error("Password must be at least 6 characters long.");
                 
                 // Directly pass batch and roll so profile maps at creation
-                user = await registerWithEmail(email, password, name, batchName, roll);
+                await registerWithEmail(email, password, name, batchName, roll);
             } else {
                 if (!password) throw new Error("Password is required");
-                user = await loginWithEmail(email, password);
-            }
-
-            // 2. Call the session API to set the session cookie and await it completely
-            const idToken = await user.getIdToken();
-            const sessionRes = await fetch("/api/auth/session", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ idToken }),
-            });
-
-            if (!sessionRes.ok) {
-                throw new Error("Failed to establish session. Please try again.");
+                await loginWithEmail(email, password);
             }
 
             // 3. Force a hard redirect to bypass Next.js client-side router cache

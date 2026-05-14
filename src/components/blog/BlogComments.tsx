@@ -67,14 +67,14 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
         try {
             // Optimistic UI update
             setComments(prev => prev.map(c =>
-                c.id === commentId ? { ...c, likes: c.likes + 1 } : c
+                c.id === commentId ? { ...c, likes: (c.likes || 0) + 1 } : c
             ));
             await likeComment(commentId);
         } catch (error) {
             console.error("Failed to like comment", error);
             // Revert on failure
             setComments(prev => prev.map(c =>
-                c.id === commentId ? { ...c, likes: c.likes - 1 } : c
+                c.id === commentId ? { ...c, likes: (c.likes || 0) - 1 } : c
             ));
         }
     };
@@ -214,7 +214,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                                     <svg className="w-5 h-5 group-hover:fill-rose-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                     </svg>
-                                    <span className="font-medium">{comment.likes}</span>
+                                    <span className="font-medium">{comment.likes || 0}</span>
                                 </button>
 
                                 <button

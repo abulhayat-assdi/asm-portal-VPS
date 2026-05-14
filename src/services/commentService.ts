@@ -1,127 +1,69 @@
-import {
-    collection,
-    addDoc,
-    updateDoc,
-    doc,
-    getDocs,
-    serverTimestamp,
-    query,
-    orderBy,
-    where,
-    Timestamp,
-    increment
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-
-const COMMENTS_COLLECTION = 'blogComments';
+// ============================================================
+// commentService — All Firestore calls replaced with API calls
+// ============================================================
 
 export interface CommentReply {
     id: string;
     authorName: string;
     content: string;
-    createdAt: Timestamp | Date | string;
+    createdAt: string;
 }
 
 export interface BlogComment {
     id: string;
-    blogId: string;
+    postId: string;
     authorName: string;
     content: string;
-    likes: number;
-    replies: CommentReply[];
-    createdAt: Timestamp | Date | string;
+    createdAt: string;
+    likes?: number;
+    replies?: CommentReply[];
 }
 
-/**
- * Fetch all comments for a specific blog post
- */
-export const getCommentsByBlogId = async (blogId: string): Promise<BlogComment[]> => {
+export const getCommentsByBlogId = async (postId: string): Promise<BlogComment[]> => {
     try {
-        const q = query(
-            collection(db, COMMENTS_COLLECTION),
-            where('blogId', '==', blogId),
-            orderBy('createdAt', 'desc')
-        );
-        const snapshot = await getDocs(q);
-
-        return snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                // Convert Firestore Timestamps to ISO strings for the frontend
-                createdAt: data.createdAt instanceof Timestamp
-                    ? data.createdAt.toDate().toISOString()
-                    : new Date().toISOString(),
-                // Ensure replies also have proper string dates
-                replies: (data.replies || []).map((reply: CommentReply) => ({
-                    ...reply,
-                    createdAt: reply.createdAt instanceof Timestamp
-                        ? reply.createdAt.toDate().toISOString()
-                        : (reply.createdAt || new Date().toISOString())
-                }))
-            } as BlogComment;
-        });
-    } catch (error) {
-        console.error("Error fetching comments:", error);
+        const res = await fetch(`/api/blog/comments?postId=${encodeURIComponent(postId)}`, { cache: "no-store" });
+        if (!res.ok) return [];
+        return res.json();
+    } catch {
         return [];
     }
 };
 
-/**
- * Add a new top-level comment to a blog
- */
-export const addComment = async (blogId: string, authorName: string, content: string): Promise<BlogComment> => {
-    const rawComment = {
-        blogId,
-        authorName,
-        content,
-        likes: 0,
-        replies: [],
-        createdAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(collection(db, COMMENTS_COLLECTION), rawComment);
-
-    return {
-        id: docRef.id,
-        blogId,
-        authorName,
-        content,
-        likes: 0,
-        replies: [],
-        createdAt: new Date().toISOString()
-    };
+export const addComment = async (postId: string, authorName: string, content: string): Promise<BlogComment> => {
+    const res = await fetch("/api/blog/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, authorName, content }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to add comment.");
+    return data;
 };
 
-/**
- * Increment the like count on a comment
- */
+// ─── Backward-compat stubs ─────────────────────────────────
+
 export const likeComment = async (commentId: string): Promise<void> => {
-    const commentRef = doc(db, COMMENTS_COLLECTION, commentId);
-    await updateDoc(commentRef, {
-        likes: increment(1)
-    });
+    await fetch(`/api/blog/comments/${encodeURIComponent(commentId)}/like`, { method: "PATCH" });
 };
 
-/**
- * Add a reply to an existing comment
- * We structure replies as an array embedded within the main comment document
- */
-export const addReply = async (commentId: string, existingReplies: CommentReply[], authorName: string, content: string): Promise<CommentReply[]> => {
-    const commentRef = doc(db, COMMENTS_COLLECTION, commentId);
-
+export const addReply = async (
+    commentId: string,
+    existingReplies: CommentReply[],
+    authorName: string,
+    content: string
+): Promise<CommentReply[]> => {
     const newReply: CommentReply = {
-        id: crypto.randomUUID(), // Local unique ID for the reply array item
+        id: crypto.randomUUID(),
         authorName,
         content,
-        createdAt: new Date().toISOString() // Storing as string in the array is simpler since it's nested
+        createdAt: new Date().toISOString(),
     };
-
-    const { arrayUnion } = await import('firebase/firestore');
-    await updateDoc(commentRef, {
-        replies: arrayUnion(newReply)
-    });
-
+    // Fire-and-forget — replies stored in a flat array on the server
+    fetch(`/api/blog/comments/${encodeURIComponent(commentId)}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newReply),
+    }).catch(console.error);
     return [...existingReplies, newReply];
 };
+
