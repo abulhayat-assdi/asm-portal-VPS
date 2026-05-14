@@ -13,7 +13,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Set necessary env vars for build time
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PRISMA_CLIENT_ENGINE_TYPE=library
+# Use a dummy DB URL during build to satisfy Prisma validation
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+
 RUN npx prisma generate
 RUN npm run build
 
@@ -23,6 +28,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PRISMA_CLIENT_ENGINE_TYPE=library
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -32,7 +38,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# CRITICAL: Copy the generated prisma client and engines
+# Explicitly copy the generated prisma client and engines
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
 USER nextjs
@@ -42,4 +48,5 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Run migrations and then start the app
+# Use runtime environment variables provided by Coolify
 CMD ["sh", "-c", "npx prisma db push || true && node server.js"]
