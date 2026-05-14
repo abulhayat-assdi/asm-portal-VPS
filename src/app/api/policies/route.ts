@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ id: item.id, ...item }, { status: 201 });
+        return NextResponse.json(item, { status: 201 });
     } catch (error) {
         console.error("[Policies POST]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

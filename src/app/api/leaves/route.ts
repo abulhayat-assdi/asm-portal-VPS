@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ id: leave.id, ...leave }, { status: 201 });
+        return NextResponse.json(leave, { status: 201 });
     } catch (error) {
         console.error("[Leaves POST]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

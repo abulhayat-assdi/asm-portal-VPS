@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ id: folder.id, ...folder }, { status: 201 });
+        return NextResponse.json(folder, { status: 201 });
     } catch (error) {
         console.error("[Folders POST]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

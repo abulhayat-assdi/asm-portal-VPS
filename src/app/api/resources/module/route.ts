@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ id: resource.id, ...resource }, { status: 201 });
+        return NextResponse.json(resource, { status: 201 });
     } catch (error) {
         console.error("[ModuleResource POST]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
