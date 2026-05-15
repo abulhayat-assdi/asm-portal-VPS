@@ -8,6 +8,7 @@ export const runtime = "nodejs";
 /**
  * GET /api/schedule/class-counts
  * Returns class counts grouped by batch → subject.
+ * Only includes batches with status="active" in the batches table.
  * Format: Record<batchName, { subjectName: string; classCount: number }[]>
  */
 export async function GET(req: NextRequest) {
@@ -16,7 +17,17 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    // Only show active batches
+    const activeBatches = await prisma.batch.findMany({
+        where: { status: "active" },
+        select: { name: true },
+    });
+    const activeBatchNames = activeBatches.map(b => b.name);
+
+    if (activeBatchNames.length === 0) return NextResponse.json({});
+
     const classes = await prisma.class.findMany({
+        where: { batch: { in: activeBatchNames } },
         select: { batch: true, subject: true },
         orderBy: { batch: "asc" },
     });

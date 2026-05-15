@@ -580,16 +580,17 @@ export default function SchedulePage() {
     };
 
     const handleDeleteBatch = async (batchId: string, batchName: string) => {
-        if (!confirm(`"${batchName}" batch সম্পূর্ণ মুছে ফেলবেন? এই কাজ undo করা যাবে না।`)) return;
+        if (!confirm(`"${batchName}" batch কি Batch-wise Class Count section থেকে সরিয়ে দেবেন?\n\nব্যাচের ছাত্র ও অন্য সব ডেটা অক্ষুণ্ণ থাকবে।`)) return;
         setIsDeletingBatch(batchId);
         try {
-            await deleteBatch(batchId);
-            setManagedBatches(prev => prev.filter(b => b.id !== batchId));
+            await toggleBatchStatus(batchId, "active"); // archive করে দাও, delete নয়
+            const data = await getBatches();
+            setManagedBatches(data);
             const stats = await getBatchClassCounts();
             setBatchStats(stats);
         } catch (error) {
-            console.error("Failed to delete batch", error);
-            alert("Batch delete করতে সমস্যা হয়েছে।");
+            console.error("Failed to remove batch from section", error);
+            alert("Batch সরাতে সমস্যা হয়েছে।");
         } finally {
             setIsDeletingBatch(null);
         }
@@ -1773,19 +1774,21 @@ export default function SchedulePage() {
                                                         {batch.status === 'active' ? 'Hide Batch' : 'Keep Active'}
                                                     </button>
 
-                                                    {/* Delete Batch */}
-                                                    <button
-                                                        onClick={() => handleDeleteBatch(batch.id!, batch.name)}
-                                                        disabled={isDeletingBatch === batch.id}
-                                                        className="text-sm font-semibold px-3 py-1.5 rounded-md transition-colors text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-50"
-                                                        title="Batch permanently delete করুন"
-                                                    >
-                                                        {isDeletingBatch === batch.id ? (
-                                                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                                                        ) : (
-                                                            'Delete'
-                                                        )}
-                                                    </button>
+                                                    {/* Remove from Class Count Section */}
+                                                    {batch.status === 'active' && (
+                                                        <button
+                                                            onClick={() => handleDeleteBatch(batch.id!, batch.name)}
+                                                            disabled={isDeletingBatch === batch.id}
+                                                            className="text-sm font-semibold px-3 py-1.5 rounded-md transition-colors text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-50"
+                                                            title="Class Count section থেকে সরান (ডেটা মুছবে না)"
+                                                        >
+                                                            {isDeletingBatch === batch.id ? (
+                                                                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                                            ) : (
+                                                                'Remove'
+                                                            )}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
