@@ -1,6 +1,6 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
-import { getPublishedPosts } from "@/services/blogService";
+import { getPublishedPostsServer as getPublishedPosts } from "@/lib/blog-server";
 import BlogList from "@/components/blog/BlogList";
 
 export const dynamic = "force-static";

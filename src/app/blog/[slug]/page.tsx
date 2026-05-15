@@ -1,7 +1,7 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import Link from "next/link";
-import { getPostBySlug, getPublishedPosts } from "@/services/blogService";
+import { getPostBySlugServer as getPostBySlug, getPublishedPostsServer as getPublishedPosts } from "@/lib/blog-server";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";

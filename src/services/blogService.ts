@@ -1,6 +1,3 @@
-import { cache } from 'react';
-import { prisma } from '@/lib/db';
-
 export interface BlogPost {
     id: string;
     title: string;
@@ -18,62 +15,38 @@ export interface BlogPost {
     updatedAt?: string | Date | null;
 }
 
-export const getPosts = cache(async (limitCount?: number): Promise<BlogPost[]> => {
+export const getPosts = async (limitCount?: number): Promise<BlogPost[]> => {
     try {
-        const posts = await prisma.post.findMany({
-            take: limitCount,
-            orderBy: { createdAt: 'desc' },
-        });
-        return posts as any;
-    } catch (error) {
-        console.error("Error fetching posts from DB:", error);
+        const url = limitCount ? `/api/blog?limit=${limitCount}` : '/api/blog';
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return [];
+        return res.json();
+    } catch {
         return [];
     }
-});
+};
 
-/**
- * Fetch a post by its internal ID
- */
-export const getPost = cache(async (id: string): Promise<BlogPost | null> => {
+export const getPost = async (id: string): Promise<BlogPost | null> => {
     try {
-        const post = await prisma.post.findUnique({
-            where: { id },
-        });
-        return post as any;
-    } catch (error) {
-        console.error("Error fetching post by ID from DB:", error);
+        const res = await fetch(`/api/blog/${encodeURIComponent(id)}`, { cache: 'no-store' });
+        if (!res.ok) return null;
+        return res.json();
+    } catch {
         return null;
     }
-});
+};
 
-/**
- * Fetch a post by its public slug
- */
-export const getPostBySlug = cache(async (slug: string): Promise<BlogPost | null> => {
+export const getPublishedPosts = async (limitCount?: number): Promise<BlogPost[]> => {
     try {
-        const post = await prisma.post.findUnique({
-            where: { slug },
-        });
-        return post as any;
-    } catch (error) {
-        console.error("Error fetching post by slug from DB:", error);
-        return null;
-    }
-});
-
-export const getPublishedPosts = cache(async (limitCount?: number): Promise<BlogPost[]> => {
-    try {
-        const posts = await prisma.post.findMany({
-            where: { status: 'published' },
-            take: limitCount,
-            orderBy: { publishedAt: 'desc' },
-        });
-        return posts as any;
-    } catch (error) {
-        console.error("Error fetching published posts from DB:", error);
+        const url = limitCount ? `/api/blog?limit=${limitCount}` : '/api/blog';
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return [];
+        const posts: BlogPost[] = await res.json();
+        return posts.filter(p => p.status === 'published');
+    } catch {
         return [];
     }
-});
+};
 
 export const createPost = async (data: Omit<BlogPost, 'id' | 'createdAt'>): Promise<string> => {
     const res = await fetch('/api/blog', {
