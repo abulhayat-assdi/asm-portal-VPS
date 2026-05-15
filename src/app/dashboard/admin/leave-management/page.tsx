@@ -40,9 +40,14 @@ const emptyForm = {
 
 const TYPE_COLORS: Record<string, string> = {
     "Weekly Holiday": "bg-indigo-100 text-indigo-700",
+    WeeklyHoliday: "bg-indigo-100 text-indigo-700",
     Sick: "bg-amber-100 text-amber-700",
     Casual: "bg-emerald-100 text-emerald-700",
     Other: "bg-slate-100 text-slate-600",
+};
+
+const TYPE_LABELS: Record<string, string> = {
+    WeeklyHoliday: "Weekly Holiday",
 };
 
 // ---------- Teacher Settings Row Component ----------
@@ -58,7 +63,16 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
     useEffect(() => {
         getLeaveSettings(teacher.teacherId).then((s) => {
             if (s) {
-                setSettings({ weeklyHolidays: (s.weeklyHolidays || []).map(Number), joinDate: s.joinDate || "" });
+                // Stored values may be day names ("Friday") or numeric strings ("5") — normalise to indices
+                const toIndex = (v: string | number): number => {
+                    const n = Number(v);
+                    if (!isNaN(n) && String(v).trim() !== "") return n;
+                    return WEEKDAYS_FULL.indexOf(String(v));
+                };
+                setSettings({
+                    weeklyHolidays: (s.weeklyHolidays || []).map(toIndex).filter(i => i >= 0),
+                    joinDate: s.joinDate || "",
+                });
             }
             setLoaded(true);
         });
@@ -79,7 +93,7 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
             await saveLeaveSettings({
                 teacherId: teacher.teacherId,
                 teacherName: teacher.name,
-                weeklyHolidays: settings.weeklyHolidays.map(String),
+                weeklyHolidays: settings.weeklyHolidays.map(i => WEEKDAYS_FULL[i]),
                 joinDate: settings.joinDate,
             });
             setSaved(true);
@@ -294,14 +308,18 @@ export default function AdminLeaveManagementPage() {
         if (!ok) return;
         setLoading(true);
         try {
+            // Step 1: Fix any wrongly-typed existing auto-generated entries
+            await fetch("/api/leaves/fix-types", { method: "POST" }).catch(() => {});
+
+            // Step 2: Generate missing entries
             const res = await fetch("/api/leaves/sync-all", { method: "POST" });
             const data = await res.json();
             if (res.ok) {
                 const summary = data.results
                     .filter((r: any) => r.generated > 0)
-                    .map((r: any) => `${r.teacher}: ${r.generated}`)
+                    .map((r: any) => `${r.teacher}: +${r.generated}`)
                     .join(", ");
-                showToast(`Sync done. Total: ${data.totalGenerated} entries added${summary ? ` (${summary})` : ""}.`);
+                showToast(`Sync done. ${data.totalGenerated} new entries added${summary ? ` — ${summary}` : ""}.`);
                 if (selectedId) fetchLeaves();
             } else {
                 showToast(data.error || "Sync failed", false);
@@ -515,7 +533,7 @@ export default function AdminLeaveManagementPage() {
                                                                 <td className="px-4 py-3 text-center font-bold text-slate-800">{leave.days}</td>
                                                                 <td className="px-4 py-3">
                                                                     <span className={`px-2 py-1 rounded-md text-xs font-bold ${TYPE_COLORS[leave.type] || TYPE_COLORS["Other"]}`}>
-                                                                        {leave.type}
+                                                                        {TYPE_LABELS[leave.type] || leave.type}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-slate-400 text-xs max-w-[120px] truncate hidden md:table-cell" title={leave.reason}>

@@ -187,7 +187,7 @@ export default function LeaveTrackingPage() {
                                                 {/* Top row */}
                                                 <div className="flex items-start justify-between mb-3">
                                                     <span className={`text-xs font-bold px-2 py-1 rounded-lg ${typeColors[leave.type] || typeColors["Other"]}`}>
-                                                        {leave.type}
+                                                        {leave.type === "WeeklyHoliday" ? "Weekly Holiday" : leave.type}
                                                     </span>
                                                     <span className="text-lg font-extrabold text-slate-700 leading-none">
                                                         {leave.days}<span className="text-xs font-semibold text-slate-400 ml-0.5">d</span>

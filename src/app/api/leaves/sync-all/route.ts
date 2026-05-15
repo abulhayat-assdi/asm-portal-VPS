@@ -26,10 +26,15 @@ function monthsRange(from: string, to: string): string[] {
     return months;
 }
 
+function toDayIndex(v: string | number): number {
+    const n = Number(v);
+    if (!isNaN(n) && String(v).trim() !== "") return n;
+    return DAY_NAMES.indexOf(String(v));
+}
+
 /**
  * POST /api/leaves/sync-all
  * Backfill + sync weekly holidays for ALL teachers with leaveTrackingEnabled.
- * Generates from max(joinDate, 2026-01) to today for each teacher.
  */
 export async function POST(req: NextRequest) {
     const user = await getSessionUser(req);
@@ -38,7 +43,6 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-        // Get all teachers with leave tracking enabled
         const teachers = await prisma.teacher.findMany({
             where: { leaveTrackingEnabled: true },
             select: { teacherId: true, name: true },
@@ -56,8 +60,12 @@ export async function POST(req: NextRequest) {
             });
             if (!settings) continue;
 
-            const weeklyHolidays = (settings.weeklyHolidays as string[]) || [];
-            if (weeklyHolidays.length === 0) continue;
+            const rawHolidays = (settings.weeklyHolidays as (string | number)[]) || [];
+            const weeklyHolidayIndices = rawHolidays
+                .map(toDayIndex)
+                .filter(i => i >= 0 && i <= 6);
+
+            if (weeklyHolidayIndices.length === 0) continue;
 
             let startMonth = "2026-01";
             if (settings.joinDate && settings.joinDate >= "2026-01") {
@@ -75,11 +83,18 @@ export async function POST(req: NextRequest) {
                     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                     if (dateStr > todayStr) break;
 
-                    const dayName = DAY_NAMES[new Date(year, month - 1, day).getDay()];
-                    if (!weeklyHolidays.includes(dayName)) continue;
+                    const dayIndex = new Date(year, month - 1, day).getDay();
+                    if (!weeklyHolidayIndices.includes(dayIndex)) continue;
 
                     const existing = await prisma.leave.findFirst({
-                        where: { teacherId: teacher.teacherId, startDate: dateStr, type: "WeeklyHoliday" },
+                        where: {
+                            teacherId: teacher.teacherId,
+                            startDate: dateStr,
+                            OR: [
+                                { type: "WeeklyHoliday" },
+                                { reason: "Auto-generated weekly holiday" },
+                            ],
+                        },
                     });
                     if (existing) continue;
 
