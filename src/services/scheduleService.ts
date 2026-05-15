@@ -159,6 +159,16 @@ export const toggleBatchStatus = async (batchId: string, currentStatus: "active"
     return true;
 };
 
+export const deleteBatch = async (batchId: string): Promise<boolean> => {
+    const res = await fetch("/api/schedule/batches", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: batchId }),
+    });
+    if (!res.ok) throw new Error("Failed to delete batch.");
+    return true;
+};
+
 export const getCompletedClassesByBatch = async (batchName: string): Promise<(FirestoreClass & { id: string })[]> => {
     const res = await fetch(`/api/schedule/completed?batch=${encodeURIComponent(batchName)}`, { cache: "no-store" });
     if (!res.ok) return [];

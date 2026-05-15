@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
-import { getClassesByTeacherId, requestClassCompletion, ClassSchedule, getAllClassesSchedules, syncBatchClassSchedules, markClassAsCompleted, getBatchClassCounts, getBatches, addBatch, toggleBatchStatus, getCompletedClassesByBatch, BatchItem } from "@/services/scheduleService";
+import { getClassesByTeacherId, requestClassCompletion, ClassSchedule, getAllClassesSchedules, syncBatchClassSchedules, markClassAsCompleted, getBatchClassCounts, getBatches, addBatch, toggleBatchStatus, deleteBatch, getCompletedClassesByBatch, BatchItem } from "@/services/scheduleService";
 import { useAuth } from "@/contexts/AuthContext";
 import { getClassRoutines, addClassRoutine, updateClassRoutine, deleteClassRoutine, ClassRoutine } from "@/services/routinesService";
 import Button from "@/components/ui/Button";
@@ -59,6 +59,7 @@ export default function SchedulePage() {
     const [newBatchName, setNewBatchName] = useState("");
     const [isSubmittingBatch, setIsSubmittingBatch] = useState(false);
     const [isExportingCsv, setIsExportingCsv] = useState<string | null>(null);
+    const [isDeletingBatch, setIsDeletingBatch] = useState<string | null>(null);
 
     const [columns, setColumns] = useState(["date", "day", "batch", "subject", "time", "status", "teacherId", "teacherName", "extra1", "extra2"]);
     const [maxRows, setMaxRows] = useState(500);
@@ -575,6 +576,22 @@ export default function SchedulePage() {
         } catch (error) {
             console.error("Failed to toggle batch", error);
             alert("Failed to update status");
+        }
+    };
+
+    const handleDeleteBatch = async (batchId: string, batchName: string) => {
+        if (!confirm(`"${batchName}" batch সম্পূর্ণ মুছে ফেলবেন? এই কাজ undo করা যাবে না।`)) return;
+        setIsDeletingBatch(batchId);
+        try {
+            await deleteBatch(batchId);
+            setManagedBatches(prev => prev.filter(b => b.id !== batchId));
+            const stats = await getBatchClassCounts();
+            setBatchStats(stats);
+        } catch (error) {
+            console.error("Failed to delete batch", error);
+            alert("Batch delete করতে সমস্যা হয়েছে।");
+        } finally {
+            setIsDeletingBatch(null);
         }
     };
 
@@ -1748,12 +1765,26 @@ export default function SchedulePage() {
                                                     <button
                                                         onClick={() => handleToggleBatchStatus(batch.id!, batch.status)}
                                                         className={`text-sm font-semibold px-3 py-1.5 rounded-md transition-colors ${
-                                                            batch.status === 'active' 
-                                                                ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200' 
+                                                            batch.status === 'active'
+                                                                ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200'
                                                                 : 'text-green-700 bg-green-50 hover:bg-green-100 border border-green-200'
                                                         }`}
                                                     >
                                                         {batch.status === 'active' ? 'Hide Batch' : 'Keep Active'}
+                                                    </button>
+
+                                                    {/* Delete Batch */}
+                                                    <button
+                                                        onClick={() => handleDeleteBatch(batch.id!, batch.name)}
+                                                        disabled={isDeletingBatch === batch.id}
+                                                        className="text-sm font-semibold px-3 py-1.5 rounded-md transition-colors text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-50"
+                                                        title="Batch permanently delete করুন"
+                                                    >
+                                                        {isDeletingBatch === batch.id ? (
+                                                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                                                        ) : (
+                                                            'Delete'
+                                                        )}
                                                     </button>
                                                 </div>
                                             </div>

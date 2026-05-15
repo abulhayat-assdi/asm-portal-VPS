@@ -57,15 +57,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     const { id, status } = await req.json();
-    if (!id) {
-        return NextResponse.json({ error: "Batch id is required" }, { status: 400 });
+    if (!id || !status) {
+        return NextResponse.json({ error: "Batch id and status are required" }, { status: 400 });
     }
-
-    const newStatus = status === "active" ? "archived" : "active";
 
     const batch = await prisma.batch.update({
         where: { id },
-        data: { status: newStatus },
+        data: { status },
     });
 
     return NextResponse.json(batch);
