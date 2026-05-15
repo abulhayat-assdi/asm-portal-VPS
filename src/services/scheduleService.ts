@@ -128,7 +128,7 @@ export const markClassAsCompleted = async (teacherId: string, teacherName: strin
 };
 
 export const getBatchClassCounts = async (): Promise<Record<string, { subjectName: string; classCount: number }[]>> => {
-    const res = await fetch("/api/batch-stats", { cache: "no-store" });
+    const res = await fetch("/api/schedule/class-counts", { cache: "no-store" });
     if (!res.ok) return {};
     return res.json();
 };
