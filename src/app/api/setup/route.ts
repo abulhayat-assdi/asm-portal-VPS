@@ -1,49 +1,58 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
-        console.log('--- Setup API Triggered ---');
-        
-        // Check if prisma is initialized
         if (!prisma || !prisma.user) {
-            throw new Error('Prisma client is not properly initialized. Check your DATABASE_URL and Docker setup.');
+            throw new Error('Prisma client is not properly initialized.');
         }
 
+        const { searchParams } = new URL(req.url);
+        const action = searchParams.get('action');
+
         const email = 'mohammadabulhayatt@gmail.com';
+
+        // action=check — just show current user state, no changes
+        if (action === 'check') {
+            const user = await prisma.user.findUnique({
+                where: { email },
+                select: { id: true, email: true, role: true, displayName: true, teacherId: true }
+            });
+            const hwCount = await prisma.homeworkSubmission.count();
+            const assignCount = await prisma.homeworkAssignment.count();
+            return NextResponse.json({ user, homeworkSubmissions: hwCount, homeworkAssignments: assignCount });
+        }
+
+        // action=fix-role — set role to super_admin
+        if (action === 'fix-role') {
+            const user = await prisma.user.update({
+                where: { email },
+                data: { role: 'super_admin' },
+                select: { email: true, role: true, displayName: true }
+            });
+            return NextResponse.json({ success: true, message: 'Role updated to super_admin', user });
+        }
+
+        // default — create/reset admin account
         const password = 'Password@123';
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 1. Create Super Admin
         const user = await prisma.user.upsert({
             where: { email },
-            update: {
-                passwordHash: hashedPassword,
-                role: 'admin',
-                displayName: 'Abul Hayat'
-            },
-            create: {
-                email,
-                passwordHash: hashedPassword,
-                role: 'admin',
-                displayName: 'Abul Hayat'
-            }
+            update: { passwordHash: hashedPassword, role: 'super_admin', displayName: 'Abul Hayat' },
+            create: { email, passwordHash: hashedPassword, role: 'super_admin', displayName: 'Abul Hayat' }
         });
 
         return NextResponse.json({
             success: true,
-            message: 'Database initialized and Admin created!',
-            user: user.email,
+            message: 'Admin account created/reset with role: super_admin',
+            user: { email: user.email, role: user.role },
         });
     } catch (error: any) {
         console.error('Setup Error:', error);
-        return NextResponse.json({
-            success: false,
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
