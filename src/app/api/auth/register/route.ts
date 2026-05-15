@@ -15,11 +15,36 @@ const registerSchema = z.object({
     roll: z.string().optional(),
 });
 
+// Rate limiter: max 5 registrations per IP per hour
+const registerAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_REGISTER = 5;
+const REGISTER_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkRegisterRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const entry = registerAttempts.get(ip);
+    if (!entry || entry.resetAt < now) {
+        registerAttempts.set(ip, { count: 1, resetAt: now + REGISTER_WINDOW_MS });
+        return true;
+    }
+    if (entry.count >= MAX_REGISTER) return false;
+    entry.count++;
+    return true;
+}
+
 /**
  * POST /api/auth/register
  * Public endpoint — registers a new student account.
  */
 export async function POST(req: NextRequest) {
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRegisterRateLimit(ip)) {
+        return NextResponse.json(
+            { error: 'Too many registration attempts. Please try again later.' },
+            { status: 429 }
+        );
+    }
+
     try {
         const body = await req.json();
         const parsed = registerSchema.safeParse(body);

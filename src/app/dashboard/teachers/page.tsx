@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import TeacherCard from "@/components/ui/TeacherCard";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { getAllTeachers, getTeachersPaginated, addTeacher, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
+import { getTeachersPaginated, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function TeachersPage() {
@@ -275,7 +275,6 @@ export default function TeachersPage() {
             } else {
                 // --- ADD MODE ---
 
-                // Create Firebase Auth user via secure backend (uses loginEmail)
                 const response = await fetch("/api/admin/create-teacher", {
                     method: "POST",
                     headers: {
@@ -288,8 +287,12 @@ export default function TeachersPage() {
                         password: formData.password,
                         name: formData.name,
                         phone: formData.phone,
+                        designation: formData.designation,
+                        about: formData.about,
                         isAdmin: formData.isAdmin,
                         order: Number(formData.order),
+                        profileImageUrl: finalImageUrl || undefined,
+                        leaveTrackingEnabled: formData.leaveTrackingEnabled,
                     }),
                 });
 
@@ -297,21 +300,6 @@ export default function TeachersPage() {
                 if (!response.ok) {
                     throw new Error(result.error || result.message || "Failed to create teacher account.");
                 }
-
-                // Add to teachers collection
-                await addTeacher({
-                    teacherId: formData.teacherId,
-                    name: formData.name,
-                    designation: formData.designation,
-                    about: formData.about,
-                    phone: formData.phone,
-                    email: formData.email,         // display email
-                    loginEmail: formData.loginEmail, // login email
-                    profileImageUrl: finalImageUrl || undefined,
-                    isAdmin: formData.isAdmin,
-                    order: Number(formData.order),
-                    leaveTrackingEnabled: formData.leaveTrackingEnabled,
-                });
             }
 
             await refreshTeachers();

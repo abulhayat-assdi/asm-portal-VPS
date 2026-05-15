@@ -1,93 +1,108 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isAdmin } from "@/lib/auth";
+
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/zip", "application/x-zip-compressed",
+  "video/mp4", "video/webm",
+]);
+
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 export async function POST(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-  try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-    const folder = (formData.get("folder") as string) || "images/instructors";
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
-    }
+    try {
+        const formData = await req.formData();
+        const file = formData.get("file") as File;
+        const folder = (formData.get("folder") as string) || "images/instructors";
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+        if (!file) {
+            return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        }
 
-    // Determine the upload directory
-    // If routines, we use public/documents/routines
-    // Else use the provided path under public/
-    let uploadSubDir = folder;
-    if (folder === "routines") {
-      uploadSubDir = "documents/routines";
-    }
+        // File type validation
+        if (!ALLOWED_MIME_TYPES.has(file.type)) {
+            return NextResponse.json({ error: `File type not allowed: ${file.type}` }, { status: 400 });
+        }
 
-    const uploadDir = path.join(process.cwd(), "public", uploadSubDir);
-    
-    // Ensure the upload directory exists
-    await mkdir(uploadDir, { recursive: true });
+        // File size validation
+        if (file.size > MAX_FILE_SIZE) {
+            return NextResponse.json({ error: `File too large. Max 100MB allowed.` }, { status: 400 });
+        }
 
-    // Generate a unique filename: timestamp-sanitized-name
-    const cleanFileName = file.name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
-    const uniqueFilename = `${Date.now()}-${cleanFileName}`;
-    const filePath = path.join(uploadDir, uniqueFilename);
+        // Determine the upload directory
+        let uploadSubDir = folder === "routines" ? "documents/routines" : folder;
 
-    // Save the file
-    await writeFile(filePath, buffer);
+        // Prevent path traversal — resolve and verify it stays within public/
+        const publicDir = path.join(process.cwd(), "public");
+        const uploadDir = path.resolve(publicDir, uploadSubDir);
+        if (!uploadDir.startsWith(publicDir + path.sep) && uploadDir !== publicDir) {
+            return NextResponse.json({ error: "Forbidden: Invalid upload path" }, { status: 403 });
+        }
 
-    // Return the public URL path
-    const url = `/${uploadSubDir}/${uniqueFilename}`;
-    return NextResponse.json({ url });
+        await mkdir(uploadDir, { recursive: true });
+
+        const cleanFileName = file.name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
+        const uniqueFilename = `${Date.now()}-${cleanFileName}`;
+        const filePath = path.join(uploadDir, uniqueFilename);
+
+        const bytes = await file.arrayBuffer();
+        await writeFile(filePath, Buffer.from(bytes));
+
+        const url = `/${uploadSubDir}/${uniqueFilename}`;
+        return NextResponse.json({ url });
     } catch (error) {
-    console.error("Error uploading file:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to upload file";
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
-  }
+        console.error("Error uploading file:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to upload file";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    }
 }
 
 export async function DELETE(req: NextRequest) {
-  try {
-    const { url } = await req.json();
-    if (!url) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 });
-    }
-
-    // Convert public URL like `/documents/routines/xxx.pdf` to actual local path
-    const cleanUrl = url.startsWith("/") ? url.slice(1) : url;
-    const filePath = path.join(process.cwd(), "public", cleanUrl);
-
-    // Prevent directory traversal attacks
-    const publicDir = path.join(process.cwd(), "public");
-    if (!filePath.startsWith(publicDir)) {
-      return NextResponse.json({ error: "Forbidden: Out of bounds" }, { status: 403 });
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     try {
-      await unlink(filePath);
-    } catch (e: any) {
-      // If file is already gone, that's fine
-      if (e.code !== "ENOENT") {
-        throw e;
-      }
-      console.warn("File to delete not found, ignoring:", filePath);
-    }
+        const { url } = await req.json();
+        if (!url) {
+            return NextResponse.json({ error: "URL is required" }, { status: 400 });
+        }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting file:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to delete file";
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
-  }
+        const cleanUrl = url.startsWith("/") ? url.slice(1) : url;
+        const publicDir = path.join(process.cwd(), "public");
+        const filePath = path.resolve(publicDir, cleanUrl);
+
+        // Prevent directory traversal
+        if (!filePath.startsWith(publicDir + path.sep)) {
+            return NextResponse.json({ error: "Forbidden: Out of bounds" }, { status: 403 });
+        }
+
+        try {
+            await unlink(filePath);
+        } catch (e: any) {
+            if (e.code !== "ENOENT") throw e;
+            console.warn("File to delete not found, ignoring:", filePath);
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Error deleting file:", error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to delete file";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    }
 }

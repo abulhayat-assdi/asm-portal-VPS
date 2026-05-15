@@ -1,10 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getSessionUser, isAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// GET — show counts before deletion
-export async function GET() {
+// GET — show counts before deletion (admin only)
+export async function GET(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const submissions = await prisma.homeworkSubmission.count();
     const assignments = await prisma.homeworkAssignment.count();
     return NextResponse.json({
@@ -14,8 +20,13 @@ export async function GET() {
     });
 }
 
-// POST — delete all homework submissions and assignments
-export async function POST() {
+// POST — delete all homework submissions and assignments (admin only)
+export async function POST(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     try {
         const deletedSubmissions = await prisma.homeworkSubmission.deleteMany({});
         const deletedAssignments = await prisma.homeworkAssignment.deleteMany({});

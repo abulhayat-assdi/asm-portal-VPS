@@ -18,6 +18,8 @@ const createTeacherSchema = z.object({
     about: z.string().optional(),
     isAdmin: z.boolean().optional(),
     order: z.number().optional(),
+    profileImageUrl: z.string().optional(),
+    leaveTrackingEnabled: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -32,10 +34,10 @@ export async function POST(req: NextRequest) {
         const parsed = createTeacherSchema.safeParse(body);
 
         if (!parsed.success) {
-            return NextResponse.json({ error: parsed.error.message }, { status: 400 });
+            return NextResponse.json({ error: parsed.error.issues.map(e => e.message).join(", ") }, { status: 400 });
         }
 
-        const { teacherId, loginEmail, displayEmail, password, name, phone, designation, about, isAdmin: grantAdmin, order } = parsed.data;
+        const { teacherId, loginEmail, displayEmail, password, name, phone, designation, about, isAdmin: grantAdmin, order, profileImageUrl, leaveTrackingEnabled } = parsed.data;
 
         const normalizedLoginEmail = loginEmail.toLowerCase().trim();
 
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
                     loginEmail: normalizedLoginEmail,
                     isAdmin: grantAdmin || false,
                     order: order || 0,
+                    ...(profileImageUrl ? { profileImageUrl } : {}),
+                    leaveTrackingEnabled: leaveTrackingEnabled || false,
                 },
             });
 

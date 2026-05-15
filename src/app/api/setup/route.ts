@@ -5,6 +5,14 @@ import bcrypt from 'bcryptjs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+    // Require SETUP_SECRET to prevent unauthorized access
+    const setupSecret = process.env.SETUP_SECRET;
+    const providedSecret = req.nextUrl.searchParams.get('secret');
+
+    if (!setupSecret || !providedSecret || providedSecret !== setupSecret) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     try {
         if (!prisma || !prisma.user) {
             throw new Error('Prisma client is not properly initialized.');

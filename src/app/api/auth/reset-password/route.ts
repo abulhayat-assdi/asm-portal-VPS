@@ -78,33 +78,43 @@ export async function POST(req: NextRequest) {
 
         // Send email
         const transporter = getTransporter();
-        await transporter.sendMail({
-            from: process.env.SMTP_FROM || `"ASM Portal" <${process.env.SMTP_USER}>`,
-            to: user.email,
-            subject: 'Reset Your ASM Portal Password',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #1a1a2e;">Password Reset Request</h2>
-                    <p>Hello ${user.displayName},</p>
-                    <p>We received a request to reset your ASM Internal Portal password.</p>
-                    <p>Click the button below to set a new password. This link expires in <strong>${TOKEN_EXPIRY_HOURS} hours</strong>.</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${resetUrl}" style="
-                            background-color: #6366f1;
-                            color: white;
-                            padding: 12px 32px;
-                            text-decoration: none;
-                            border-radius: 6px;
-                            font-size: 16px;
-                            display: inline-block;
-                        ">Reset Password</a>
+        try {
+            await transporter.sendMail({
+                from: process.env.SMTP_FROM || `"ASM Portal" <${process.env.SMTP_USER}>`,
+                to: user.email,
+                subject: 'Reset Your ASM Portal Password',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a2e;">Password Reset Request</h2>
+                        <p>Hello ${user.displayName},</p>
+                        <p>We received a request to reset your ASM Internal Portal password.</p>
+                        <p>Click the button below to set a new password. This link expires in <strong>${TOKEN_EXPIRY_HOURS} hours</strong>.</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${resetUrl}" style="
+                                background-color: #059669;
+                                color: white;
+                                padding: 12px 32px;
+                                text-decoration: none;
+                                border-radius: 6px;
+                                font-size: 16px;
+                                display: inline-block;
+                            ">Reset Password</a>
+                        </div>
+                        <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #999; font-size: 12px;">ASM Internal Portal &mdash; This is an automated message.</p>
                     </div>
-                    <p style="color: #666; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                    <p style="color: #999; font-size: 12px;">ASM Internal Portal &mdash; This is an automated message.</p>
-                </div>
-            `,
-        });
+                `,
+            });
+        } catch (smtpError) {
+            console.error('[Reset Password] SMTP send failed:', smtpError);
+            // Log reset URL to server console so admin can manually share it
+            console.warn(`[Reset Password] MANUAL RESET URL for ${user.email}:\n${resetUrl}`);
+            return NextResponse.json(
+                { error: 'Email delivery failed. Please contact the admin to reset your password manually.' },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

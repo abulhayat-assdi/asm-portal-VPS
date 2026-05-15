@@ -40,11 +40,24 @@ export const getAllTeachers = async (): Promise<Teacher[]> => {
     return teachers.map(applyFallbackImage).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 };
 
-export const addTeacher = async (data: Omit<Teacher, "id">): Promise<string> => {
+export const addTeacher = async (data: Omit<Teacher, "id"> & { password: string }): Promise<string> => {
     const res = await fetch("/api/admin/create-teacher", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+            teacherId: data.teacherId,
+            loginEmail: data.loginEmail,
+            displayEmail: data.email,
+            password: data.password,
+            name: data.name,
+            phone: data.phone,
+            designation: data.designation,
+            about: data.about,
+            isAdmin: data.isAdmin,
+            order: data.order,
+            profileImageUrl: data.profileImageUrl,
+            leaveTrackingEnabled: data.leaveTrackingEnabled,
+        }),
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || "Failed to add teacher.");
