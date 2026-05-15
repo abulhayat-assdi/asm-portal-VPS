@@ -23,7 +23,7 @@ export default function FeedbackPage() {
         });
     };
 
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
 
     // Fetch Feedback
     useEffect(() => {
@@ -32,7 +32,7 @@ export default function FeedbackPage() {
         
         const loadFeedback = async () => {
             setLoading(true);
-            const data = await feedbackService.getFeedbackList(userProfile.role === "admin");
+            const data = await feedbackService.getFeedbackList(userProfile.role === "admin" || userProfile.role === "super_admin");
             setFeedbackList(data);
             setLoading(false);
         };

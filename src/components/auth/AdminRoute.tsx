@@ -13,13 +13,13 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
             if (!user) {
                 // Not authenticated, redirect to login
                 router.push("/login");
-            } else if (userProfile && userProfile.role !== "admin") {
+            } else if (userProfile && userProfile.role !== "admin" && userProfile.role !== "super_admin") {
                 router.push("/dashboard");
             }
         }
     }, [user, userProfile, loading, router]);
 
-    if (loading || !user || !userProfile || userProfile.role !== "admin") {
+    if (loading || !user || !userProfile || (userProfile.role !== "admin" && userProfile.role !== "super_admin")) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
                 <div className="text-center">

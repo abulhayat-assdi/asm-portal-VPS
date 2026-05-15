@@ -105,7 +105,7 @@ const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category"
 export default function AllBatchInfoPage() {
 
     const { userProfile } = useAuth();
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const [allStudents, setAllStudents] = useState<StudentBatchInfo[]>([]);
     const [loading, setLoading] = useState(true);
 

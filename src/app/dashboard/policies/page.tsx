@@ -30,7 +30,7 @@ async function uploadPdfFile(file: File, subPath: string): Promise<string> {
 
 export default function PoliciesPage() {
     const { user, userProfile } = useAuth();
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const [policies, setPolicies] = useState<Policy[]>([]);
     const [meetings, setMeetings] = useState<MeetingMinute[]>([]);
     const [loading, setLoading] = useState(true);

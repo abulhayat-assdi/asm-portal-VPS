@@ -47,7 +47,7 @@ export default function HomeworkViewPage() {
     const [editDeadline, setEditDeadline] = useState("");
     const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const isTeacher = userProfile?.role === "teacher";
 
     const fetchData = useCallback(async () => {

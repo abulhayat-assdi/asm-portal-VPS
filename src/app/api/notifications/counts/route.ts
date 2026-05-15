@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         };
 
         // 1. Homework Submissions (Teacher/Admin)
-        if (role === "admin" || role === "teacher") {
+        if (isAdmin(user) || role === "teacher") {
             const ts = getTs("/dashboard/homework");
             const where: any = {
                 submittedAt: { gt: ts }
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 2. Admin Manage Homework
-        if (role === "admin") {
+        if (isAdmin(user)) {
             const ts = getTs("/dashboard/admin/manage-homework");
             counts["/dashboard/admin/manage-homework"] = await prisma.homeworkSubmission.count({
                 where: { submittedAt: { gt: ts } }
@@ -52,14 +52,14 @@ export async function GET(req: NextRequest) {
         }
 
         // 3. Contact Messages (Admin only)
-        if (role === "admin") {
+        if (isAdmin(user)) {
             counts["/dashboard/admin/contact-messages"] = await prisma.contactMessage.count({
                 where: { status: "unread" }
             });
         }
 
         // 4. Feedback (Admin only)
-        if (role === "admin") {
+        if (isAdmin(user)) {
             const ts = getTs("/dashboard/feedback");
             counts["/dashboard/feedback"] = await prisma.feedback.count({
                 where: { createdAt: { gt: ts } }
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
         }
 
         // 5. Daily Tracker (Admin only)
-        if (role === "admin") {
+        if (isAdmin(user)) {
             const ts = getTs("/dashboard/tracker");
             counts["/dashboard/tracker"] = await prisma.dailyTrackerReport.count({
                 where: { createdAt: { gt: ts } }

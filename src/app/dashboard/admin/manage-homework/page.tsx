@@ -38,7 +38,7 @@ export default function ManageHomeworkPage() {
         setSelectedFolder(null);
     }, [filterTeacher, filterBatch, searchQuery]);
 
-    const isAdmin = user?.role === "admin";
+    const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
     const fetchData = useCallback(async () => {
         if (!user || !isAdmin) return;

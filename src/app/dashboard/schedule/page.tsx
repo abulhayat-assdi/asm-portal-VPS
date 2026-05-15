@@ -20,7 +20,7 @@ export default function SchedulePage() {
     const [showAll, setShowAll] = useState(false);
     const [expandedPending, setExpandedPending] = useState<string | null>(null);
     const { userProfile, loading: authLoading } = useAuth();
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     // Add Routine Modal State

@@ -86,7 +86,7 @@ const staticCourseModules = [
 
 export default function CourseModulesPage() {
     const { user, userProfile } = useAuth();
-    const isAdmin = userProfile?.role === "admin";
+    const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
 
     const [resources, setResources] = useState<Resource[]>([]);
     const [loading, setLoading] = useState(true);
