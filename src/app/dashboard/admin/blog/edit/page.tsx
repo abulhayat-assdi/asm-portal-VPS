@@ -273,7 +273,7 @@ function EditBlogContent() {
                                         <div className="mt-4 relative w-full h-48">
                                             <p className="text-sm text-gray-500 mb-2">Current Image:</p>
                                             <div className="relative w-full h-full">
-                                                <Image src={formData.featuredImage} alt="Featured" fill className="rounded-md object-cover" />
+                                                <Image src={formData.featuredImage} alt="Featured" fill sizes="(max-width: 768px) 100vw, 400px" className="rounded-md object-cover" />
                                             </div>
                                         </div>
                                     )}

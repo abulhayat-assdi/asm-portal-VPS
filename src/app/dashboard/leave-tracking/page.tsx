@@ -64,8 +64,8 @@ export default function LeaveTrackingPage() {
             setLoading(true);
             setSyncing(true);
             try {
-                if (teacher) await syncAutoWeeklyLeaves(teacher.id);
-                const data = await getLeavesByTeacher(selectedTeacherId);
+                if (teacher) await syncAutoWeeklyLeaves(teacher.teacherId).catch(() => {});
+                const data = await getLeavesByTeacher(teacher?.teacherId || selectedTeacherId);
                 setLeaves(data);
             } finally {
                 setLoading(false);

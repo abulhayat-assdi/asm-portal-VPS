@@ -56,13 +56,13 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
-        getLeaveSettings(teacher.id).then((s) => {
+        getLeaveSettings(teacher.teacherId).then((s) => {
             if (s) {
                 setSettings({ weeklyHolidays: (s.weeklyHolidays || []).map(Number), joinDate: s.joinDate || "" });
             }
             setLoaded(true);
         });
-    }, [teacher.id]);
+    }, [teacher.teacherId]);
 
     const toggle = (i: number) => {
         setSettings((prev) => ({
@@ -77,7 +77,7 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
         setSaving(true);
         try {
             await saveLeaveSettings({
-                teacherId: teacher.id,
+                teacherId: teacher.teacherId,
                 teacherName: teacher.name,
                 weeklyHolidays: settings.weeklyHolidays.map(String),
                 joinDate: settings.joinDate,
@@ -195,8 +195,9 @@ export default function AdminLeaveManagementPage() {
         setLoading(true);
         try {
             const teacher = teachers.find((t) => t.id === selectedId);
-            if (teacher) await syncAutoWeeklyLeaves(teacher.id);
-            const data = await getLeavesByTeacher(selectedId);
+            if (!teacher) return;
+            await syncAutoWeeklyLeaves(teacher.teacherId).catch(() => {});
+            const data = await getLeavesByTeacher(teacher.teacherId);
             setLeaves(data);
         } finally {
             setLoading(false);
@@ -220,7 +221,7 @@ export default function AdminLeaveManagementPage() {
             const teacher = teachers.find((t) => t.id === selectedId);
             const monthYear = getMonthYear(formData.startDate);
             const payload = {
-                teacherId: selectedId,
+                teacherId: teacher?.teacherId || selectedId,
                 teacherName: teacher?.name || "",
                 startDate: formData.startDate,
                 endDate: formData.endDate,

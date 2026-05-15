@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     output: 'standalone',
-    serverExternalPackages: ['@prisma/client'],
+    serverExternalPackages: ['@prisma/client', 'sharp'],
     experimental: {
         serverActions: {
             allowedOrigins: ['tasm-skill.asf.bd', 'www.tasm-skill.asf.bd', '*.tasm-skill.asf.bd'],
@@ -10,15 +10,18 @@ const nextConfig: NextConfig = {
         },
     },
     images: {
-        unoptimized: true,
-        minimumCacheTTL: 86400,
+        // Enable optimization with sharp
+        minimumCacheTTL: 604800,        // Cache optimized images for 7 days
         formats: ['image/avif', 'image/webp'],
+        deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+        imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
         remotePatterns: [
-            { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/photo-**' },
-            { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/premium_photo-**' },
+            { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
             { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
             { protocol: 'https', hostname: 'drive.google.com', pathname: '/**' },
             { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+            { protocol: 'https', hostname: 'tasm-skill.asf.bd', pathname: '/**' },
+            { protocol: 'http', hostname: 'localhost', pathname: '/**' },
         ],
     },
 };

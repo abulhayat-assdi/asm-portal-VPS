@@ -18,10 +18,13 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { teacherId, monthYear } = body;
+        const { teacherId } = body;
+        // Default to current month if not provided
+        const now = new Date();
+        const monthYear = body.monthYear || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-        if (!teacherId || !monthYear) {
-            return NextResponse.json({ error: "teacherId and monthYear required" }, { status: 400 });
+        if (!teacherId) {
+            return NextResponse.json({ error: "teacherId required" }, { status: 400 });
         }
 
         const settings = await prisma.leaveSettings.findUnique({ where: { teacherId } });
