@@ -719,6 +719,8 @@ model VideoTestimonial {
   id          String   @id @default(uuid())
   title       String
   videoUrl    String   @map("video_url")
+  videoId     String   @default("") @map("video_id")
+  studentName String   @default("") @map("student_name")
   thumbnailUrl String? @map("thumbnail_url")
   description String?
   isPublished Boolean  @default(false) @map("is_published")

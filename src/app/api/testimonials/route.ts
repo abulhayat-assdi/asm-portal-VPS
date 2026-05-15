@@ -5,13 +5,38 @@ import { getSessionUser, isAdmin } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** GET /api/testimonials — published only */
+function extractVideoId(url: string): string {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/,
+    ];
+    for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+    }
+    return "";
+}
+
+/** GET /api/testimonials — return in shape the frontend service expects */
 export async function GET() {
     const items = await prisma.videoTestimonial.findMany({
         where: { isPublished: true },
         orderBy: { order: "asc" },
     });
-    return NextResponse.json(items);
+
+    // Map DB fields → service interface shape
+    const result = items.map((item) => ({
+        id: item.id,
+        youtubeUrl: item.videoUrl,
+        videoId: item.videoId || extractVideoId(item.videoUrl),
+        title: item.title,
+        studentName: item.studentName || "",
+        order: item.order,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+    }));
+
+    return NextResponse.json(result);
 }
 
 /** POST /api/testimonials */
@@ -23,20 +48,32 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { title, videoUrl, videoId, thumbnailUrl, description, isPublished, order, studentName } = body;
+        const { youtubeUrl, videoId: bodyVideoId, title, studentName, order } = body;
+
+        const resolvedVideoId = bodyVideoId || extractVideoId(youtubeUrl || "");
 
         const item = await prisma.videoTestimonial.create({
             data: {
                 title: title || "",
-                videoUrl: videoUrl || videoId ? `https://youtu.be/${videoId}` : "",
-                thumbnailUrl: thumbnailUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null),
-                description: description || null,
-                isPublished: isPublished ?? false,
+                videoUrl: youtubeUrl || "",
+                videoId: resolvedVideoId,
+                studentName: studentName || "",
+                thumbnailUrl: resolvedVideoId
+                    ? `https://img.youtube.com/vi/${resolvedVideoId}/hqdefault.jpg`
+                    : null,
+                isPublished: true,
                 order: Number(order) || 0,
             },
         });
 
-        return NextResponse.json(item, { status: 201 });
+        return NextResponse.json({
+            id: item.id,
+            youtubeUrl: item.videoUrl,
+            videoId: item.videoId,
+            title: item.title,
+            studentName: item.studentName,
+            order: item.order,
+        }, { status: 201 });
     } catch (error) {
         console.error("[Testimonials POST]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
@@ -52,9 +89,30 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { id, ...data } = body;
-        const item = await prisma.videoTestimonial.update({ where: { id }, data });
-        return NextResponse.json(item);
+        const { id, youtubeUrl, videoId: bodyVideoId, title, studentName, order } = body;
+
+        const resolvedVideoId = bodyVideoId || (youtubeUrl ? extractVideoId(youtubeUrl) : undefined);
+
+        const updateData: Record<string, unknown> = {};
+        if (title !== undefined) updateData.title = title;
+        if (studentName !== undefined) updateData.studentName = studentName;
+        if (order !== undefined) updateData.order = Number(order);
+        if (youtubeUrl !== undefined) updateData.videoUrl = youtubeUrl;
+        if (resolvedVideoId !== undefined) {
+            updateData.videoId = resolvedVideoId;
+            updateData.thumbnailUrl = `https://img.youtube.com/vi/${resolvedVideoId}/hqdefault.jpg`;
+        }
+
+        const item = await prisma.videoTestimonial.update({ where: { id }, data: updateData });
+
+        return NextResponse.json({
+            id: item.id,
+            youtubeUrl: item.videoUrl,
+            videoId: item.videoId,
+            title: item.title,
+            studentName: item.studentName,
+            order: item.order,
+        });
     } catch (error) {
         console.error("[Testimonials PATCH]", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
