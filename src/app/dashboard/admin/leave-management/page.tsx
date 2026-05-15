@@ -286,6 +286,33 @@ export default function AdminLeaveManagementPage() {
 
     const totalDays = leaves.reduce((s, l) => s + l.days, 0);
 
+    const handleSyncAll = async () => {
+        const ok = await confirm({
+            message: "January 2026 থেকে আজকে পর্যন্ত সব teacher-এর weekly holiday auto-generate করবে (missing entries যোগ হবে, existing রাখবে)। Continue?",
+            variant: "warning",
+        });
+        if (!ok) return;
+        setLoading(true);
+        try {
+            const res = await fetch("/api/leaves/sync-all", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) {
+                const summary = data.results
+                    .filter((r: any) => r.generated > 0)
+                    .map((r: any) => `${r.teacher}: ${r.generated}`)
+                    .join(", ");
+                showToast(`Sync done. Total: ${data.totalGenerated} entries added${summary ? ` (${summary})` : ""}.`);
+                if (selectedId) fetchLeaves();
+            } else {
+                showToast(data.error || "Sync failed", false);
+            }
+        } catch {
+            showToast("Sync failed", false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-6xl mx-auto space-y-6 pb-10">
             {/* Toast */}
@@ -296,9 +323,18 @@ export default function AdminLeaveManagementPage() {
             )}
 
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-slate-800">⚙️ Leave Management</h1>
-                <p className="text-sm text-slate-500 mt-1">Admin panel to manage teacher leaves, weekly holidays and settings.</p>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-800">⚙️ Leave Management</h1>
+                    <p className="text-sm text-slate-500 mt-1">Admin panel to manage teacher leaves, weekly holidays and settings.</p>
+                </div>
+                <button
+                    onClick={handleSyncAll}
+                    disabled={loading}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm disabled:opacity-50 transition-colors"
+                >
+                    🔄 Sync All Teachers (Jan 2026 → Today)
+                </button>
             </div>
 
             {/* Tabs at top level */}
