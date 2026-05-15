@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
         if (!parsed.success) {
             return NextResponse.json(
-                { error: parsed.error.errors.map(e => e.message).join(", ") },
+                { error: parsed.error.issues.map(e => e.message).join(", ") },
                 { status: 400 }
             );
         }
