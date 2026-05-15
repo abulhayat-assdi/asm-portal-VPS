@@ -12,10 +12,12 @@ import * as blogService from "@/services/blogService";
 import { uploadImage } from "@/lib/uploadImage";
 import Image from "next/image";
 import RichTextEditor from "@/components/blog/RichTextEditor";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 const CATEGORIES = ["Article", "Project Presentation", "Practical Learning"];
 
 export default function CreateBlogPage() {
+    const confirm = useConfirm();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -77,8 +79,9 @@ export default function CreateBlogPage() {
             return;
         }
 
-        if (status === 'published' && !confirm("Are you sure you want to publish this post?")) {
-            return;
+        if (status === 'published') {
+            const ok = await confirm({ message: "Are you sure you want to publish this post?", variant: "warning" });
+            if (!ok) return;
         }
 
         setLoading(true);

@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import AdminRoute from "@/components/auth/AdminRoute";
 import * as service from "@/services/homeVideoTestimonialService";
 import Image from "next/image";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 // ──────────────────────────────────────────────
 // VIDEO FORM MODAL
@@ -91,6 +92,7 @@ function VideoFormModal({
 // MAIN PAGE
 // ──────────────────────────────────────────────
 export default function HomeVideoTestimonialsAdminPage() {
+    const confirm = useConfirm();
     const [videos, setVideos] = useState<service.HomeVideoTestimonial[]>([]);
     const [loading, setLoading] = useState(true);
     const [editVideo, setEditVideo] = useState<service.HomeVideoTestimonial | null>(null);
@@ -128,7 +130,8 @@ export default function HomeVideoTestimonialsAdminPage() {
     };
 
     const handleDelete = async (v: service.HomeVideoTestimonial) => {
-        if (!confirm(`Delete video "${v.title}"?`)) return;
+        const ok = await confirm({ message: `Delete video "${v.title}"?`, variant: "danger" });
+        if (!ok) return;
         try {
             await service.deleteVideo(v.id);
             await loadVideos();

@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import AdminRoute from "@/components/auth/AdminRoute";
 import * as ssService from "@/services/successStoryService";
 import Image from "next/image";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 type Tab = "videos" | "reviews";
 
@@ -242,6 +243,7 @@ function ReviewFormModal({
 // MAIN PAGE
 // ──────────────────────────────────────────────
 export default function SuccessStoriesAdminPage() {
+    const confirm = useConfirm();
     const [tab, setTab] = useState<Tab>("videos");
 
     // Videos state
@@ -301,7 +303,8 @@ export default function SuccessStoriesAdminPage() {
     };
 
     const handleDeleteVideo = async (v: ssService.VideoStory) => {
-        if (!confirm(`Delete video "${v.title}"?`)) return;
+        const ok = await confirm({ message: `Delete video "${v.title}"?`, variant: "danger" });
+        if (!ok) return;
         try {
             await ssService.deleteVideo(v.id);
             await loadVideos();
@@ -328,7 +331,8 @@ export default function SuccessStoriesAdminPage() {
     };
 
     const handleDeleteReview = async (r: ssService.WrittenReview) => {
-        if (!confirm(`Delete review from "${r.studentName}"?`)) return;
+        const ok = await confirm({ message: `Delete review from "${r.studentName}"?`, variant: "danger" });
+        if (!ok) return;
         try {
             await ssService.deleteReview(r.id);
             await loadReviews();

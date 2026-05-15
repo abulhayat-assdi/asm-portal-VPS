@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getAllResources, Resource } from "@/services/resourceService";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import {
     ModuleResource, ResourceType,
     uploadModuleResourceFile, addModuleResource, getModuleResourcesByTeacher,
@@ -60,6 +61,7 @@ const defaultUploadForm = (): UploadForm => ({
 //  Main Component
 // ═══════════════════════════════════════════════════════════════════════════
 export default function ResourceManagementPage() {
+    const confirm = useConfirm();
     const { user, userProfile } = useAuth();
 
     // ─── Data State ──────────────────────────────────────────────────────────
@@ -200,7 +202,8 @@ export default function ResourceManagementPage() {
     };
 
     const handleDeleteFolder = async (folder: ModuleFolder) => {
-        if (!confirm(`"${folder.title}" ফোল্ডার এবং এর সব ফাইল মুছে যাবে। নিশ্চিত?`)) return;
+        const ok = await confirm({ message: `"${folder.title}" ফোল্ডার এবং এর সব ফাইল মুছে যাবে। নিশ্চিত?`, variant: "danger" });
+        if (!ok) return;
         // Delete all files in folder
         const files = folderResources[folder.id] || await getModuleResourcesByFolder(folder.id);
         await Promise.all(files.map(f => deleteModuleResource(f.id, f.storagePath)));
@@ -328,7 +331,8 @@ export default function ResourceManagementPage() {
     };
 
     const handleDeleteResource = async (res: ModuleResource) => {
-        if (!confirm(`"${res.title}" ফাইলটি মুছে ফেলা হবে। নিশ্চিত?`)) return;
+        const ok = await confirm({ message: `"${res.title}" ফাইলটি মুছে ফেলা হবে। নিশ্চিত?`, variant: "danger" });
+        if (!ok) return;
         await deleteModuleResource(res.id, res.storagePath);
         if (res.folderId) {
             setFolderResources(prev => ({

@@ -34,17 +34,19 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { name, batch, role, company, story, imageUrl, isPublished } = body;
+        const { name, studentName, batch, role, company, story, quote, imageUrl, isPublished, rating, order } = body;
 
         const item = await prisma.successStory.create({
             data: {
-                name,
+                name: name || studentName || "",
                 batch: batch || "",
                 role: role || "",
                 company: company || "",
-                story,
+                story: story || quote || "",
                 imageUrl: imageUrl || null,
                 isPublished: isPublished ?? false,
+                rating: rating ?? 5,
+                order: order ?? 0,
             },
         });
 
@@ -64,8 +66,19 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { id, ...data } = body;
-        const item = await prisma.successStory.update({ where: { id }, data });
+        const { id, studentName, quote, name, story, rating, order, ...rest } = body;
+        const item = await prisma.successStory.update({
+            where: { id },
+            data: {
+                ...rest,
+                ...(studentName !== undefined && { name: studentName }),
+                ...(name !== undefined && { name }),
+                ...(quote !== undefined && { story: quote }),
+                ...(story !== undefined && { story }),
+                ...(rating !== undefined && { rating }),
+                ...(order !== undefined && { order }),
+            },
+        });
         return NextResponse.json(item);
     } catch (error) {
         console.error("[SuccessStories PATCH]", error);

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import { 
     getAllPolicies, 
     getAllMeetingMinutes, 
@@ -29,6 +30,7 @@ async function uploadPdfFile(file: File, subPath: string): Promise<string> {
 }
 
 export default function PoliciesPage() {
+    const confirm = useConfirm();
     const { user, userProfile } = useAuth();
     const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const [policies, setPolicies] = useState<Policy[]>([]);
@@ -193,7 +195,8 @@ export default function PoliciesPage() {
     };
 
     const handleDeletePolicyClick = async (id: string, title: string) => {
-        if (confirm(`Are you sure you want to delete policy "${title}"?`)) {
+        const ok = await confirm({ message: `Are you sure you want to delete policy "${title}"?`, variant: "danger" });
+        if (ok) {
             try {
                 await deletePolicy(id);
                 await fetchData();
@@ -217,7 +220,8 @@ export default function PoliciesPage() {
     };
 
     const handleDeleteMeetingClick = async (id: string, title: string) => {
-        if (confirm(`Are you sure you want to delete meeting minutes "${title}"?`)) {
+        const ok = await confirm({ message: `Are you sure you want to delete meeting minutes "${title}"?`, variant: "danger" });
+        if (ok) {
             try {
                 await deleteMeetingMinute(id);
                 await fetchData();

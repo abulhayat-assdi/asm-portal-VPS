@@ -8,8 +8,10 @@ import Badge from "@/components/ui/Badge";
 import AdminRoute from "@/components/auth/AdminRoute";
 import * as blogService from "@/services/blogService";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 export default function BlogAdminPage() {
+    const confirm = useConfirm();
     const [posts, setPosts] = useState<blogService.BlogPost[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -30,7 +32,8 @@ export default function BlogAdminPage() {
     }, []);
 
     const handlePublish = async (post: blogService.BlogPost) => {
-        if (!confirm(`Are you sure you want to publish "${post.title}"?`)) return;
+        const ok = await confirm({ message: `Are you sure you want to publish "${post.title}"?`, variant: "warning" });
+        if (!ok) return;
 
         try {
             await blogService.publishPost(post.id);
@@ -41,7 +44,8 @@ export default function BlogAdminPage() {
     };
 
     const handleDelete = async (post: blogService.BlogPost) => {
-        if (!confirm(`Are you sure you want to delete "${post.title}"?`)) return;
+        const ok = await confirm({ message: `Are you sure you want to delete "${post.title}"?`, variant: "danger" });
+        if (!ok) return;
 
         try {
             await blogService.deletePost(post.id);

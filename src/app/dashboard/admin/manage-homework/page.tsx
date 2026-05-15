@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import {
     getAllHomework,
     deleteHomework,
@@ -11,6 +12,7 @@ import {
 import { getAllBatchInfo } from "@/services/batchInfoService";
 
 export default function ManageHomeworkPage() {
+    const confirm = useConfirm();
     const { user, loading: authLoading } = useAuth();
 
     const [homework, setHomework] = useState<HomeworkSubmission[]>([]);
@@ -129,7 +131,8 @@ export default function ManageHomeworkPage() {
     }, [filteredHomework, filterTeacher, selectedFolder, groupedFolders]);
 
     const handleDelete = async (hw: HomeworkSubmission) => {
-        if (!confirm(`Delete homework "${hw.subject}" by ${hw.studentName}?`)) return;
+        const ok = await confirm({ message: `Delete homework "${hw.subject}" by ${hw.studentName}?`, variant: "danger" });
+        if (!ok) return;
         setDeletingId(hw.id);
         try {
             const paths = hw.files ? hw.files.map(f => f.storagePath) : (hw.storagePath ? [hw.storagePath] : []);

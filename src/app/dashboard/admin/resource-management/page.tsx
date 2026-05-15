@@ -9,6 +9,7 @@ import {
 import { getAllResources, Resource } from "@/services/resourceService";
 import { getPublicUniqueBatches } from "@/services/batchInfoService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 const RESOURCE_TYPES: ResourceType[] = ["Presentation", "Notes", "Assignment", "Practice", "Other"];
 const resourceTypeIcon: Record<ResourceType, string> = {
@@ -23,6 +24,7 @@ const fileTypeIcon = (ft: string) => {
 };
 
 export default function AdminResourceManagementPage() {
+    const confirm = useConfirm();
     const { user } = useAuth();
 
     const [courseModules, setCourseModules] = useState<Resource[]>([]);
@@ -133,7 +135,8 @@ export default function AdminResourceManagementPage() {
     };
 
     const handleDelete = async (res: ModuleResource) => {
-        if (!confirm(`Delete "${res.title}"?`)) return;
+        const ok = await confirm({ message: `Delete "${res.title}"?`, variant: "danger" });
+        if (!ok) return;
         await deleteModuleResource(res.id, res.storagePath);
         setAllResources(prev => prev.filter(r => r.id !== res.id));
     };

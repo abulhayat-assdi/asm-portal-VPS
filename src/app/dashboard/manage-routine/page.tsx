@@ -5,8 +5,10 @@ import Card, { CardBody } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { getBatches } from "@/services/scheduleService";
 import { getRoutinesByBatch, syncBatchRoutines, BatchRoutineEntry } from "@/services/routineManagerService";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 export default function ManageRoutinePage() {
+    const confirm = useConfirm();
     const [batches, setBatches] = useState<{ id: string; name: string; status: string }[]>([]);
     const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
     const [loadingBatches, setLoadingBatches] = useState(true);
@@ -117,8 +119,9 @@ export default function ManageRoutinePage() {
         });
     };
 
-    const handleClearRows = () => {
-        if (confirm("Are you sure you want to clear all data in the table for this batch?")) {
+    const handleClearRows = async () => {
+        const ok = await confirm({ message: "Are you sure you want to clear all data in the table for this batch?", variant: "warning" });
+        if (ok) {
             const emptyRows = initializeEmptyRows(maxRows);
             rowDataRef.current = emptyRows;
             setGridRenderKey(k => k + 1);

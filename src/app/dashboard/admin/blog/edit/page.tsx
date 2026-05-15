@@ -15,10 +15,12 @@ import RichTextEditor from "@/components/blog/RichTextEditor";
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 const CATEGORIES = ["Article", "Project Presentation", "Practical Learning"];
 
 function EditBlogContent() {
+    const confirm = useConfirm();
     const router = useRouter();
     const searchParams = useSearchParams();
     const id = searchParams.get('id');
@@ -126,7 +128,8 @@ function EditBlogContent() {
 
     const handlePublish = async () => {
         if (!id) return;
-        if (!confirm("Are you sure you want to publish this post?")) return;
+        const ok = await confirm({ message: "Are you sure you want to publish this post?", variant: "warning" });
+        if (!ok) return;
 
         setSaving(true);
         try {

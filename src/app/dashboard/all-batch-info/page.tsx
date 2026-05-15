@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo } from "@/services/batchInfoService";
 import Button from "@/components/ui/Button";
 import * as XLSX from "xlsx";
@@ -103,7 +104,7 @@ interface OverviewStat {
 const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTk", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
 
 export default function AllBatchInfoPage() {
-
+    const confirm = useConfirm();
     const { userProfile } = useAuth();
     const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const [allStudents, setAllStudents] = useState<StudentBatchInfo[]>([]);
@@ -390,7 +391,8 @@ export default function AllBatchInfoPage() {
             return;
         }
 
-        if (confirm(`Are you sure you want to mark ${newBatchName} as Completed? This will change the status of all missing/running students to 'Completed'.`)) {
+        const ok = await confirm({ message: `Are you sure you want to mark ${newBatchName} as Completed? This will change the status of all missing/running students to 'Completed'.`, variant: "warning" });
+        if (ok) {
             setIsAdding(true);
             try {
                 // Filter out purely empty rows
@@ -1069,8 +1071,9 @@ export default function AllBatchInfoPage() {
                                 </div>
                             </div>
                             <div className="flex gap-4 items-center shrink-0">
-                                <button onClick={() => {
-                                    if (confirm('Clear all grid data?')) {
+                                <button onClick={async () => {
+                                    const ok = await confirm({ message: 'Clear all grid data?', variant: "warning" });
+                                    if (ok) {
                                         setGridData(initializeEmptyRows());
                                         setGridPage(0);
                                     }

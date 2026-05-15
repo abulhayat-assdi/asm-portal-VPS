@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getAllTeachers, Teacher } from "@/services/teacherService";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import {
     getLeaveSettings,
     saveLeaveSettings,
@@ -168,6 +169,7 @@ function TeacherSettingsRow({ teacher, onSaved }: { teacher: Teacher; onSaved: (
 
 // ---------- Main Component ----------
 export default function AdminLeaveManagementPage() {
+    const confirm = useConfirm();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [selectedId, setSelectedId] = useState("");
     const [activeTab, setActiveTab] = useState<"records" | "settings">("records");
@@ -257,7 +259,8 @@ export default function AdminLeaveManagementPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm("Delete this leave record?")) return;
+        const ok = await confirm({ message: "Delete this leave record?", variant: "danger" });
+        if (!ok) return;
         try {
             await deleteLeave(id);
             showToast("Leave deleted.");
@@ -269,7 +272,8 @@ export default function AdminLeaveManagementPage() {
 
     const handleCleanDuplicates = async () => {
         if (!selectedId) return;
-        if (!confirm("This will remove duplicate weekly holiday entries (keeping one per date). Continue?")) return;
+        const ok = await confirm({ message: "This will remove duplicate weekly holiday entries (keeping one per date). Continue?", variant: "warning" });
+        if (!ok) return;
         const count = await cleanDuplicateWeeklyLeaves(selectedId);
         if (count > 0) {
             showToast(`Removed ${count} duplicate entries successfully.`);

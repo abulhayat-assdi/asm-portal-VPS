@@ -7,8 +7,10 @@ import { getClassesByTeacherId, requestClassCompletion, ClassSchedule, getAllCla
 import { useAuth } from "@/contexts/AuthContext";
 import { getClassRoutines, addClassRoutine, updateClassRoutine, deleteClassRoutine, ClassRoutine } from "@/services/routinesService";
 import Button from "@/components/ui/Button";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 export default function SchedulePage() {
+    const confirm = useConfirm();
     const [scheduleData, setScheduleData] = useState<ClassSchedule[]>([]);
     const [routines, setRoutines] = useState<ClassRoutine[]>([]);
     // Batch Stats State
@@ -505,7 +507,8 @@ export default function SchedulePage() {
     };
 
     const handleDeleteRoutine = async (routine: ClassRoutine) => {
-        if (!confirm(`Are you sure you want to delete "${routine.title}"?`)) return;
+        const ok = await confirm({ message: `Are you sure you want to delete "${routine.title}"?`, variant: "danger" });
+        if (!ok) return;
 
         setIsDeletingRoutine(routine.id);
         try {
@@ -580,7 +583,8 @@ export default function SchedulePage() {
     };
 
     const handleDeleteBatch = async (batchId: string, batchName: string) => {
-        if (!confirm(`"${batchName}" batch কি Batch-wise Class Count section থেকে সরিয়ে দেবেন?\n\nব্যাচের ছাত্র ও অন্য সব ডেটা অক্ষুণ্ণ থাকবে।`)) return;
+        const ok = await confirm({ message: `"${batchName}" batch কি Batch-wise Class Count section থেকে সরিয়ে দেবেন?\n\nব্যাচের ছাত্র ও অন্য সব ডেটা অক্ষুণ্ণ থাকবে।`, variant: "danger" });
+        if (!ok) return;
         setIsDeletingBatch(batchId);
         try {
             await toggleBatchStatus(batchId, "active"); // archive করে দাও, delete নয়
@@ -661,8 +665,9 @@ export default function SchedulePage() {
         }
     }, [selectedBatchForGrid]);
 
-    const handleClearScheduleRows = () => {
-        if (confirm("Are you sure you want to clear all data in the table?")) {
+    const handleClearScheduleRows = async () => {
+        const ok = await confirm({ message: "Are you sure you want to clear all data in the table?", variant: "warning" });
+        if (ok) {
             // Preserve the IDs so the backend knows to delete existing records
             const emptyRowsWithIds = rowDataRef.current.map(row => {
                 const emptyRow: Record<string, string> = Object.fromEntries([...columns, "id"].map(c => [c, ""]));

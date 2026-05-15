@@ -9,8 +9,10 @@ import * as feedbackService from "@/services/feedbackService";
 import { getClassesByTeacherId } from "@/services/scheduleService";
 import { formatDateShort } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/contexts/ConfirmContext";
 
 export default function AdminPage() {
+    const confirm = useConfirm();
     // State - User Management now uses allTeachers from Firestore
     const [stats, setStats] = useState<adminService.AdminStats>({
         totalUsers: 0,
@@ -176,7 +178,8 @@ export default function AdminPage() {
     const handleBulkComplete = async () => {
         if (!user || selectedClasses.length === 0) return;
 
-        if (!confirm(`Are you sure you want to mark ${selectedClasses.length} classes as complete?`)) return;
+        const ok = await confirm({ message: `Are you sure you want to mark ${selectedClasses.length} classes as complete?`, variant: "warning" });
+        if (!ok) return;
 
         setLoading(true);
         try {
@@ -535,7 +538,8 @@ export default function AdminPage() {
                                                     <button
                                                         onClick={async () => {
                                                             if (!user) return;
-                                                            if (confirm("Are you sure you want to delete this feedback?")) {
+                                                            const ok = await confirm({ message: "Are you sure you want to delete this feedback?", variant: "danger" });
+                                                            if (ok) {
                                                                 try {
                                                                     await feedbackService.deleteFeedback(fb.id, user.id);
                                                                     setPendingFeedbacks(prev => prev.filter(f => f.id !== fb.id));

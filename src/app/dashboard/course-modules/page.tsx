@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
+import { useConfirm } from "@/contexts/ConfirmContext";
 import {
     getAllResources, addResource, updateResource, deleteResource,
     uploadResourceFile, deleteResourceFile, Resource
@@ -85,6 +86,7 @@ const staticCourseModules = [
 ];
 
 export default function CourseModulesPage() {
+    const confirm = useConfirm();
     const { user, userProfile } = useAuth();
     const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
 
@@ -184,7 +186,8 @@ export default function CourseModulesPage() {
     };
 
     const handleDeleteClick = async (resource: Resource) => {
-        if (confirm(`Delete "${resource.title}"?`)) {
+        const ok = await confirm({ message: `Delete "${resource.title}"?`, variant: "danger" });
+        if (ok) {
             if (resource.storagePath) {
                 await deleteResourceFile(resource.storagePath);
             }
