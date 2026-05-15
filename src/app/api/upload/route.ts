@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Determine the upload directory
-        let uploadSubDir = folder === "routines" ? "documents/routines" : folder;
+        const uploadSubDir = folder === "routines" ? "documents/routines" : folder;
 
         // Prevent path traversal — resolve and verify it stays within public/
         const publicDir = path.join(process.cwd(), "public");
