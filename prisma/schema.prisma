@@ -127,6 +127,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   activityLogs        ActivityLog[]
   chatMessages        ChatMessage[]
+  cvDrafts            CvDraft[]
 
   @@index([email])
   @@index([role])
@@ -810,6 +811,107 @@ model StudentExamBatchRecord {
   @@unique([batchName, roll])
   @@index([batchName])
   @@map("student_exam_batch_records")
+}
+
+// ============================================================
+// CV / RESUME GENERATOR MODULE
+// ============================================================
+
+model CvTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  thumbnail   String?
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  drafts CvDraft[]
+
+  @@index([isActive])
+  @@map("cv_templates")
+}
+
+model CvDraft {
+  id         String @id @default(uuid())
+  userId     String @map("user_id")
+  templateId String @map("template_id")
+  title      String @default("My CV")
+
+  // Personal Info
+  fullName        String? @map("full_name")
+  profilePhoto    String? @map("profile_photo")
+  careerObjective String? @map("career_objective")
+
+  // Contact
+  phone   String?
+  email   String?
+  address String?
+
+  // Personal Data
+  dateOfBirth   String? @map("date_of_birth")
+  bloodGroup    String? @map("blood_group")
+  religion      String?
+  maritalStatus String? @map("marital_status")
+  nationality   String?
+
+  // Dynamic JSON sections
+  // skills:         string[]
+  // languages:      { id, name, level }[]
+  // hobbies:        string[]
+  // workExperience: { id, jobTitle, company, location, bullets }[]
+  // training:       { id, trainingName, institute, bullets }[]
+  // education:      { id, degree, department, institution, gpa, year }[]
+  // references:     { id, name, phone, email, title }[]
+  skills         Json? @default("[]")
+  languages      Json? @default("[]")
+  hobbies        Json? @default("[]")
+  workExperience Json? @default("[]") @map("work_experience")
+  training       Json? @default("[]")
+  education      Json? @default("[]")
+  references     Json? @default("[]")
+
+  // Declaration & Signature
+  declaration String?
+  signature   String?
+
+  // Drag-and-drop section order
+  sectionOrder Json? @map("section_order")
+
+  // Public sharing
+  shareSlug String?  @unique @map("share_slug")
+  isPublic  Boolean  @default(false) @map("is_public")
+
+  // Analytics
+  downloadCount Int @default(0) @map("download_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template CvTemplate @relation(fields: [templateId], references: [id])
+  versions CvVersion[]
+
+  @@index([userId])
+  @@index([templateId])
+  @@index([shareSlug])
+  @@index([createdAt])
+  @@map("cv_drafts")
+}
+
+model CvVersion {
+  id        String   @id @default(uuid())
+  draftId   String   @map("draft_id")
+  snapshot  Json
+  label     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  draft CvDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+  @@index([createdAt])
+  @@map("cv_versions")
 }
 
 // ============================================================
