@@ -31,6 +31,7 @@ const teacherAdminNavItems = [
     { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", adminOnly: true },
     { href: "/dashboard/admin/home-video-testimonials", label: "Home Videos", icon: "🎥", adminOnly: true },
     { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", adminOnly: true },
+    { href: "/dashboard/admin/user-management", label: "User Management", icon: "🔑", adminOnly: true },
 ];
 
 const studentNavItems = [
