@@ -31,6 +31,7 @@ const teacherAdminNavItems = [
     { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", adminOnly: true },
     { href: "/dashboard/admin/home-video-testimonials", label: "Home Videos", icon: "🎥", adminOnly: true },
     { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", adminOnly: true },
+    { href: "/dashboard/admin/cv-manager", label: "CV Manager", icon: "📄", adminOnly: true },
     { href: "/dashboard/admin/user-management", label: "User Management", icon: "🔑", adminOnly: true },
 ];
 
@@ -41,6 +42,7 @@ const studentNavItems = [
     { href: "/student-dashboard/course-outline", label: "Course Outline", icon: "📋", adminOnly: false },
     { href: "/student-dashboard/homework", label: "Homework", icon: "📝", adminOnly: false },
     { href: "/student-dashboard/results", label: "Results", icon: "🎓", adminOnly: false },
+    { href: "/student-dashboard/cv", label: "CV Builder", icon: "📄", adminOnly: false },
     { href: "/student-dashboard/profile", label: "Profile", icon: "👤", adminOnly: false },
 ];
 
@@ -141,7 +143,8 @@ export default function Sidebar() {
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-2">
                         {filteredNavItems.map((item) => {
-                            const isActive = pathname === item.href;
+                            const isActive = pathname === item.href ||
+                            (item.href !== "/student-dashboard" && item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
                             const badgeCount = counts[item.href] || 0;
                             return (
                                 <li key={item.href}>

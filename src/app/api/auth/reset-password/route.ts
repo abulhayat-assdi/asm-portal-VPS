@@ -74,7 +74,8 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${rawToken}`;
+        const appUrl = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+        const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
 
         // Send email
         const transporter = getTransporter();
