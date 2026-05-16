@@ -123,7 +123,41 @@ export interface CvTemplateRecord {
   thumbnail?: string | null;
   description?: string | null;
   isActive: boolean;
+  config?: TemplateConfig | null;
   createdAt: string;
+}
+
+// ─── Template visual configuration ───────────────────────────────────────────
+
+export interface TemplateConfig {
+  // Sidebar
+  sidebarWidthPercent: number;     // 25–45
+  sidebarBgColor: string;          // hex
+  sidebarTextColor: string;        // hex
+
+  // Profile photo
+  showProfilePhoto: boolean;
+  profilePhotoSizePx: number;      // 60–120
+  profilePhotoShape: "circle" | "square" | "rounded";
+
+  // Right content background
+  contentBgColor: string;
+
+  // Typography (right panel)
+  nameColor: string;
+  nameFontSize: number;            // px, 16–32
+  sectionHeadingColor: string;
+  sectionHeadingFontSize: number;  // px, 7–12
+  bodyFontSize: number;            // px, 8–12
+
+  // Typography (sidebar)
+  sidebarFontSize: number;         // px, 8–11
+
+  // Section placement: which sections live in the sidebar
+  sidebarSections: string[];       // subset of SectionKey[]
+
+  // Accent / border color on right panel headings
+  accentColor: string;
 }
 
 // ─── Admin list item ─────────────────────────────────────────────────────────

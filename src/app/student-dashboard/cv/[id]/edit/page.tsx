@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { DropResult } from "@hello-pangea/dnd";
@@ -17,9 +17,11 @@ import {
   LANGUAGE_LEVELS,
   RELIGIONS,
   NATIONALITIES,
+  DEFAULT_TEMPLATE_CONFIG,
 } from "@/lib/cv/constants";
-import type { SectionKey, CvVersionSummary } from "@/lib/cv/types";
+import type { SectionKey, CvVersionSummary, TemplateConfig } from "@/lib/cv/types";
 import { generateCvPdf } from "@/lib/cv/pdf/generatePdf";
+import { resolveProfilePhoto } from "@/lib/cv/imageUtils";
 
 // ─── Auto-save status indicator ──────────────────────────────────────────────
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -100,72 +102,111 @@ function SectionPanel({ title, children }: { title: string; children: React.Reac
 }
 
 // ─── Live Preview — Template 001 (Classic Two-Column) ────────────────────────
-function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
+function Template001Preview({
+  data,
+  config = DEFAULT_TEMPLATE_CONFIG,
+}: {
+  data: Partial<CvFormSchema>;
+  config?: TemplateConfig;
+}) {
   const sectionOrder = (data.sectionOrder as SectionKey[]) ?? DEFAULT_SECTION_ORDER;
+  const sidebarSections = (config.sidebarSections ?? ["skills", "languages", "hobbies"]) as SectionKey[];
+  const rightSections = sectionOrder.filter((s) => !sidebarSections.includes(s));
 
-  const sidebarSections: SectionKey[] = ["skills", "languages", "hobbies"];
-  const rightSections: SectionKey[] = sectionOrder.filter((s) => !sidebarSections.includes(s));
+  const photoRadius =
+    config.profilePhotoShape === "circle"
+      ? "50%"
+      : config.profilePhotoShape === "rounded"
+      ? "12px"
+      : "0";
+
+  const resolvedPhoto = resolveProfilePhoto(data.profilePhoto);
+
+  const headingStyle: React.CSSProperties = {
+    color: config.sectionHeadingColor,
+    borderColor: config.accentColor,
+    fontSize: `${config.sectionHeadingFontSize}px`,
+  };
 
   return (
     <div
       className="w-full bg-white shadow-xl overflow-hidden"
-      style={{ fontFamily: "Arial, sans-serif", fontSize: "11px", lineHeight: 1.45 }}
+      style={{ fontFamily: "Arial, sans-serif", fontSize: `${config.bodyFontSize}px`, lineHeight: 1.45 }}
     >
       <div className="flex min-h-[297mm]">
         {/* ── Left Sidebar ── */}
         <div
           className="flex flex-col items-center pt-8 px-3 pb-6 gap-4"
-          style={{ width: "32%", backgroundColor: "#1a2f4e", color: "#fff" }}
+          style={{
+            width: `${config.sidebarWidthPercent}%`,
+            backgroundColor: config.sidebarBgColor,
+            color: config.sidebarTextColor,
+            fontSize: `${config.sidebarFontSize}px`,
+            flexShrink: 0,
+          }}
         >
           {/* Profile photo */}
-          <div
-            className="rounded-full overflow-hidden border-4 border-white/30"
-            style={{ width: 80, height: 80, flexShrink: 0 }}
-          >
-            {data.profilePhoto ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={data.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-              <div
-                className="w-full h-full flex items-center justify-center text-2xl font-black"
-                style={{ backgroundColor: "#2d5278" }}
-              >
-                {data.fullName?.charAt(0).toUpperCase() ?? "?"}
-              </div>
-            )}
-          </div>
+          {config.showProfilePhoto && (
+            <div
+              className="overflow-hidden border-4 border-white/30"
+              style={{
+                width: config.profilePhotoSizePx,
+                height: config.profilePhotoSizePx,
+                borderRadius: photoRadius,
+                flexShrink: 0,
+              }}
+            >
+              {resolvedPhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={resolvedPhoto} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div
+                  className="w-full h-full flex items-center justify-center font-black"
+                  style={{ backgroundColor: "#2d5278", fontSize: `${Math.round(config.profilePhotoSizePx * 0.3)}px` }}
+                >
+                  {data.fullName?.charAt(0).toUpperCase() ?? "?"}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Contact */}
           <div className="w-full">
-            <p className="font-black text-xs uppercase tracking-wider mb-2 border-b border-white/20 pb-1">
+            <p
+              className="font-black uppercase tracking-wider mb-2 border-b pb-1"
+              style={{ borderColor: "rgba(255,255,255,0.2)", fontSize: `${config.sidebarFontSize + 1}px` }}
+            >
               Contact
             </p>
             {data.phone && (
-              <p className="flex items-center gap-1.5 text-[10px] text-white/90 mb-1">
+              <p className="flex items-center gap-1.5 mb-1" style={{ opacity: 0.9 }}>
                 <span>📞</span> {data.phone}
               </p>
             )}
             {data.email && (
-              <p className="flex items-center gap-1.5 text-[10px] text-white/90 mb-1 break-all">
+              <p className="flex items-center gap-1.5 mb-1 break-all" style={{ opacity: 0.9 }}>
                 <span>✉</span> {data.email}
               </p>
             )}
             {data.address && (
-              <p className="flex items-start gap-1.5 text-[10px] text-white/90">
+              <p className="flex items-start gap-1.5" style={{ opacity: 0.9 }}>
                 <span className="mt-0.5">📍</span> {data.address}
               </p>
             )}
           </div>
 
-          {/* Skills */}
-          {(data.skills ?? []).length > 0 && (
+          {/* Dynamic sidebar sections */}
+          {sidebarSections.includes("skills") && (data.skills ?? []).length > 0 && (
             <div className="w-full">
-              <p className="font-black text-xs uppercase tracking-wider mb-2 border-b border-white/20 pb-1">
+              <p
+                className="font-black uppercase tracking-wider mb-2 border-b pb-1"
+                style={{ borderColor: "rgba(255,255,255,0.2)", fontSize: `${config.sidebarFontSize + 1}px` }}
+              >
                 Skills
               </p>
               <ul className="space-y-1">
                 {(data.skills ?? []).map((s, i) => (
-                  <li key={i} className="flex items-center gap-1.5 text-[10px] text-white/90">
+                  <li key={i} className="flex items-center gap-1.5" style={{ opacity: 0.9 }}>
                     <span className="w-1 h-1 rounded-full bg-white/60 shrink-0" />
                     {s}
                   </li>
@@ -174,31 +215,35 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             </div>
           )}
 
-          {/* Languages */}
-          {(data.languages ?? []).length > 0 && (
+          {sidebarSections.includes("languages") && (data.languages ?? []).length > 0 && (
             <div className="w-full">
-              <p className="font-black text-xs uppercase tracking-wider mb-2 border-b border-white/20 pb-1">
+              <p
+                className="font-black uppercase tracking-wider mb-2 border-b pb-1"
+                style={{ borderColor: "rgba(255,255,255,0.2)", fontSize: `${config.sidebarFontSize + 1}px` }}
+              >
                 Languages
               </p>
               <ul className="space-y-1">
                 {(data.languages ?? []).map((l, i) => (
-                  <li key={i} className="text-[10px] text-white/90">
-                    {l.name} <span className="text-white/50">({l.level})</span>
+                  <li key={i} style={{ opacity: 0.9 }}>
+                    {l.name} <span style={{ opacity: 0.5 }}>({l.level})</span>
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          {/* Hobbies */}
-          {(data.hobbies ?? []).length > 0 && (
+          {sidebarSections.includes("hobbies") && (data.hobbies ?? []).length > 0 && (
             <div className="w-full">
-              <p className="font-black text-xs uppercase tracking-wider mb-2 border-b border-white/20 pb-1">
+              <p
+                className="font-black uppercase tracking-wider mb-2 border-b pb-1"
+                style={{ borderColor: "rgba(255,255,255,0.2)", fontSize: `${config.sidebarFontSize + 1}px` }}
+              >
                 Hobbies
               </p>
               <ul className="space-y-1">
                 {(data.hobbies ?? []).map((h, i) => (
-                  <li key={i} className="flex items-center gap-1.5 text-[10px] text-white/90">
+                  <li key={i} className="flex items-center gap-1.5" style={{ opacity: 0.9 }}>
                     <span className="w-1 h-1 rounded-full bg-white/60 shrink-0" />
                     {h}
                   </li>
@@ -210,10 +255,13 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
           {/* Personal Data */}
           {(data.dateOfBirth || data.bloodGroup || data.religion || data.maritalStatus || data.nationality) && (
             <div className="w-full">
-              <p className="font-black text-xs uppercase tracking-wider mb-2 border-b border-white/20 pb-1">
+              <p
+                className="font-black uppercase tracking-wider mb-2 border-b pb-1"
+                style={{ borderColor: "rgba(255,255,255,0.2)", fontSize: `${config.sidebarFontSize + 1}px` }}
+              >
                 Personal Data
               </p>
-              <div className="space-y-0.5 text-[10px] text-white/90">
+              <div className="space-y-0.5" style={{ opacity: 0.9 }}>
                 {data.dateOfBirth && <p>Date of Birth : {data.dateOfBirth}</p>}
                 {data.bloodGroup && <p>Blood Group : {data.bloodGroup}</p>}
                 {data.religion && <p>Religion : {data.religion}</p>}
@@ -225,12 +273,12 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
         </div>
 
         {/* ── Right Content ── */}
-        <div className="flex-1 p-6 space-y-4">
+        <div className="flex-1 p-6 space-y-4" style={{ backgroundColor: config.contentBgColor }}>
           {/* Name */}
-          <div className="border-b-2 pb-2" style={{ borderColor: "#1a2f4e" }}>
+          <div className="border-b-2 pb-2" style={{ borderColor: config.accentColor }}>
             <h1
               className="font-black uppercase tracking-wide leading-tight"
-              style={{ fontSize: "22px", color: "#1a2f4e" }}
+              style={{ fontSize: `${config.nameFontSize}px`, color: config.nameColor }}
             >
               {data.fullName || <span className="text-gray-300">Your Full Name</span>}
             </h1>
@@ -241,10 +289,10 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             if (key === "careerObjective" && data.careerObjective) {
               return (
                 <div key={key}>
-                  <h2 className="font-black uppercase text-xs tracking-widest border-b pb-1 mb-2" style={{ color: "#1a2f4e", borderColor: "#1a2f4e" }}>
+                  <h2 className="font-black uppercase tracking-widest border-b pb-1 mb-2" style={headingStyle}>
                     Career Objective
                   </h2>
-                  <p className="text-gray-700 leading-relaxed" style={{ fontSize: "10.5px" }}>
+                  <p className="text-gray-700 leading-relaxed" style={{ fontSize: `${config.bodyFontSize}px` }}>
                     {data.careerObjective}
                   </p>
                 </div>
@@ -254,16 +302,16 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             if (key === "workExperience" && (data.workExperience ?? []).length > 0) {
               return (
                 <div key={key}>
-                  <h2 className="font-black uppercase text-xs tracking-widest border-b pb-1 mb-2" style={{ color: "#1a2f4e", borderColor: "#1a2f4e" }}>
+                  <h2 className="font-black uppercase tracking-widest border-b pb-1 mb-2" style={headingStyle}>
                     Work Experience
                   </h2>
                   {(data.workExperience ?? []).map((w) => (
                     <div key={w.id} className="mb-2">
-                      <p className="font-bold italic" style={{ color: "#1a2f4e" }}>{w.jobTitle}</p>
-                      <p className="text-gray-600 text-[10px]">{[w.company, w.location].filter(Boolean).join(" , ")}</p>
+                      <p className="font-bold italic" style={{ color: config.sectionHeadingColor }}>{w.jobTitle}</p>
+                      <p className="text-gray-600" style={{ fontSize: `${config.bodyFontSize - 1}px` }}>{[w.company, w.location].filter(Boolean).join(" , ")}</p>
                       <ul className="mt-1 space-y-0.5">
                         {w.bullets.filter(Boolean).map((b, i) => (
-                          <li key={i} className="flex items-start gap-1.5 text-gray-700" style={{ fontSize: "10.5px" }}>
+                          <li key={i} className="flex items-start gap-1.5 text-gray-700" style={{ fontSize: `${config.bodyFontSize}px` }}>
                             <span className="text-gray-400 mt-0.5">•</span> {b}
                           </li>
                         ))}
@@ -277,16 +325,16 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             if (key === "training" && (data.training ?? []).length > 0) {
               return (
                 <div key={key}>
-                  <h2 className="font-black uppercase text-xs tracking-widest border-b pb-1 mb-2" style={{ color: "#1a2f4e", borderColor: "#1a2f4e" }}>
+                  <h2 className="font-black uppercase tracking-widest border-b pb-1 mb-2" style={headingStyle}>
                     Professional Training
                   </h2>
                   {(data.training ?? []).map((t) => (
                     <div key={t.id} className="mb-2">
-                      <p className="font-bold" style={{ color: "#1a2f4e" }}>{t.trainingName}</p>
-                      <p className="text-gray-600 text-[10px]">{t.institute}</p>
+                      <p className="font-bold" style={{ color: config.sectionHeadingColor }}>{t.trainingName}</p>
+                      <p className="text-gray-600" style={{ fontSize: `${config.bodyFontSize - 1}px` }}>{t.institute}</p>
                       <ul className="mt-1 space-y-0.5">
                         {t.bullets.filter(Boolean).map((b, i) => (
-                          <li key={i} className="flex items-start gap-1.5 text-gray-700" style={{ fontSize: "10.5px" }}>
+                          <li key={i} className="flex items-start gap-1.5 text-gray-700" style={{ fontSize: `${config.bodyFontSize}px` }}>
                             <span className="text-gray-400 mt-0.5">•</span> {b}
                           </li>
                         ))}
@@ -300,14 +348,14 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             if (key === "education" && (data.education ?? []).length > 0) {
               return (
                 <div key={key}>
-                  <h2 className="font-black uppercase text-xs tracking-widest border-b pb-1 mb-2" style={{ color: "#1a2f4e", borderColor: "#1a2f4e" }}>
+                  <h2 className="font-black uppercase tracking-widest border-b pb-1 mb-2" style={headingStyle}>
                     Education
                   </h2>
                   {(data.education ?? []).map((e) => (
                     <div key={e.id} className="mb-2">
-                      <p className="font-bold italic" style={{ color: "#1a2f4e" }}>{[e.degree, e.department].filter(Boolean).join(" , ")}</p>
-                      <p className="text-gray-600 text-[10px]">{e.institution}</p>
-                      <div className="flex items-center justify-between text-[10px] text-gray-500">
+                      <p className="font-bold italic" style={{ color: config.sectionHeadingColor }}>{[e.degree, e.department].filter(Boolean).join(" , ")}</p>
+                      <p className="text-gray-600" style={{ fontSize: `${config.bodyFontSize - 1}px` }}>{e.institution}</p>
+                      <div className="flex items-center justify-between text-gray-500" style={{ fontSize: `${config.bodyFontSize - 1}px` }}>
                         {e.gpa && <span>GPA: {e.gpa}</span>}
                         {e.year && <span>{e.year}</span>}
                       </div>
@@ -320,12 +368,12 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             if (key === "references" && (data.references ?? []).length > 0) {
               return (
                 <div key={key}>
-                  <h2 className="font-black uppercase text-xs tracking-widest border-b pb-1 mb-2" style={{ color: "#1a2f4e", borderColor: "#1a2f4e" }}>
+                  <h2 className="font-black uppercase tracking-widest border-b pb-1 mb-2" style={headingStyle}>
                     Reference
                   </h2>
                   <div className="grid grid-cols-2 gap-3">
                     {(data.references ?? []).map((r) => (
-                      <div key={r.id} className="text-[10px] text-gray-700">
+                      <div key={r.id} className="text-gray-700" style={{ fontSize: `${config.bodyFontSize - 1}px` }}>
                         <p className="font-bold">{r.name}</p>
                         <p>Phone : {r.phone}</p>
                         <p>Email : {r.email}</p>
@@ -340,11 +388,11 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
             if (key === "declaration" && data.declaration) {
               return (
                 <div key={key}>
-                  <p className="text-gray-700 leading-relaxed" style={{ fontSize: "10px" }}>
+                  <p className="text-gray-700 leading-relaxed" style={{ fontSize: `${config.bodyFontSize - 1}px` }}>
                     {data.declaration}
                   </p>
                   {data.signature && (
-                    <p className="mt-4 text-right font-semibold" style={{ color: "#1a2f4e" }}>
+                    <p className="mt-4 text-right font-semibold" style={{ color: config.nameColor }}>
                       {data.signature}
                     </p>
                   )}
@@ -363,12 +411,15 @@ function Template001Preview({ data }: { data: Partial<CvFormSchema> }) {
 export default function CvEditorPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromAdmin = searchParams.get("from") === "admin";
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [activeTab, setActiveTab] = useState<"form" | "preview">("form");
   const [versions, setVersions] = useState<CvVersionSummary[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [templateConfig, setTemplateConfig] = useState<TemplateConfig>(DEFAULT_TEMPLATE_CONFIG);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use input type for RHF so optional defaults match the resolver's expected type
@@ -423,6 +474,10 @@ export default function CvEditorPage() {
           }
         });
         if (!data.sectionOrder?.length) setValue("sectionOrder", DEFAULT_SECTION_ORDER);
+        // Apply template visual config if present
+        if (data.template?.config) {
+          setTemplateConfig(data.template.config as TemplateConfig);
+        }
       })
       .catch(() => router.replace("/student-dashboard/cv"))
       .finally(() => setLoading(false));
@@ -537,7 +592,7 @@ export default function CvEditorPage() {
       {/* Top toolbar */}
       <div className="shrink-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 flex-wrap">
         <button
-          onClick={() => router.push("/student-dashboard/cv")}
+          onClick={() => router.push(fromAdmin ? "/dashboard/admin/cv-manager" : "/student-dashboard/cv")}
           className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -981,7 +1036,7 @@ export default function CvEditorPage() {
           }`}
         >
           <div className="max-w-[210mm] mx-auto">
-            <Template001Preview data={formData} />
+            <Template001Preview data={formData} config={templateConfig} />
           </div>
         </div>
       </div>

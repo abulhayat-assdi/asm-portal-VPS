@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       thumbnail: t.thumbnail,
       description: t.description,
       isActive: t.isActive,
+      config: t.config,
       createdAt: t.createdAt.toISOString(),
     }))
   );
@@ -36,13 +37,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, slug, thumbnail, description } = await req.json();
+  const { name, slug, thumbnail, description, config } = await req.json();
   if (!name || !slug) {
     return NextResponse.json({ error: "name and slug are required" }, { status: 400 });
   }
 
   const template = await prisma.cvTemplate.create({
-    data: { name, slug, thumbnail, description },
+    data: { name, slug, thumbnail, description, ...(config !== undefined && { config }) },
   });
 
   return NextResponse.json(template, { status: 201 });
@@ -55,7 +56,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { id, name, slug, thumbnail, description, isActive } = await req.json();
+  const { id, name, slug, thumbnail, description, isActive, config } = await req.json();
   if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const template = await prisma.cvTemplate.update({
@@ -66,6 +67,7 @@ export async function PATCH(req: NextRequest) {
       ...(thumbnail !== undefined && { thumbnail }),
       ...(description !== undefined && { description }),
       ...(isActive !== undefined && { isActive }),
+      ...(config !== undefined && { config }),
     },
   });
 

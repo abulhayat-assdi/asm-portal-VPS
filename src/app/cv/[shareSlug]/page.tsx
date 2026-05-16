@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import type { SectionKey } from "@/lib/cv/types";
 import { DEFAULT_SECTION_ORDER } from "@/lib/cv/constants";
+import { resolveProfilePhoto } from "@/lib/cv/imageUtils";
 
 // ─── Data fetching (Server Component) ────────────────────────────────────────
 async function getCvData(shareSlug: string) {
@@ -36,6 +37,7 @@ export default async function PublicCvPage({ params }: { params: Promise<{ share
   const sectionOrder: SectionKey[] = data.sectionOrder?.length ? data.sectionOrder : DEFAULT_SECTION_ORDER;
   const sidebarSections: SectionKey[] = ["skills", "languages", "hobbies"];
   const rightSections = sectionOrder.filter((s: SectionKey) => !sidebarSections.includes(s));
+  const resolvedPhoto = resolveProfilePhoto(data.profilePhoto);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center py-8 px-4">
@@ -66,9 +68,9 @@ export default async function PublicCvPage({ params }: { params: Promise<{ share
               className="rounded-full overflow-hidden border-4 border-white/30 flex items-center justify-center font-black text-3xl"
               style={{ width: 90, height: 90, backgroundColor: "#2d5278", flexShrink: 0 }}
             >
-              {data.profilePhoto ? (
+              {resolvedPhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={data.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                <img src={resolvedPhoto} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <span style={{ color: "#fff" }}>{data.fullName?.charAt(0).toUpperCase() ?? "?"}</span>
               )}

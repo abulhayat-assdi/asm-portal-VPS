@@ -824,6 +824,8 @@ model CvTemplate {
   thumbnail   String?
   description String?
   isActive    Boolean  @default(true) @map("is_active")
+  // Visual config: sidebar width/color, font sizes, photo size, etc.
+  config      Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

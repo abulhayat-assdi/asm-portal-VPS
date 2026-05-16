@@ -1,4 +1,4 @@
-import type { SectionKey } from "./types";
+import type { SectionKey, TemplateConfig } from "./types";
 
 export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   "careerObjective",
@@ -55,3 +55,22 @@ export const AUTOSAVE_DEBOUNCE_MS = 1500;
 
 // Template slugs
 export const CV_TEMPLATE_SLUG_001 = "classic-two-column";
+
+// Default visual config — matches the Classic Two-Column template
+export const DEFAULT_TEMPLATE_CONFIG: TemplateConfig = {
+  sidebarWidthPercent: 32,
+  sidebarBgColor: "#1a2f4e",
+  sidebarTextColor: "#ffffff",
+  showProfilePhoto: true,
+  profilePhotoSizePx: 80,
+  profilePhotoShape: "circle",
+  contentBgColor: "#ffffff",
+  nameColor: "#1a2f4e",
+  nameFontSize: 22,
+  sectionHeadingColor: "#1a2f4e",
+  sectionHeadingFontSize: 8.5,
+  bodyFontSize: 10.5,
+  sidebarFontSize: 10,
+  sidebarSections: ["skills", "languages", "hobbies"],
+  accentColor: "#1a2f4e",
+};

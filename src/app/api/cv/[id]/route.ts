@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 async function getDraftOrFail(id: string, userId: string, userIsAdmin: boolean) {
   const draft = await prisma.cvDraft.findUnique({
     where: { id },
-    include: { template: { select: { name: true, slug: true } } },
+    include: { template: { select: { name: true, slug: true, config: true } } },
   });
   if (!draft) return null;
   if (draft.userId !== userId && !userIsAdmin) return null;
