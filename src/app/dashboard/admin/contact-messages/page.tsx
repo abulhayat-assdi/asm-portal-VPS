@@ -123,9 +123,21 @@ export default function ContactManagementPage() {
                 });
                 if (!res.ok) throw new Error("Upload failed");
                 const data = await res.json();
-                attachments.push({ url: data.fileUrl, name: file.name, path: data.storagePath, size: file.size, type: file.type });
+                attachments.push({ url: `/api/file?path=${encodeURIComponent(data.storagePath)}`, name: file.name, path: data.storagePath, size: file.size, type: file.type });
             }
             await sendChatMessage(selectedThread.studentUid, "admin", text, attachments);
+
+            // Optimistic update — show message instantly without waiting for SSE poll
+            const sentText = text;
+            const sentAttachments = attachments;
+            setMessages(prev => [...prev, {
+                id: `optimistic-${Date.now()}`,
+                sender: "admin",
+                text: sentText,
+                attachments: sentAttachments,
+                createdAt: new Date().toISOString(),
+            }]);
+
             setText("");
             setFiles([]);
         } catch (err) {
@@ -323,6 +335,7 @@ export default function ContactManagementPage() {
                         <textarea
                             key={selectedThread!.studentUid}
                             autoFocus
+                            dir="ltr"
                             value={text}
                             onChange={e => setText(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}

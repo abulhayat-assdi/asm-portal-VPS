@@ -85,7 +85,7 @@ export default function ContactAdminStudent() {
                 const data = await response.json();
 
                 uploadedAttachments.push({
-                    url: data.fileUrl,
+                    url: `/api/file?path=${encodeURIComponent(data.storagePath)}`,
                     name: file.name,
                     path: data.storagePath,
                     size: file.size,
@@ -108,6 +108,17 @@ export default function ContactAdminStudent() {
                 uploadedAttachments,
                 profileInfo
             );
+
+            // Optimistic update — show message instantly without waiting for SSE poll
+            const sentText = text;
+            const sentAttachments = uploadedAttachments;
+            setMessages(prev => [...prev, {
+                id: `optimistic-${Date.now()}`,
+                sender: "student",
+                text: sentText,
+                attachments: sentAttachments,
+                createdAt: new Date().toISOString(),
+            }]);
 
             setText("");
             setFiles([]);
@@ -219,6 +230,7 @@ export default function ContactAdminStudent() {
                     <div className="relative flex-1">
                         <textarea
                             autoFocus
+                            dir="ltr"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             onKeyDown={(e) => {

@@ -74,7 +74,7 @@ export async function GET(
             };
 
             send();
-            const intervalId = setInterval(send, 3000); // Poll every 3 seconds for chat (lower latency)
+            const intervalId = setInterval(send, 2000); // Poll every 2 seconds for chat (lower latency)
 
             const pingId = setInterval(() => {
                 controller.enqueue(encoder.encode(`: ping\n\n`));
