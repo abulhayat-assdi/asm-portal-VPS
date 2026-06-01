@@ -1,96 +1,92 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin } from "@/lib/auth";
-
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** GET /api/cv/admin/templates — list all templates (admin) or active only (users) */
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getSessionUser, isAdmin } from "@/lib/auth";
+import { z } from "zod";
+
+const templateSchema = z.object({
+    name: z.string().min(1),
+    slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, hyphens"),
+    description: z.string().optional(),
+    thumbnail: z.string().optional(),
+    isActive: z.boolean().optional().default(true),
+    config: z.object({
+        primaryColor: z.string(),
+        sidebarColor: z.string(),
+        sidebarWidth: z.number().min(20).max(50),
+        fontFamily: z.string(),
+        photoShape: z.enum(["circle", "square"]),
+        showPhoto: z.boolean(),
+    }),
+});
+
+const updateSchema = templateSchema.partial().extend({ id: z.string().min(1) });
+
 export async function GET(req: NextRequest) {
-  const user = await getSessionUser(req);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const where = isAdmin(user) ? {} : { isActive: true };
-  const templates = await prisma.cvTemplate.findMany({
-    where,
-    orderBy: { createdAt: "asc" },
-  });
-
-  return NextResponse.json(
-    templates.map((t) => ({
-      id: t.id,
-      name: t.name,
-      slug: t.slug,
-      thumbnail: t.thumbnail,
-      description: t.description,
-      isActive: t.isActive,
-      config: t.config,
-      createdAt: t.createdAt.toISOString(),
-    }))
-  );
+    const user = await getSessionUser(req);
+    // Public GET for active templates (students need this); admin gets all
+    if (user && isAdmin(user)) {
+        const templates = await prisma.cvTemplate.findMany({ orderBy: { createdAt: "asc" } });
+        return NextResponse.json(templates);
+    }
+    const templates = await prisma.cvTemplate.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: "asc" },
+    });
+    return NextResponse.json(templates);
 }
 
-/** POST /api/cv/admin/templates — create template (admin only) */
 export async function POST(req: NextRequest) {
-  const user = await getSessionUser(req);
-  if (!user || !isAdmin(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { name, slug, thumbnail, description, config } = await req.json();
-  if (!name || !slug) {
-    return NextResponse.json({ error: "name and slug are required" }, { status: 400 });
-  }
+    const body = await req.json();
+    const parsed = templateSchema.safeParse(body);
+    if (!parsed.success) {
+        return NextResponse.json({ error: "Validation failed", details: parsed.error.issues }, { status: 400 });
+    }
 
-  const template = await prisma.cvTemplate.create({
-    data: { name, slug, thumbnail, description, ...(config !== undefined && { config }) },
-  });
+    const existing = await prisma.cvTemplate.findUnique({ where: { slug: parsed.data.slug } });
+    if (existing) return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
 
-  return NextResponse.json(template, { status: 201 });
+    const template = await prisma.cvTemplate.create({ data: parsed.data });
+    return NextResponse.json(template, { status: 201 });
 }
 
-/** PATCH /api/cv/admin/templates — update template (admin only) */
 export async function PATCH(req: NextRequest) {
-  const user = await getSessionUser(req);
-  if (!user || !isAdmin(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { id, name, slug, thumbnail, description, isActive, config } = await req.json();
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+    const body = await req.json();
+    const parsed = updateSchema.safeParse(body);
+    if (!parsed.success) {
+        return NextResponse.json({ error: "Validation failed", details: parsed.error.issues }, { status: 400 });
+    }
 
-  const template = await prisma.cvTemplate.update({
-    where: { id },
-    data: {
-      ...(name !== undefined && { name }),
-      ...(slug !== undefined && { slug }),
-      ...(thumbnail !== undefined && { thumbnail }),
-      ...(description !== undefined && { description }),
-      ...(isActive !== undefined && { isActive }),
-      ...(config !== undefined && { config }),
-    },
-  });
+    const { id, ...data } = parsed.data;
 
-  return NextResponse.json(template);
+    const template = await prisma.cvTemplate.update({ where: { id }, data });
+    return NextResponse.json(template);
 }
 
-/** DELETE /api/cv/admin/templates?id=... — delete template (admin only) */
 export async function DELETE(req: NextRequest) {
-  const user = await getSessionUser(req);
-  if (!user || !isAdmin(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const user = await getSessionUser(req);
+    if (!user || !isAdmin(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const id = new URL(req.url).searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const draftCount = await prisma.cvDraft.count({ where: { templateId: id } });
-  if (draftCount > 0) {
-    // Soft-disable instead of hard delete to preserve existing CVs
-    await prisma.cvTemplate.update({ where: { id }, data: { isActive: false } });
-    return NextResponse.json({ deactivated: true, draftCount });
-  }
+    // Check if any active drafts use this template
+    const activeDraftCount = await prisma.cvDraft.count({ where: { templateId: id } });
+    if (activeDraftCount > 0) {
+        // Soft-disable instead of delete
+        await prisma.cvTemplate.update({ where: { id }, data: { isActive: false } });
+        return NextResponse.json({ softDisabled: true, message: "Template has active drafts and was disabled instead of deleted." });
+    }
 
-  await prisma.cvTemplate.delete({ where: { id } });
-  return NextResponse.json({ deleted: true });
+    await prisma.cvTemplate.delete({ where: { id } });
+    return NextResponse.json({ success: true });
 }

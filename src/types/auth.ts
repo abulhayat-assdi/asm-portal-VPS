@@ -14,6 +14,7 @@ export interface UserProfile {
     studentBatchName?: string;
     studentRoll?: string;
     profileImageUrl?: string;
+    permissions?: string[];
     createdAt: Date | string;
     lastLoginAt?: Date | string;
 }
@@ -27,4 +28,5 @@ export interface AuthContextType {
     logout: () => Promise<void>;
     sendPasswordReset: (email: string) => Promise<void>;
     refreshProfile: () => Promise<void>;
+    hasPermission: (key: string) => boolean;
 }

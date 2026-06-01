@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { z } from "zod";
+import { PORTAL_OWNER_EMAIL } from "@/lib/permissions";
 
 const updateTeacherSchema = z.object({
     teacherDbId: z.string().min(1, "Teacher DB ID is required"),  // Teacher table UUID
@@ -37,6 +38,12 @@ export async function POST(req: NextRequest) {
         const teacher = await prisma.teacher.findUnique({ where: { id: teacherDbId } });
         if (!teacher) {
             return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
+        }
+
+        // Block any role/admin changes on the portal owner
+        const teacherEmail = teacher.loginEmail || teacher.email;
+        if (teacherEmail === PORTAL_OWNER_EMAIL && grantAdmin !== undefined && !grantAdmin) {
+            return NextResponse.json({ error: "The portal owner's admin access cannot be revoked." }, { status: 403 });
         }
 
         // Find corresponding user account

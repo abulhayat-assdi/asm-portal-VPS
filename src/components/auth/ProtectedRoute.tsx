@@ -1,12 +1,26 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { PERMISSION_META, PermissionKey } from "@/lib/permissions";
+
+// Map the current URL to its required permission key (most-specific path wins)
+function getRequiredPermission(pathname: string): PermissionKey | null {
+    const entries = Object.entries(PERMISSION_META) as [PermissionKey, typeof PERMISSION_META[PermissionKey]][];
+    const sorted = entries.sort((a, b) => b[1].path.length - a[1].path.length);
+    for (const [key, meta] of sorted) {
+        if (pathname === meta.path || pathname.startsWith(meta.path + "/")) {
+            return key;
+        }
+    }
+    return null;
+}
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const { user, userProfile, loading } = useAuth();
+    const { user, userProfile, loading, hasPermission } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!loading && !user) {
@@ -59,6 +73,23 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
                             <div className="h-96 bg-white rounded-xl border border-gray-100 shadow-sm"></div>
                         </div>
                     </main>
+                </div>
+            </div>
+        );
+    }
+
+    // Check page-level permission
+    const requiredPermission = getRequiredPermission(pathname || "");
+    if (requiredPermission && !hasPermission(requiredPermission)) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center max-w-sm mx-auto p-8 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <div className="text-6xl mb-4">🔒</div>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                        আপনার এই পেইজে প্রবেশের অনুমতি নেই।<br />
+                        Super Admin এর সাথে যোগাযোগ করুন।
+                    </p>
                 </div>
             </div>
         );

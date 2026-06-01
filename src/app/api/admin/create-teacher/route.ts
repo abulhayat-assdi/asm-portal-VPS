@@ -6,6 +6,12 @@ import { getSessionUser, isAdmin } from "@/lib/auth";
 import { AUTH_ROLES } from "@/lib/constants";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import {
+    DEFAULT_TEACHER_PERMISSIONS,
+    DEFAULT_ADMIN_PERMISSIONS,
+    TEACHER_FEATURE_PERMISSIONS,
+    PORTAL_OWNER_EMAIL,
+} from "@/lib/permissions";
 
 const createTeacherSchema = z.object({
     teacherId: z.string().min(1, "Teacher ID is required"),
@@ -17,14 +23,15 @@ const createTeacherSchema = z.object({
     designation: z.string().optional(),
     about: z.string().optional(),
     isAdmin: z.boolean().optional(),
+    includeTeacherFeatures: z.boolean().optional(),
     order: z.number().optional(),
-    profileImageUrl: z.string().optional(),
     leaveTrackingEnabled: z.boolean().optional(),
+    profileImageUrl: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
     try {
-        // Auth check — only admins can create teachers
+        // 1. Auth check — only admins/super_admins can create teachers
         const caller = await getSessionUser(req);
         if (!caller || !isAdmin(caller)) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
@@ -34,10 +41,18 @@ export async function POST(req: NextRequest) {
         const parsed = createTeacherSchema.safeParse(body);
 
         if (!parsed.success) {
-            return NextResponse.json({ error: parsed.error.issues.map(e => e.message).join(", ") }, { status: 400 });
+            return NextResponse.json({ error: parsed.error.message }, { status: 400 });
         }
 
-        const { teacherId, loginEmail, displayEmail, password, name, phone, designation, about, isAdmin: grantAdmin, order, profileImageUrl, leaveTrackingEnabled } = parsed.data;
+        const { teacherId, loginEmail, displayEmail, password, name, phone, designation, about, isAdmin: grantAdmin, includeTeacherFeatures, order, leaveTrackingEnabled, profileImageUrl } = parsed.data;
+
+        // 2. Only super_admin can grant admin role
+        if (grantAdmin && caller.role !== "super_admin") {
+            return NextResponse.json(
+                { error: "Forbidden: Only the portal owner (super_admin) can grant admin access." },
+                { status: 403 }
+            );
+        }
 
         const normalizedLoginEmail = loginEmail.toLowerCase().trim();
 
@@ -51,6 +66,16 @@ export async function POST(req: NextRequest) {
         const passwordHash = await bcrypt.hash(password, 12);
         const role = grantAdmin ? AUTH_ROLES.ADMIN : AUTH_ROLES.TEACHER;
 
+        // Determine default permissions
+        let defaultPermissions: string[];
+        if (grantAdmin) {
+            defaultPermissions = includeTeacherFeatures
+                ? [...DEFAULT_ADMIN_PERMISSIONS, ...TEACHER_FEATURE_PERMISSIONS]
+                : [...DEFAULT_ADMIN_PERMISSIONS];
+        } else {
+            defaultPermissions = [...DEFAULT_TEACHER_PERMISSIONS];
+        }
+
         // 5. Create user and teacher records in a transaction
         const result = await prisma.$transaction(async (tx: any) => {
             const user = await tx.user.create({
@@ -60,6 +85,7 @@ export async function POST(req: NextRequest) {
                     displayName: name,
                     role,
                     teacherId,
+                    permissions: defaultPermissions,
                 },
             });
 
@@ -74,8 +100,8 @@ export async function POST(req: NextRequest) {
                     loginEmail: normalizedLoginEmail,
                     isAdmin: grantAdmin || false,
                     order: order || 0,
-                    ...(profileImageUrl ? { profileImageUrl } : {}),
                     leaveTrackingEnabled: leaveTrackingEnabled || false,
+                    ...(profileImageUrl ? { profileImageUrl } : {}),
                 },
             });
 

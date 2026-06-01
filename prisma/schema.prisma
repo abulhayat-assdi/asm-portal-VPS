@@ -4,8 +4,9 @@
 // ============================================================
 
 generator client {
-  provider = "prisma-client-js"
-  engineType = "library"
+  provider      = "prisma-client-js"
+  engineType    = "library"
+  binaryTargets = ["native", "windows", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -119,6 +120,7 @@ model User {
   studentBatchName String?   @map("student_batch_name")
   studentRoll      String?   @map("student_roll")
   profileImageUrl  String?   @map("profile_image_url")
+  permissions      Json      @default("[]")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
   lastLoginAt      DateTime? @map("last_login_at")
@@ -732,6 +734,95 @@ model VideoTestimonial {
   @@index([isPublished])
   @@index([order])
   @@map("video_testimonials")
+}
+
+// ============================================================
+// DAILY TRACKER
+// ============================================================
+
+// ============================================================
+// CV BUILDER
+// ============================================================
+
+model CvTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  thumbnail   String?
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  config      Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  drafts CvDraft[]
+
+  @@index([isActive])
+  @@map("cv_templates")
+}
+
+model CvDraft {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  templateId      String   @map("template_id")
+  title           String   @default("My CV")
+
+  fullName        String?  @map("full_name")
+  profilePhoto    String?  @map("profile_photo")
+  careerObjective String?  @map("career_objective")
+
+  phone           String?
+  email           String?
+  address         String?
+
+  dateOfBirth     String?  @map("date_of_birth")
+  bloodGroup      String?  @map("blood_group")
+  religion        String?
+  maritalStatus   String?  @map("marital_status")
+  nationality     String?
+
+  skills         Json     @default("[]")
+  languages      Json     @default("[]")
+  hobbies        Json     @default("[]")
+  workExperience Json     @default("[]") @map("work_experience")
+  training       Json     @default("[]")
+  education      Json     @default("[]")
+  references     Json     @default("[]")
+
+  declaration    String?
+  signature      String?
+  sectionOrder   Json     @default("[\"workExperience\",\"training\",\"education\",\"languages\",\"references\",\"skills\",\"hobbies\"]") @map("section_order")
+
+  shareSlug      String?  @unique @map("share_slug")
+  isPublic       Boolean  @default(false) @map("is_public")
+  downloadCount  Int      @default(0) @map("download_count")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template CvTemplate @relation(fields: [templateId], references: [id])
+  versions CvVersion[]
+
+  @@index([userId])
+  @@index([templateId])
+  @@index([shareSlug])
+  @@index([createdAt])
+  @@map("cv_drafts")
+}
+
+model CvVersion {
+  id        String   @id @default(uuid())
+  draftId   String   @map("draft_id")
+  snapshot  Json
+  label     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  draft CvDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+  @@index([createdAt])
+  @@map("cv_versions")
 }
 
 // ============================================================

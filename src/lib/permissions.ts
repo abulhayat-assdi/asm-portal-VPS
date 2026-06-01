@@ -1,0 +1,126 @@
+// ============================================================
+// ASM Portal — Permission System
+// ============================================================
+
+export const PORTAL_OWNER_EMAIL = "mohammadabulhayatt@gmail.com";
+
+export type PermissionKey =
+    | "schedule"
+    | "routine"
+    | "batch_info"
+    | "resources"
+    | "course_modules"
+    | "policies"
+    | "feedback"
+    | "tracker"
+    | "homework"
+    | "leave_tracking"
+    | "teachers"
+    | "admin_panel"
+    | "admin_homework"
+    | "admin_results"
+    | "admin_leave"
+    | "admin_notices"
+    | "admin_contact"
+    | "admin_resources"
+    | "admin_blog"
+    | "admin_testimonials"
+    | "admin_success"
+    | "admin_cms"
+    | "access_management";
+
+export type PermissionGroup = "teacher" | "management" | "admin" | "system";
+
+export interface PermissionMeta {
+    label: string;
+    path: string;
+    group: PermissionGroup;
+    icon: string;
+}
+
+export const PERMISSION_META: Record<PermissionKey, PermissionMeta> = {
+    schedule:          { label: "Class Schedule",        path: "/dashboard/schedule",                        group: "teacher",    icon: "📅" },
+    routine:           { label: "Manage Routine",         path: "/dashboard/manage-routine",                  group: "teacher",    icon: "📆" },
+    batch_info:        { label: "All Batch Info",         path: "/dashboard/all-batch-info",                  group: "teacher",    icon: "📊" },
+    resources:         { label: "Resource Library",       path: "/dashboard/resources",                       group: "teacher",    icon: "🗂️" },
+    course_modules:    { label: "Course Modules",         path: "/dashboard/course-modules",                  group: "teacher",    icon: "📚" },
+    policies:          { label: "Policy & Minutes",       path: "/dashboard/policies",                        group: "teacher",    icon: "📋" },
+    feedback:          { label: "Feedback",               path: "/dashboard/feedback",                        group: "teacher",    icon: "💬" },
+    tracker:           { label: "Daily Tracker",          path: "/dashboard/tracker",                         group: "teacher",    icon: "📋" },
+    homework:          { label: "Homework",               path: "/dashboard/homework",                        group: "teacher",    icon: "📝" },
+    leave_tracking:    { label: "Leave Tracking",         path: "/dashboard/leave-tracking",                  group: "teacher",    icon: "🌴" },
+    teachers:          { label: "Teacher Directory",      path: "/dashboard/teachers",                        group: "management", icon: "👥" },
+    admin_panel:       { label: "Admin Panel",            path: "/dashboard/admin",                           group: "admin",      icon: "⚙️" },
+    admin_homework:    { label: "Manage Homework",        path: "/dashboard/admin/manage-homework",           group: "admin",      icon: "📁" },
+    admin_results:     { label: "Manage Results",         path: "/dashboard/admin/manage-results",            group: "admin",      icon: "📝" },
+    admin_leave:       { label: "Manage Leaves",          path: "/dashboard/admin/leave-management",          group: "admin",      icon: "🌴" },
+    admin_notices:     { label: "Student Notices",        path: "/dashboard/admin/student-updates",           group: "admin",      icon: "🔔" },
+    admin_contact:     { label: "Contact Messages",       path: "/dashboard/admin/contact-messages",          group: "admin",      icon: "📩" },
+    admin_resources:   { label: "Admin: Resources",       path: "/dashboard/admin/resource-management",       group: "admin",      icon: "🗂️" },
+    admin_blog:        { label: "Blog Management",        path: "/dashboard/admin/blog",                      group: "admin",      icon: "📝" },
+    admin_testimonials:{ label: "Video Testimonials",     path: "/dashboard/admin/home-video-testimonials",   group: "admin",      icon: "🎥" },
+    admin_success:     { label: "Success Stories",        path: "/dashboard/admin/success-stories",           group: "admin",      icon: "🎬" },
+    admin_cms:         { label: "CMS / Pages",            path: "/dashboard/admin/manage-pages",              group: "admin",      icon: "🖥️" },
+    access_management: { label: "Access Management",      path: "/dashboard/admin/access-management",         group: "system",     icon: "🔑" },
+};
+
+export const PERMISSION_GROUPS: { key: PermissionGroup; label: string }[] = [
+    { key: "teacher",    label: "Teacher Features" },
+    { key: "management", label: "Management" },
+    { key: "admin",      label: "Admin Features" },
+    { key: "system",     label: "System" },
+];
+
+export const ALL_PERMISSION_KEYS = Object.keys(PERMISSION_META) as PermissionKey[];
+
+// Default permissions assigned to a newly created teacher
+export const DEFAULT_TEACHER_PERMISSIONS: PermissionKey[] = [
+    "schedule", "routine", "batch_info", "resources", "course_modules",
+    "policies", "feedback", "tracker", "homework", "leave_tracking",
+    "teachers", "admin_results",
+];
+
+// Default admin permissions (management/admin pages only — no teacher features)
+export const DEFAULT_ADMIN_PERMISSIONS: PermissionKey[] = [
+    "teachers", "batch_info",
+    "admin_panel", "admin_homework", "admin_results", "admin_leave",
+    "admin_notices", "admin_contact", "admin_resources", "admin_blog",
+    "admin_testimonials", "admin_success", "admin_cms",
+];
+
+// Teacher-feature permissions added to admin when "Include teacher features" is checked
+export const TEACHER_FEATURE_PERMISSIONS: PermissionKey[] = [
+    "schedule", "routine", "resources", "course_modules",
+    "policies", "feedback", "tracker", "homework", "leave_tracking",
+];
+
+/**
+ * Returns effective permissions for a user.
+ * null/empty means role defaults apply (backward compatibility).
+ */
+export function getEffectivePermissions(
+    role: string,
+    storedPermissions: string[] | null | undefined
+): string[] {
+    if (role === "super_admin") return ALL_PERMISSION_KEYS;
+    if (!storedPermissions || storedPermissions.length === 0) {
+        if (role === "admin") return DEFAULT_ADMIN_PERMISSIONS;
+        if (role === "teacher") return DEFAULT_TEACHER_PERMISSIONS;
+        return [];
+    }
+    return storedPermissions;
+}
+
+/**
+ * Check if a user has a specific permission.
+ * Super admins always pass.
+ */
+export function hasPermission(
+    role: string,
+    storedPermissions: string[] | null | undefined,
+    permission: PermissionKey
+): boolean {
+    if (role === "super_admin") return true;
+    const effective = getEffectivePermissions(role, storedPermissions);
+    return effective.includes(permission);
+}

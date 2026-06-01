@@ -7,51 +7,52 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
 import { useSidebarNotifications } from "@/hooks/useSidebarNotifications";
+import { PermissionKey } from "@/lib/permissions";
 
-const teacherAdminNavItems = [
-    { href: "/dashboard", label: "Dashboard", icon: "🏠", adminOnly: false },
-    { href: "/dashboard/teachers", label: "Teacher Directory", icon: "👥", adminOnly: false },
-    { href: "/dashboard/schedule", label: "Class Schedule", icon: "📅", adminOnly: false },
-    { href: "/dashboard/manage-routine", label: "Manage Routine", icon: "📆", adminOnly: false },
-    { href: "/dashboard/all-batch-info", label: "All Batch Info", icon: "📊", adminOnly: false },
-    { href: "/dashboard/resources", label: "Resource Management", icon: "🗂️", adminOnly: false },
-    { href: "/dashboard/course-modules", label: "Course Modules", icon: "📚", adminOnly: false },
-    { href: "/dashboard/policies", label: "Policy & Minutes", icon: "📋", adminOnly: false },
-    { href: "/dashboard/feedback", label: "Feedback", icon: "💬", adminOnly: false },
-    { href: "/dashboard/tracker", label: "Daily Tracker", icon: "📋", adminOnly: false },
-    { href: "/dashboard/homework", label: "Homework", icon: "📝", adminOnly: false },
-    { href: "/dashboard/leave-tracking", label: "Leave Tracking", icon: "🌴", adminOnly: false },
-    { href: "/dashboard/admin", label: "Admin Panel", icon: "⚙️", adminOnly: true },
-    { href: "/dashboard/admin/manage-homework", label: "Manage Homework", icon: "📁", adminOnly: true },
-    { href: "/dashboard/admin/leave-management", label: "Manage Leaves", icon: "🌴", adminOnly: true },
-    { href: "/dashboard/admin/manage-results", label: "Manage Results", icon: "📝", adminOnly: false },
-    { href: "/dashboard/admin/student-updates", label: "Student Updates", icon: "🔔", adminOnly: true },
-    { href: "/dashboard/admin/contact-messages", label: "Contact Messages", icon: "📩", adminOnly: true },
-    { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", adminOnly: true },
-    { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", adminOnly: true },
-    { href: "/dashboard/admin/home-video-testimonials", label: "Home Videos", icon: "🎥", adminOnly: true },
-    { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", adminOnly: true },
-    { href: "/dashboard/admin/cv-manager", label: "CV Manager", icon: "📄", adminOnly: true },
-    { href: "/dashboard/admin/user-management", label: "User Management", icon: "🔑", adminOnly: true },
+const teacherAdminNavItems: { href: string; label: string; icon: string; permission: PermissionKey | null }[] = [
+    { href: "/dashboard",                                label: "Dashboard",          icon: "🏠", permission: null },
+    { href: "/dashboard/teachers",                       label: "Teacher Directory",  icon: "👥", permission: "teachers" },
+    { href: "/dashboard/schedule",                       label: "Class Schedule",     icon: "📅", permission: "schedule" },
+    { href: "/dashboard/manage-routine",                 label: "Manage Routine",     icon: "📆", permission: "routine" },
+    { href: "/dashboard/all-batch-info",                 label: "All Batch Info",     icon: "📊", permission: "batch_info" },
+    { href: "/dashboard/resources",                      label: "Resource Library",   icon: "🗂️", permission: "resources" },
+    { href: "/dashboard/course-modules",                 label: "Course Modules",     icon: "📚", permission: "course_modules" },
+    { href: "/dashboard/policies",                       label: "Policy & Minutes",   icon: "📋", permission: "policies" },
+    { href: "/dashboard/feedback",                       label: "Feedback",           icon: "💬", permission: "feedback" },
+    { href: "/dashboard/tracker",                        label: "Daily Tracker",      icon: "📋", permission: "tracker" },
+    { href: "/dashboard/homework",                       label: "Homework",           icon: "📝", permission: "homework" },
+    { href: "/dashboard/leave-tracking",                 label: "Leave Tracking",     icon: "🌴", permission: "leave_tracking" },
+    { href: "/dashboard/admin",                          label: "Admin Panel",        icon: "⚙️", permission: "admin_panel" },
+    { href: "/dashboard/admin/manage-homework",          label: "Manage Homework",    icon: "📁", permission: "admin_homework" },
+    { href: "/dashboard/admin/leave-management",         label: "Manage Leaves",      icon: "🌴", permission: "admin_leave" },
+    { href: "/dashboard/admin/manage-results",           label: "Manage Results",     icon: "📝", permission: "admin_results" },
+    { href: "/dashboard/admin/student-updates",          label: "Student Updates",    icon: "🔔", permission: "admin_notices" },
+    { href: "/dashboard/admin/contact-messages",         label: "Contact Messages",   icon: "📩", permission: "admin_contact" },
+    { href: "/dashboard/admin/resource-management",      label: "Admin: Resources",   icon: "🗂️", permission: "admin_resources" },
+    { href: "/dashboard/admin/blog",                     label: "Blog Management",    icon: "📝", permission: "admin_blog" },
+    { href: "/dashboard/admin/home-video-testimonials",  label: "Home Videos",        icon: "🎥", permission: "admin_testimonials" },
+    { href: "/dashboard/admin/success-stories",          label: "Success Stories",    icon: "🎬", permission: "admin_success" },
+    { href: "/dashboard/admin/access-management",        label: "Access Management",  icon: "🔑", permission: "access_management" },
+    { href: "/dashboard/admin/cv-manager",               label: "CV Manager",         icon: "📄", permission: "admin_panel" },
 ];
 
-const studentNavItems = [
-    { href: "/student-dashboard", label: "Dashboard", icon: "🏠", adminOnly: false },
-    { href: "/student-dashboard/routine", label: "Class Routine", icon: "🗓️", adminOnly: false },
-    { href: "/student-dashboard/resource", label: "Resource", icon: "📚", adminOnly: false },
-    { href: "/student-dashboard/course-outline", label: "Course Outline", icon: "📋", adminOnly: false },
-    { href: "/student-dashboard/homework", label: "Homework", icon: "📝", adminOnly: false },
-    { href: "/student-dashboard/results", label: "Results", icon: "🎓", adminOnly: false },
-    { href: "/student-dashboard/cv", label: "CV Builder", icon: "📄", adminOnly: false },
-    { href: "/student-dashboard/profile", label: "Profile", icon: "👤", adminOnly: false },
+const studentNavItems: { href: string; label: string; icon: string; permission: null }[] = [
+    { href: "/student-dashboard",                  label: "Dashboard",     icon: "🏠", permission: null },
+    { href: "/student-dashboard/routine",          label: "Class Routine", icon: "🗓️", permission: null },
+    { href: "/student-dashboard/resource",         label: "Resource",      icon: "📚", permission: null },
+    { href: "/student-dashboard/course-outline",   label: "Course Outline",icon: "📋", permission: null },
+    { href: "/student-dashboard/homework",         label: "Homework",      icon: "📝", permission: null },
+    { href: "/student-dashboard/results",          label: "Results",       icon: "🎓", permission: null },
+    { href: "/student-dashboard/profile",          label: "Profile",       icon: "👤", permission: null },
+    { href: "/student-dashboard/cv",               label: "My CV",         icon: "📄", permission: null },
 ];
 
 export default function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
-    const { userProfile, logout, loading } = useAuth();
+    const { userProfile, logout, loading, hasPermission } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    
+
     // Notifications hook
     const { counts, markPageAsVisited } = useSidebarNotifications();
 
@@ -65,14 +66,12 @@ export default function Sidebar() {
     const isStudent = userProfile?.role === "student";
     const activeNavItems = isStudent ? studentNavItems : teacherAdminNavItems;
 
-    // Filter nav items based on user role
-    // Show all items while loading, then filter based on role
+    // Filter nav items using permission system
     const filteredNavItems = activeNavItems.filter(item => {
-        if (item.adminOnly) {
-            // Only show admin items if user is loaded and is admin
-            return !loading && (userProfile?.role === "admin" || userProfile?.role === "super_admin");
-        }
-        return true;
+        if (loading) return true; // show all while loading
+        if (isStudent) return true;
+        if (!item.permission) return true; // dashboard — always visible
+        return hasPermission(item.permission);
     });
 
     // Handle logout: clear Firebase session and redirect to login
@@ -143,8 +142,7 @@ export default function Sidebar() {
                 <nav className="flex-1 p-4 overflow-y-auto">
                     <ul className="space-y-2">
                         {filteredNavItems.map((item) => {
-                            const isActive = pathname === item.href ||
-                            (item.href !== "/student-dashboard" && item.href !== "/dashboard" && pathname.startsWith(item.href + "/"));
+                            const isActive = pathname === item.href;
                             const badgeCount = counts[item.href] || 0;
                             return (
                                 <li key={item.href}>

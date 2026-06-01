@@ -12,11 +12,14 @@ const PUBLIC_API_ROUTES = [
     '/api/auth/reset-password',
     '/api/feedback',
     '/api/setup',
+    '/api/cv/public/',
+    '/api/cv/admin/templates',
 ];
 
 const isPublicAssetPath = (pathname: string) =>
     pathname.startsWith('/_next') ||
     pathname.startsWith('/images') ||
+    pathname.startsWith('/cv/') ||
     pathname === '/favicon.ico';
 
 const verifyAndGetRole = async (token: string): Promise<string | undefined> => {
@@ -74,5 +77,6 @@ export const config = {
         '/login',
         '/student-login',
         '/api/:path*',
+        '/cv/:path*',
     ],
 };

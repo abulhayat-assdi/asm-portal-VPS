@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
 import { COOKIES, AUTH_ROLES } from '@/lib/constants';
+import { getEffectivePermissions } from '@/lib/permissions';
 
 /**
  * GET /api/auth/profile
@@ -60,6 +61,9 @@ export async function GET(req: NextRequest) {
             }
         }
 
+        const storedPerms = Array.isArray(user.permissions) ? user.permissions as string[] : [];
+        const permissions = getEffectivePermissions(user.role, storedPerms);
+
         return NextResponse.json({
             id: user.id,
             email: user.email,
@@ -69,6 +73,7 @@ export async function GET(req: NextRequest) {
             studentBatchName: user.studentBatchName,
             studentRoll: user.studentRoll,
             profileImageUrl: enrichedProfileImageUrl,
+            permissions,
             createdAt: user.createdAt,
             lastLoginAt: user.lastLoginAt,
         });

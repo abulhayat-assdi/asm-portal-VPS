@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { signJWT } from '@/lib/auth';
 import { COOKIES } from '@/lib/constants';
+import { PORTAL_OWNER_EMAIL } from '@/lib/permissions';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -79,11 +80,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
         }
 
-        // 3. Update last login
+        // 3. Update last login — also enforce portal owner is always super_admin
+        const enforceRole = user.email === PORTAL_OWNER_EMAIL && user.role !== 'super_admin'
+            ? { role: 'super_admin' as const }
+            : {};
         await prisma.user.update({
             where: { id: user.id },
-            data: { lastLoginAt: new Date() },
+            data: { lastLoginAt: new Date(), ...enforceRole },
         });
+        if (enforceRole.role) user.role = enforceRole.role;
 
         // 4. Sign JWT
         const token = await signJWT({

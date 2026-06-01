@@ -18,6 +18,11 @@ export async function GET(req: NextRequest) {
             throw new Error('Prisma client is not properly initialized.');
         }
 
+        // Ensure permissions column exists (safe to run multiple times)
+        await prisma.$executeRawUnsafe(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions JSONB DEFAULT '[]'::JSONB;
+        `);
+
         const { searchParams } = new URL(req.url);
         const action = searchParams.get('action');
 
@@ -50,8 +55,19 @@ export async function GET(req: NextRequest) {
 
         const user = await prisma.user.upsert({
             where: { email },
-            update: { passwordHash: hashedPassword, role: 'super_admin', displayName: 'Abul Hayat' },
-            create: { email, passwordHash: hashedPassword, role: 'super_admin', displayName: 'Abul Hayat' }
+            update: {
+                passwordHash: hashedPassword,
+                role: 'super_admin',
+                displayName: 'Abul Hayat',
+                permissions: [],
+            },
+            create: {
+                email,
+                passwordHash: hashedPassword,
+                role: 'super_admin',
+                displayName: 'Abul Hayat',
+                permissions: [],
+            }
         });
 
         return NextResponse.json({
@@ -59,8 +75,8 @@ export async function GET(req: NextRequest) {
             message: 'Admin account created/reset with role: super_admin',
             user: { email: user.email, role: user.role },
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Setup Error:', error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }

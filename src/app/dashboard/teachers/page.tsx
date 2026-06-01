@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import TeacherCard from "@/components/ui/TeacherCard";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { getTeachersPaginated, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
+import { getAllTeachers, getTeachersPaginated, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function TeachersPage() {
@@ -21,7 +21,7 @@ export default function TeachersPage() {
 
     // Role checks
     const isAdminUser = userProfile?.role === "admin" || userProfile?.role === "super_admin";
-    const isPortalOwner = userProfile?.role === "admin" || userProfile?.role === "super_admin";
+    const isPortalOwner = userProfile?.role === "super_admin";
 
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,6 +46,7 @@ export default function TeachersPage() {
         password: "",
         profileImageUrl: "",
         isAdmin: false,
+        includeTeacherFeatures: true,
         order: 0,
         leaveTrackingEnabled: false,
     });
@@ -111,6 +112,7 @@ export default function TeachersPage() {
             password: "",
             profileImageUrl: "",
             isAdmin: false,
+            includeTeacherFeatures: true,
             order: 0,
             leaveTrackingEnabled: false,
         });
@@ -161,6 +163,7 @@ export default function TeachersPage() {
             password: "", // intentionally blank for edit
             profileImageUrl: teacher.profileImageUrl || "",
             isAdmin: Boolean(teacher.isAdmin),
+            includeTeacherFeatures: true,
             order: teacher.order || 0,
             leaveTrackingEnabled: Boolean(teacher.leaveTrackingEnabled),
         });
@@ -286,13 +289,14 @@ export default function TeachersPage() {
                         displayEmail: formData.email,
                         password: formData.password,
                         name: formData.name,
-                        phone: formData.phone,
                         designation: formData.designation,
                         about: formData.about,
+                        phone: formData.phone,
                         isAdmin: formData.isAdmin,
+                        includeTeacherFeatures: formData.isAdmin ? formData.includeTeacherFeatures : undefined,
                         order: Number(formData.order),
-                        profileImageUrl: finalImageUrl || undefined,
                         leaveTrackingEnabled: formData.leaveTrackingEnabled,
+                        profileImageUrl: finalImageUrl || undefined,
                     }),
                 });
 
@@ -644,6 +648,25 @@ export default function TeachersPage() {
                                 <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded px-3 py-2">
                                     ⚠️ Only the portal owner can grant or revoke admin access.
                                 </p>
+                            )}
+
+                            {/* Include teacher features — only shown when adding a new admin */}
+                            {!isEditMode && formData.isAdmin && (
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-100 bg-blue-50">
+                                    <input
+                                        type="checkbox"
+                                        id="includeTeacherFeatures"
+                                        checked={formData.includeTeacherFeatures}
+                                        onChange={(e) => setFormData({ ...formData, includeTeacherFeatures: e.target.checked })}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="includeTeacherFeatures" className="text-sm font-medium text-slate-700 cursor-pointer">
+                                        📚 Include Teacher Features
+                                        <span className="block text-xs font-normal text-slate-500 mt-0.5">
+                                            টিক দিলে এই অ্যাডমিন টিচারদের সব ফিচারও (Schedule, Homework, Leave Tracking ইত্যাদি) পাবে
+                                        </span>
+                                    </label>
+                                </div>
                             )}
 
                             {/* Leave Tracking Toggle */}

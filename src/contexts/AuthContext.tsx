@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { AuthContextType, UserProfile } from "@/types/auth";
+import { getEffectivePermissions } from "@/lib/permissions";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -124,6 +125,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(profile);
     };
 
+    const hasPermission = (key: string): boolean => {
+        if (!user) return false;
+        if (user.role === "super_admin") return true;
+        const perms = user.permissions ?? getEffectivePermissions(user.role, []);
+        return perms.includes(key);
+    };
+
     const value: AuthContextType = {
         user,
         userProfile: user,
@@ -133,6 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         sendPasswordReset,
         refreshProfile,
+        hasPermission,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

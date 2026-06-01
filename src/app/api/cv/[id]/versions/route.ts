@@ -1,119 +1,104 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin } from "@/lib/auth";
-import { MAX_CV_VERSIONS } from "@/lib/cv/constants";
-
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** GET /api/cv/[id]/versions — list version history */
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
+import { MAX_CV_VERSIONS } from "@/lib/cv/constants";
+
+async function checkDraftOwner(draftId: string, userId: string) {
+    const draft = await prisma.cvDraft.findUnique({ where: { id: draftId } });
+    if (!draft) return { draft: null, forbidden: false };
+    if (draft.userId !== userId) return { draft: null, forbidden: true };
+    return { draft, forbidden: false };
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser(req);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = await getSessionUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const draft = await prisma.cvDraft.findUnique({ where: { id }, select: { userId: true } });
-  if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (draft.userId !== user.id && !isAdmin(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const { id } = await params;
+    const { draft, forbidden } = await checkDraftOwner(id, user.id);
+    if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const versions = await prisma.cvVersion.findMany({
-    where: { draftId: id },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, label: true, createdAt: true },
-  });
+    const versions = await prisma.cvVersion.findMany({
+        where: { draftId: id },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, label: true, createdAt: true },
+    });
 
-  return NextResponse.json(versions.map((v) => ({ ...v, createdAt: v.createdAt.toISOString() })));
+    return NextResponse.json(versions);
 }
 
-/** POST /api/cv/[id]/versions — create a snapshot */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser(req);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = await getSessionUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const draft = await prisma.cvDraft.findUnique({ where: { id } });
-  if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (draft.userId !== user.id && !isAdmin(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const { id } = await params;
+    const { draft, forbidden } = await checkDraftOwner(id, user.id);
+    if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const body = await req.json().catch(() => ({}));
-  const label: string | undefined = body.label;
+    const body = await req.json().catch(() => ({}));
+    const label: string | undefined = body.label;
 
-  // Create snapshot
-  const version = await prisma.cvVersion.create({
-    data: {
-      draftId: id,
-      label: label ?? null,
-      snapshot: draft as object,
-    },
-  });
+    // Auto-prune oldest if at limit
+    const count = await prisma.cvVersion.count({ where: { draftId: id } });
+    if (count >= MAX_CV_VERSIONS) {
+        const oldest = await prisma.cvVersion.findFirst({
+            where: { draftId: id },
+            orderBy: { createdAt: "asc" },
+        });
+        if (oldest) await prisma.cvVersion.delete({ where: { id: oldest.id } });
+    }
 
-  // Prune oldest versions if over limit
-  const allVersions = await prisma.cvVersion.findMany({
-    where: { draftId: id },
-    orderBy: { createdAt: "desc" },
-    select: { id: true },
-  });
-  if (allVersions.length > MAX_CV_VERSIONS) {
-    const toDelete = allVersions.slice(MAX_CV_VERSIONS).map((v) => v.id);
-    await prisma.cvVersion.deleteMany({ where: { id: { in: toDelete } } });
-  }
+    // Snapshot: all draft fields except id, userId
+    const { id: _id, userId: _uid, ...snapshot } = draft as Record<string, unknown>;
+    void _id; void _uid;
 
-  return NextResponse.json({ id: version.id, createdAt: version.createdAt.toISOString() }, { status: 201 });
+    const version = await prisma.cvVersion.create({
+        data: {
+            draftId: id,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            snapshot: snapshot as any,
+            label: label || null,
+        },
+    });
+
+    return NextResponse.json(version, { status: 201 });
 }
 
-/** PATCH /api/cv/[id]/versions — restore a snapshot */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getSessionUser(req);
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const user = await getSessionUser(req);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const draft = await prisma.cvDraft.findUnique({ where: { id }, select: { userId: true } });
-  if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (draft.userId !== user.id && !isAdmin(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+    const { id } = await params;
+    const { draft, forbidden } = await checkDraftOwner(id, user.id);
+    if (forbidden) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { versionId } = await req.json();
-  const version = await prisma.cvVersion.findUnique({ where: { id: versionId } });
-  if (!version || version.draftId !== id) {
-    return NextResponse.json({ error: "Version not found" }, { status: 404 });
-  }
+    const body = await req.json();
+    const versionId: string = body.versionId;
+    if (!versionId) return NextResponse.json({ error: "versionId required" }, { status: 400 });
 
-  const snap = version.snapshot as Record<string, unknown>;
+    const version = await prisma.cvVersion.findUnique({ where: { id: versionId } });
+    if (!version || version.draftId !== id) {
+        return NextResponse.json({ error: "Version not found" }, { status: 404 });
+    }
 
-  // Restore all data fields from snapshot, preserve id/userId/shareSlug/downloadCount
-  await prisma.cvDraft.update({
-    where: { id },
-    data: {
-      title: (snap.title as string) ?? "My CV",
-      templateId: snap.templateId as string,
-      fullName: (snap.fullName as string) ?? null,
-      profilePhoto: (snap.profilePhoto as string) ?? null,
-      careerObjective: (snap.careerObjective as string) ?? null,
-      phone: (snap.phone as string) ?? null,
-      email: (snap.email as string) ?? null,
-      address: (snap.address as string) ?? null,
-      dateOfBirth: (snap.dateOfBirth as string) ?? null,
-      bloodGroup: (snap.bloodGroup as string) ?? null,
-      religion: (snap.religion as string) ?? null,
-      maritalStatus: (snap.maritalStatus as string) ?? null,
-      nationality: (snap.nationality as string) ?? null,
-      skills: snap.skills ?? [],
-      languages: snap.languages ?? [],
-      hobbies: snap.hobbies ?? [],
-      workExperience: snap.workExperience ?? [],
-      training: snap.training ?? [],
-      education: snap.education ?? [],
-      references: snap.references ?? [],
-      declaration: (snap.declaration as string) ?? null,
-      signature: (snap.signature as string) ?? null,
-      sectionOrder: snap.sectionOrder ?? [],
-    },
-  });
+    const snapshot = version.snapshot as Record<string, unknown>;
 
-  return NextResponse.json({ restored: true });
+    // Restore all fields except protected ones
+    const { id: _id, userId: _uid, shareSlug: _slug, downloadCount: _dl, ...restoreData } = snapshot;
+    void _id; void _uid; void _slug; void _dl;
+
+    const updated = await prisma.cvDraft.update({
+        where: { id },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: restoreData as any,
+        include: { template: { select: { id: true, name: true, slug: true, config: true } } },
+    });
+
+    return NextResponse.json(updated);
 }
