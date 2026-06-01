@@ -111,5 +111,8 @@ export async function getSessionUserFromRequestOrBearer(request: NextRequest): P
 export const isAdmin = (user: JWTPayload) =>
     user.role === 'admin' || user.role === 'super_admin';
 
+export const isSuperAdmin = (user: JWTPayload) =>
+    user.role === 'super_admin';
+
 export const isTeacherOrAdmin = (user: JWTPayload) =>
     user.role === 'teacher' || user.role === 'admin' || user.role === 'super_admin';
