@@ -3,7 +3,16 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isSuperAdmin, isAdmin } from "@/lib/auth";
-import { PORTAL_OWNER_EMAIL, getEffectivePermissions, ALL_PERMISSION_KEYS } from "@/lib/permissions";
+import {
+    PORTAL_OWNER_EMAIL,
+    getEffectivePermissions,
+    getDisplayRoleLabel,
+    ALL_PERMISSION_KEYS,
+    ADMIN_TEACHER_MARKER,
+    DEFAULT_TEACHER_PERMISSIONS,
+    DEFAULT_ADMIN_PERMISSIONS,
+    TEACHER_FEATURE_PERMISSIONS,
+} from "@/lib/permissions";
 
 /**
  * GET /api/admin/access-management
@@ -32,41 +41,45 @@ export async function GET(req: NextRequest) {
         orderBy: [{ role: "asc" }, { displayName: "asc" }],
     });
 
-    const result = users.map((u) => ({
-        id: u.id,
-        email: u.email,
-        displayName: u.displayName,
-        role: u.role,
-        isPortalOwner: u.email === PORTAL_OWNER_EMAIL,
-        permissions: getEffectivePermissions(u.role, u.permissions as string[] | null),
-    }));
+    const result = users.map((u) => {
+        const rawPerms = u.permissions as string[] | null;
+        return {
+            id: u.id,
+            email: u.email,
+            displayName: u.displayName,
+            role: u.role,
+            displayRole: getDisplayRoleLabel(u.role, rawPerms),
+            isPortalOwner: u.email === PORTAL_OWNER_EMAIL,
+            permissions: getEffectivePermissions(u.role, rawPerms),
+        };
+    });
 
     return NextResponse.json(result);
 }
 
 /**
  * PUT /api/admin/access-management
- * Body: { userId: string, permissions: string[] }
- * Updates permissions for a user.
- * Only super_admin can call this.
+ * Body: { userId, permissions?, role? }
+ * - permissions: update page access
+ * - role: 'teacher' | 'admin' — promote/demote (super_admin only)
+ * Both can be sent together or separately.
  */
 export async function PUT(req: NextRequest) {
     const caller = await getSessionUser(req);
     if (!caller || !isSuperAdmin(caller)) {
-        return NextResponse.json({ error: "Forbidden: Only super_admin can manage permissions." }, { status: 403 });
+        return NextResponse.json({ error: "Forbidden: Only super_admin can manage access." }, { status: 403 });
     }
 
     const body = await req.json();
-    const { userId, permissions } = body;
+    const { userId, permissions, roleLabel } = body as {
+        userId: string;
+        permissions?: string[];
+        /** Explicit display label: "teacher" | "admin" | "admin_teacher" */
+        roleLabel?: "teacher" | "admin" | "admin_teacher";
+    };
 
-    if (!userId || !Array.isArray(permissions)) {
-        return NextResponse.json({ error: "userId and permissions array are required." }, { status: 400 });
-    }
-
-    // Validate permission keys
-    const invalid = permissions.filter((p: string) => !ALL_PERMISSION_KEYS.includes(p as any));
-    if (invalid.length > 0) {
-        return NextResponse.json({ error: `Invalid permission keys: ${invalid.join(", ")}` }, { status: 400 });
+    if (!userId) {
+        return NextResponse.json({ error: "userId is required." }, { status: 400 });
     }
 
     // Find target user
@@ -75,25 +88,87 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    // Portal owner permissions cannot be changed
+    // Portal owner is immutable
     if (target.email === PORTAL_OWNER_EMAIL) {
-        return NextResponse.json({ error: "The portal owner's permissions cannot be changed." }, { status: 403 });
+        return NextResponse.json({ error: "The portal owner's account cannot be modified." }, { status: 403 });
     }
 
-    // Students cannot be given admin permissions
     if (target.role === "student") {
-        return NextResponse.json({ error: "Student permissions cannot be managed here." }, { status: 400 });
+        return NextResponse.json({ error: "Student accounts cannot be managed here." }, { status: 400 });
     }
 
-    // access_management permission can only be granted to admins/super_admins, not teachers
-    const filteredPermissions = target.role === "teacher"
-        ? permissions.filter((p: string) => p !== "access_management")
-        : permissions;
+    // ── Derive DB role from roleLabel ────────────────────────
+    // "admin_teacher" → DB role = "admin" (gives full admin API access)
+    // "admin"         → DB role = "admin"
+    // "teacher"       → DB role = "teacher"
+    const dbRole: "teacher" | "admin" | undefined =
+        roleLabel === "teacher" ? "teacher"
+        : roleLabel === "admin" || roleLabel === "admin_teacher" ? "admin"
+        : undefined;
 
-    await prisma.user.update({
-        where: { id: userId },
-        data: { permissions: filteredPermissions },
+    const roleChanged = dbRole !== undefined && dbRole !== target.role;
+
+    // ── Build final permissions array ────────────────────────
+    let finalPermissions: string[] | undefined;
+
+    if (permissions !== undefined) {
+        if (!Array.isArray(permissions)) {
+            return NextResponse.json({ error: "permissions must be an array." }, { status: 400 });
+        }
+        // Validate — allow real permission keys; strip any stale markers (we'll re-add if needed)
+        const pagePerms = permissions.filter((p) => !p.startsWith("__"));
+        const invalid   = pagePerms.filter((p) => !ALL_PERMISSION_KEYS.includes(p as any));
+        if (invalid.length > 0) {
+            return NextResponse.json({ error: `Invalid permission keys: ${invalid.join(", ")}` }, { status: 400 });
+        }
+
+        const effectiveDbRole = dbRole ?? (target.role as string);
+
+        // access_management only available to admins
+        const filtered = effectiveDbRole === "teacher"
+            ? pagePerms.filter((p) => p !== "access_management")
+            : pagePerms;
+
+        // Re-attach the role display marker if Admin+Teacher is selected
+        finalPermissions = roleLabel === "admin_teacher"
+            ? [...filtered, ADMIN_TEACHER_MARKER]
+            : filtered;
+    }
+
+    if (finalPermissions === undefined && roleLabel !== undefined) {
+        // Role changed but no permissions sent — apply sensible defaults
+        const existingPagePerms = getEffectivePermissions(target.role, target.permissions as string[]);
+        finalPermissions = roleLabel === "admin_teacher"
+            ? [...existingPagePerms, ADMIN_TEACHER_MARKER]
+            : existingPagePerms.filter((p) => p !== ADMIN_TEACHER_MARKER);
+    }
+
+    // ── Persist ──────────────────────────────────────────────
+    await prisma.$transaction(async (tx: any) => {
+        await tx.user.update({
+            where: { id: userId },
+            data: {
+                ...(roleChanged ? { role: dbRole } : {}),
+                ...(finalPermissions !== undefined ? { permissions: finalPermissions } : {}),
+            },
+        });
+
+        // Sync Teacher.isAdmin
+        if (roleChanged) {
+            await tx.teacher.updateMany({
+                where: { OR: [{ loginEmail: target.email }, { email: target.email }] },
+                data:  { isAdmin: dbRole === "admin" },
+            });
+        }
     });
 
-    return NextResponse.json({ success: true, permissions: filteredPermissions });
+    const savedRole        = dbRole ?? (target.role as string);
+    const savedPermissions = finalPermissions ?? (target.permissions as string[]) ?? [];
+
+    return NextResponse.json({
+        success:     true,
+        role:        savedRole,
+        displayRole: getDisplayRoleLabel(savedRole, savedPermissions),
+        permissions: getEffectivePermissions(savedRole, savedPermissions),
+    });
 }

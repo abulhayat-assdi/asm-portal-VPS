@@ -73,6 +73,10 @@ export const PERMISSION_GROUPS: { key: PermissionGroup; label: string }[] = [
 
 export const ALL_PERMISSION_KEYS = Object.keys(PERMISSION_META) as PermissionKey[];
 
+// Special marker stored in the permissions array to indicate the explicit role label.
+// Never used as an actual page permission — always filtered out from access checks.
+export const ADMIN_TEACHER_MARKER = "__role:admin_teacher";
+
 // Default permissions assigned to a newly created teacher
 export const DEFAULT_TEACHER_PERMISSIONS: PermissionKey[] = [
     "schedule", "routine", "batch_info", "resources", "course_modules",
@@ -94,9 +98,15 @@ export const TEACHER_FEATURE_PERMISSIONS: PermissionKey[] = [
     "policies", "feedback", "tracker", "homework", "leave_tracking",
 ];
 
+/** Strip internal metadata markers — only real page keys remain. */
+function stripMarkers(perms: string[]): string[] {
+    return perms.filter((p) => !p.startsWith("__"));
+}
+
 /**
- * Returns effective permissions for a user.
+ * Returns effective page permissions for a user.
  * null/empty means role defaults apply (backward compatibility).
+ * Internal __markers are always excluded from the result.
  */
 export function getEffectivePermissions(
     role: string,
@@ -108,7 +118,18 @@ export function getEffectivePermissions(
         if (role === "teacher") return DEFAULT_TEACHER_PERMISSIONS;
         return [];
     }
-    return storedPermissions;
+    return stripMarkers(storedPermissions);
+}
+
+/**
+ * Determine the display role label from DB role + stored permissions.
+ * "Admin + Teacher" is stored via ADMIN_TEACHER_MARKER in the permissions array.
+ */
+export function getDisplayRoleLabel(role: string, storedPermissions: string[] | null | undefined): string {
+    if (role === "super_admin") return "Super Admin";
+    if (role === "admin" && storedPermissions?.includes(ADMIN_TEACHER_MARKER)) return "Admin + Teacher";
+    if (role === "admin") return "Admin";
+    return "Teacher";
 }
 
 /**
