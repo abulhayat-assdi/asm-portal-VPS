@@ -83,28 +83,43 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
 // ─── CV Preview ────────────────────────────────────────────────────────────────
 
 function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig }) {
-    const sidebarW = config.sidebarWidth;
-    const mainW = 100 - sidebarW;
-    const color = config.sidebarColor;
+    const sw = config.sidebarWidth || 38;
+    const color = config.sidebarColor || "#1e3a5f";
     const initial = data.fullName?.charAt(0)?.toUpperCase() ?? "?";
+    const sections = data.sectionOrder?.length
+        ? data.sectionOrder
+        : ["workExperience", "training", "education", "languages", "references", "skills", "hobbies"];
 
-    const sections = (data.sectionOrder?.length ? data.sectionOrder : ["workExperience","training","education","languages","references","skills","hobbies"]);
+    const sSH: React.CSSProperties = {
+        color: "rgba(255,255,255,0.75)", fontWeight: 700, fontSize: "0.5rem",
+        textTransform: "uppercase", letterSpacing: "0.1em",
+        borderBottom: "1px solid rgba(255,255,255,0.3)", paddingBottom: 2, marginBottom: 5,
+    };
+    const mSH = (c: string): React.CSSProperties => ({
+        fontWeight: 700, fontSize: "0.6rem", textTransform: "uppercase",
+        letterSpacing: "0.07em", borderBottom: `1.5px solid ${c}`,
+        paddingBottom: 2, marginBottom: 6, color: c,
+    });
 
-    const sh = (label: string) => (
-        <h4 style={{ fontWeight: 700, fontSize: "0.58rem", textTransform: "uppercase" as const, letterSpacing: "0.07em", borderBottom: `1.5px solid ${color}`, paddingBottom: 2, marginBottom: 5, color }}>{label}</h4>
-    );
+    const personalData = [
+        { label: "Date of Birth", value: data.dateOfBirth },
+        { label: "Blood Group",   value: data.bloodGroup },
+        { label: "Religion",      value: data.religion },
+        { label: "Marital Status",value: data.maritalStatus },
+        { label: "Nationality",   value: data.nationality },
+    ].filter(f => f.value);
 
-    function renderSection(key: string) {
+    function renderMainSection(key: string) {
         switch (key) {
             case "workExperience":
                 return data.workExperience?.length ? (
                     <div key="we">
-                        {sh(SECTION_LABELS.workExperience)}
+                        <h4 style={mSH(color)}>{SECTION_LABELS.workExperience}</h4>
                         {data.workExperience.map((item, i) => (
                             <div key={i} style={{ marginBottom: 6 }}>
-                                <p style={{ fontWeight: 700, fontSize: "0.6rem", color: "#1f2937" }}>{item.jobTitle}</p>
-                                <p style={{ fontSize: "0.58rem", color: "#6b7280" }}>{item.company}{item.location ? ` — ${item.location}` : ""}</p>
-                                {item.bullets?.map((b, j) => b && <p key={j} style={{ fontSize: "0.57rem", color: "#4b5563", paddingLeft: 8 }}>• {b}</p>)}
+                                <p style={{ fontWeight: 700, fontSize: "0.62rem", color: "#1a1a1a" }}>{item.jobTitle}</p>
+                                <p style={{ fontSize: "0.57rem", color: "#555", fontStyle: "italic" }}>{item.company}{item.location ? `, ${item.location}` : ""}</p>
+                                {item.bullets?.map((b, j) => b && <p key={j} style={{ fontSize: "0.57rem", color: "#444", paddingLeft: 8 }}>• {b}</p>)}
                             </div>
                         ))}
                     </div>
@@ -112,12 +127,12 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
             case "training":
                 return data.training?.length ? (
                     <div key="tr">
-                        {sh(SECTION_LABELS.training)}
+                        <h4 style={mSH(color)}>{SECTION_LABELS.training}</h4>
                         {data.training.map((item, i) => (
                             <div key={i} style={{ marginBottom: 6 }}>
-                                <p style={{ fontWeight: 700, fontSize: "0.6rem", color: "#1f2937" }}>{item.trainingName}</p>
-                                <p style={{ fontSize: "0.58rem", color: "#6b7280" }}>{item.institute}{item.year ? ` (${item.year})` : ""}</p>
-                                {item.bullets?.map((b, j) => b && <p key={j} style={{ fontSize: "0.57rem", color: "#4b5563", paddingLeft: 8 }}>• {b}</p>)}
+                                <p style={{ fontWeight: 700, fontSize: "0.62rem", color: "#1a1a1a" }}>{item.trainingName}</p>
+                                <p style={{ fontSize: "0.57rem", color: "#555", fontStyle: "italic" }}>{item.institute}{item.year ? ` (${item.year})` : ""}</p>
+                                {item.bullets?.map((b, j) => b && <p key={j} style={{ fontSize: "0.57rem", color: "#444", paddingLeft: 8 }}>• {b}</p>)}
                             </div>
                         ))}
                     </div>
@@ -125,12 +140,15 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
             case "education":
                 return data.education?.length ? (
                     <div key="edu">
-                        {sh(SECTION_LABELS.education)}
+                        <h4 style={mSH(color)}>{SECTION_LABELS.education}</h4>
                         {data.education.map((item, i) => (
                             <div key={i} style={{ marginBottom: 6 }}>
-                                <p style={{ fontWeight: 700, fontSize: "0.6rem", color: "#1f2937" }}>{item.degree}{item.department ? ` — ${item.department}` : ""}</p>
-                                <p style={{ fontSize: "0.58rem", color: "#6b7280" }}>{item.institution}</p>
-                                {(item.gpa || item.year) && <p style={{ fontSize: "0.55rem", color: "#9ca3af" }}>{item.gpa ? `GPA: ${item.gpa}` : ""}{item.gpa && item.year ? " | " : ""}{item.year ?? ""}</p>}
+                                <p style={{ fontWeight: 700, fontSize: "0.62rem", color: "#1a1a1a" }}>{item.degree}{item.department ? ` — ${item.department}` : ""}</p>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                    <p style={{ fontSize: "0.57rem", color: "#555", fontStyle: "italic" }}>{item.institution}</p>
+                                    {item.year && <p style={{ fontSize: "0.55rem", color: "#888" }}>{item.year}</p>}
+                                </div>
+                                {item.gpa && <p style={{ fontSize: "0.55rem", color: "#888" }}>GPA: {item.gpa}</p>}
                             </div>
                         ))}
                     </div>
@@ -138,145 +156,114 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
             case "references":
                 return data.references?.length ? (
                     <div key="ref">
-                        {sh(SECTION_LABELS.references)}
+                        <h4 style={mSH(color)}>{SECTION_LABELS.references}</h4>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             {data.references.map((ref, i) => (
                                 <div key={i}>
-                                    <p style={{ fontWeight: 700, fontSize: "0.6rem", color: "#1f2937" }}>{ref.name}</p>
-                                    {ref.title && <p style={{ fontSize: "0.57rem", color: "#6b7280" }}>{ref.title}</p>}
-                                    {ref.phone && <p style={{ fontSize: "0.55rem", color: "#9ca3af" }}>{ref.phone}</p>}
+                                    <p style={{ fontWeight: 700, fontSize: "0.6rem", color: "#1a1a1a" }}>{ref.name}</p>
+                                    {ref.title && <p style={{ fontSize: "0.55rem", color: "#555" }}>{ref.title}</p>}
+                                    {ref.organization && <p style={{ fontSize: "0.55rem", color: "#555" }}>{ref.organization}</p>}
+                                    {ref.phone && <p style={{ fontSize: "0.53rem", color: "#777" }}>Phone : {ref.phone}</p>}
+                                    {ref.email && <p style={{ fontSize: "0.53rem", color: "#777" }}>Email : {ref.email}</p>}
                                 </div>
                             ))}
                         </div>
-                    </div>
-                ) : null;
-            case "skills":
-                return data.skills?.length ? (
-                    <div key="sk">
-                        {sh(SECTION_LABELS.skills)}
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                            {data.skills.map((s, i) => (
-                                <span key={i} style={{ backgroundColor: "#f3f4f6", color: "#374151", fontSize: "0.55rem", padding: "1px 6px", borderRadius: 99 }}>{s}</span>
-                            ))}
-                        </div>
-                    </div>
-                ) : null;
-            case "hobbies":
-                return data.hobbies?.length ? (
-                    <div key="hb">
-                        {sh(SECTION_LABELS.hobbies)}
-                        <p style={{ fontSize: "0.58rem", color: "#4b5563" }}>{data.hobbies.join(" • ")}</p>
                     </div>
                 ) : null;
             default: return null;
         }
     }
 
-    const sidebarStyle: React.CSSProperties = {
-        flexShrink: 0,
-        width: `${sidebarW}%`,
-        minWidth: `${sidebarW}%`,
-        backgroundColor: color,
-        padding: "12px",
-        color: "#ffffff",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        boxSizing: "border-box",
-    };
-
-    const mainStyle: React.CSSProperties = {
-        flex: 1,
-        minWidth: 0,
-        padding: "12px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        boxSizing: "border-box",
-    };
-
-    const sectionHeadingStyle = (c: string): React.CSSProperties => ({
-        fontWeight: 700,
-        fontSize: "0.6rem",
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        borderBottom: `1.5px solid ${c}`,
-        paddingBottom: "2px",
-        marginBottom: "4px",
-        color: c,
-    });
-
     return (
-        <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", fontSize: "0.6rem", fontFamily: "sans-serif", minHeight: 480, boxShadow: "0 2px 12px rgba(0,0,0,0.1)" }}>
-            <div style={{ display: "flex", flexDirection: "row", minHeight: 480 }}>
-                {/* Sidebar */}
-                <div style={sidebarStyle}>
+        <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", fontSize: "0.6rem", fontFamily: "sans-serif", minHeight: 500, boxShadow: "0 2px 12px rgba(0,0,0,0.1)" }}>
+            <div style={{ display: "flex", flexDirection: "row", minHeight: 500 }}>
+
+                {/* ── Sidebar ── */}
+                <div style={{ flexShrink: 0, width: `${sw}%`, minWidth: `${sw}%`, backgroundColor: color, padding: "12px 10px", color: "#fff", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
+
+                    {/* Photo */}
                     {config.showPhoto && (
-                        <div style={{
-                            width: 48, height: 48, borderRadius: config.photoShape === "circle" ? "50%" : "6px",
-                            backgroundColor: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            overflow: "hidden", flexShrink: 0, alignSelf: "center",
-                        }}>
-                            {data.profilePhoto
-                                ? <img src={data.profilePhoto} alt="photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                : <span style={{ fontWeight: 900, fontSize: "1.1rem", color: "#fff" }}>{initial}</span>}
-                        </div>
-                    )}
-                    {data.fullName && (
-                        <p style={{ fontWeight: 900, textAlign: "center", fontSize: "0.7rem", lineHeight: 1.3, color: "#fff" }}>{data.fullName}</p>
-                    )}
-
-                    {(data.phone || data.email || data.address) && (
-                        <div>
-                            <p style={{ color: "rgba(255,255,255,0.6)", fontWeight: 700, fontSize: "0.5rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Contact</p>
-                            {data.phone && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", wordBreak: "break-all" }}>{data.phone}</p>}
-                            {data.email && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", wordBreak: "break-all" }}>{data.email}</p>}
-                            {data.address && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem" }}>{data.address}</p>}
-                        </div>
-                    )}
-
-                    {data.skills?.length > 0 && sections.includes("skills") && (
-                        <div>
-                            <p style={{ color: "rgba(255,255,255,0.6)", fontWeight: 700, fontSize: "0.5rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Skills</p>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                                {data.skills.slice(0, 8).map((s, i) => (
-                                    <span key={i} style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "#fff", fontSize: "0.5rem", padding: "1px 5px", borderRadius: 3 }}>{s}</span>
-                                ))}
+                        <div style={{ alignSelf: "center" }}>
+                            <div style={{ width: 52, height: 52, borderRadius: config.photoShape === "circle" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                                {data.profilePhoto
+                                    ? <img src={data.profilePhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    : <span style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff" }}>{initial}</span>}
                             </div>
                         </div>
                     )}
+                    {data.fullName && <p style={{ fontWeight: 900, textAlign: "center", fontSize: "0.68rem", lineHeight: 1.3, color: "#fff" }}>{data.fullName}</p>}
 
-                    {data.languages?.length > 0 && sections.includes("languages") && (
+                    {(data.phone || data.email || data.address) && (
                         <div>
-                            <p style={{ color: "rgba(255,255,255,0.6)", fontWeight: 700, fontSize: "0.5rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Languages</p>
+                            <p style={sSH}>Contact</p>
+                            {data.phone && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>✆ {data.phone}</p>}
+                            {data.email && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2, wordBreak: "break-all" }}>✉ {data.email}</p>}
+                            {data.address && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem" }}>⌂ {data.address}</p>}
+                        </div>
+                    )}
+
+                    {data.skills?.length > 0 && (
+                        <div>
+                            <p style={sSH}>Skills</p>
+                            {data.skills.map((sk, i) => (
+                                <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>• {sk}</p>
+                            ))}
+                        </div>
+                    )}
+
+                    {data.languages?.length > 0 && (
+                        <div>
+                            <p style={sSH}>Languages</p>
                             {data.languages.map((l, i) => (
-                                <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
+                                <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
                                     <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem" }}>{l.name}</span>
-                                    <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.5rem" }}>{l.level}</span>
+                                    <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.52rem" }}>{l.level}</span>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {data.hobbies?.length > 0 && sections.includes("hobbies") && (
+                    {data.hobbies?.length > 0 && (
                         <div>
-                            <p style={{ color: "rgba(255,255,255,0.6)", fontWeight: 700, fontSize: "0.5rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Hobbies</p>
-                            <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem" }}>{data.hobbies.slice(0, 5).join(" • ")}</p>
+                            <p style={sSH}>Hobbies</p>
+                            {data.hobbies.map((h, i) => (
+                                <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>• {h}</p>
+                            ))}
+                        </div>
+                    )}
+
+                    {personalData.length > 0 && (
+                        <div>
+                            <p style={sSH}>Personal Data</p>
+                            {personalData.map((f, i) => (
+                                <div key={i} style={{ display: "flex", gap: 3, marginBottom: 2 }}>
+                                    <span style={{ color: "rgba(255,255,255,0.65)", fontSize: "0.52rem", minWidth: 54 }}>{f.label} :</span>
+                                    <span style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.52rem", flex: 1 }}>{f.value}</span>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
 
-                {/* Main */}
-                <div style={mainStyle}>
-                    {data.fullName && <p style={{ fontWeight: 900, fontSize: "0.75rem", color }}>{data.fullName}</p>}
+                {/* ── Main ── */}
+                <div style={{ flex: 1, minWidth: 0, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
+                    {data.fullName && <p style={{ fontWeight: 900, fontSize: "0.9rem", color, marginBottom: 2 }}>{data.fullName}</p>}
+
                     {data.careerObjective && (
                         <div>
-                            <h4 style={sectionHeadingStyle(color)}>Objective</h4>
-                            <p style={{ fontSize: "0.58rem", color: "#4b5563", lineHeight: 1.5 }}>{data.careerObjective}</p>
+                            <h4 style={mSH(color)}>Career Objective</h4>
+                            <p style={{ fontSize: "0.58rem", color: "#333", lineHeight: 1.6 }}>{data.careerObjective}</p>
                         </div>
                     )}
-                    {sections.filter((k) => !["skills", "hobbies", "languages"].includes(k)).map(renderSection)}
+
+                    {sections.filter(k => !["skills", "hobbies", "languages"].includes(k)).map(renderMainSection)}
+
+                    {data.declaration && (
+                        <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 6, marginTop: 4 }}>
+                            <p style={{ fontSize: "0.55rem", color: "#444", lineHeight: 1.5, fontStyle: "italic" }}>{data.declaration}</p>
+                            {data.signature && <p style={{ fontSize: "0.6rem", color: "#222", fontWeight: 700, textAlign: "right", marginTop: 4 }}>{data.signature}</p>}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

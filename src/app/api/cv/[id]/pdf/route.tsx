@@ -3,21 +3,12 @@ export const runtime = "nodejs";
 
 import React from "react";
 import { NextRequest, NextResponse } from "next/server";
-import { renderToStream } from "@react-pdf/renderer";
+import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { CvDocument } from "@/lib/cv/pdf/generatePdf";
 import type { CvDraftFull } from "@/lib/cv/schemas";
 import type { TemplateConfig } from "@/lib/cv/constants";
-
-async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-        const chunks: Buffer[] = [];
-        stream.on("data", (chunk: Buffer | string) => chunks.push(Buffer.from(chunk)));
-        stream.on("end", () => resolve(Buffer.concat(chunks)));
-        stream.on("error", reject);
-    });
-}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const user = await getSessionUser(req);
@@ -36,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const defaultConfig: TemplateConfig = {
         primaryColor: "#1e3a5f",
         sidebarColor: "#1e3a5f",
-        sidebarWidth: 35,
+        sidebarWidth: 38,
         fontFamily: "Helvetica",
         photoShape: "circle",
         showPhoto: true,
@@ -67,7 +58,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         references: (draft.references as CvDraftFull["references"]) ?? [],
         declaration: draft.declaration ?? "",
         signature: draft.signature ?? "",
-        sectionOrder: (draft.sectionOrder as string[]) ?? ["workExperience", "training", "education", "languages", "references", "skills", "hobbies"],
+        sectionOrder: (draft.sectionOrder as string[]) ?? [
+            "workExperience", "training", "education", "references",
+        ],
         shareSlug: draft.shareSlug,
         isPublic: draft.isPublic,
         downloadCount: draft.downloadCount,
@@ -84,23 +77,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     };
 
     try {
-        const stream = await renderToStream(<CvDocument data={fullData} />);
-        const buffer = await streamToBuffer(stream as unknown as NodeJS.ReadableStream);
+        // renderToBuffer is the Node.js API for @react-pdf/renderer
+        const buffer = await renderToBuffer(<CvDocument data={fullData} />);
 
-        const filename = `${fullData.fullName || "CV"}_CV.pdf`.replace(/[^a-zA-Z0-9_\-. ]/g, "_");
+        const safeName = (fullData.fullName || "CV").replace(/[^a-zA-Z0-9 _-]/g, "_");
+        const filename = `${safeName}_CV.pdf`;
 
         // Increment download count (fire-and-forget)
-        prisma.cvDraft.update({ where: { id }, data: { downloadCount: { increment: 1 } } }).catch(() => {});
+        prisma.cvDraft
+            .update({ where: { id }, data: { downloadCount: { increment: 1 } } })
+            .catch(() => {});
 
         return new NextResponse(new Uint8Array(buffer), {
             headers: {
                 "Content-Type": "application/pdf",
                 "Content-Disposition": `attachment; filename="${filename}"`,
-                "Content-Length": buffer.length.toString(),
+                "Content-Length": String(buffer.length),
             },
         });
     } catch (err) {
-        console.error("PDF generation error:", err);
-        return NextResponse.json({ error: "PDF generation failed" }, { status: 500 });
+        console.error("[PDF] generation failed:", err instanceof Error ? err.message : err);
+        return NextResponse.json(
+            { error: "PDF generation failed", detail: err instanceof Error ? err.message : "unknown" },
+            { status: 500 }
+        );
     }
 }
