@@ -16,7 +16,7 @@ import type {
     CvLanguageItem,
     CvReferenceItem,
 } from '../schemas';
-import { SECTION_LABELS } from '../constants';
+import { SECTION_LABELS, type TemplateConfig } from '../constants';
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
@@ -205,13 +205,16 @@ function renderMainSection(key: string, data: CvDraftFull, s: ReturnType<typeof 
 // ─── CV Document ─────────────────────────────────────────────────────────────
 
 export function CvDocument({ data }: { data: CvDraftFull }) {
-    const cfg = data.template?.config ?? {
-        sidebarColor: '#1e3a5f', sidebarWidth: 38,
-        primaryColor: '#1e3a5f', photoShape: 'circle' as const, showPhoto: true, fontFamily: 'Helvetica',
-    };
-    const s = buildStyles(cfg.sidebarColor, cfg.sidebarWidth);
+    // Defensive: runtime config may come from Prisma JSON with missing/undefined fields
+    const rawCfg = data.template?.config as Partial<TemplateConfig> | undefined;
+    const sidebarColor = rawCfg?.sidebarColor || '#1e3a5f';
+    const sidebarWidth = Number(rawCfg?.sidebarWidth) || 38;
+    const showPhoto = rawCfg?.showPhoto !== false;
+    const photoShape = rawCfg?.photoShape ?? 'circle';
+
+    const s = buildStyles(sidebarColor, sidebarWidth);
     const initial = data.fullName ? data.fullName.charAt(0).toUpperCase() : '?';
-    const photoContainer = cfg.photoShape === 'circle' ? s.photoCircle : s.photoSquare;
+    const photoContainer = photoShape === 'circle' ? s.photoCircle : s.photoSquare;
     const langs = (data.languages ?? []) as CvLanguageItem[];
     const skills = (data.skills ?? []) as string[];
     const hobbies = (data.hobbies ?? []) as string[];
@@ -238,7 +241,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                 <View style={s.sidebar}>
 
                     {/* Photo */}
-                    {cfg.showPhoto && (
+                    {showPhoto && (
                         <View style={s.photoWrap}>
                             <View style={photoContainer}>
                                 {data.profilePhoto
