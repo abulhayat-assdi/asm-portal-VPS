@@ -175,8 +175,8 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
     }
 
     return (
-        <div style={{ background: "#fff", borderRadius: 10, overflow: "hidden", fontSize: "0.6rem", fontFamily: "sans-serif", minHeight: 500, boxShadow: "0 2px 12px rgba(0,0,0,0.1)" }}>
-            <div style={{ display: "flex", flexDirection: "row", minHeight: 500 }}>
+        <div style={{ background: "#fff", overflow: "hidden", fontSize: "0.72rem", fontFamily: "sans-serif", height: "100%", minHeight: 400 }}>
+            <div style={{ display: "flex", flexDirection: "row", height: "100%", minHeight: 400 }}>
 
                 {/* ── Sidebar ── */}
                 <div style={{ flexShrink: 0, width: `${sw}%`, minWidth: `${sw}%`, backgroundColor: color, padding: "12px 10px", color: "#fff", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
@@ -484,26 +484,29 @@ export default function CvEditorPage() {
         }
     };
 
-    // Download PDF — server-side generation via API route
+    // Download PDF — client-side generation using @react-pdf/renderer in browser
     const handleDownload = async () => {
         setDownloading(true);
         try {
-            // Auto-save current state first so the server has latest data
-            if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-            await fetch(`/api/cv/${id}/auto-save`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form.getValues()),
-            });
-
-            // Navigate to PDF route — server handles generation + Content-Disposition: attachment
-            const link = document.createElement("a");
-            link.href = `/api/cv/${id}/pdf`;
-            link.setAttribute("download", "");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch {
+            const values = form.getValues();
+            const fullData: CvDraftFull = {
+                ...values,
+                id,
+                userId: "",
+                templateId: draft?.templateId ?? "",
+                downloadCount: draft?.downloadCount ?? 0,
+                shareSlug: draft?.shareSlug,
+                isPublic: draft?.isPublic ?? false,
+                createdAt: draft?.createdAt ?? "",
+                updatedAt: draft?.updatedAt ?? "",
+                template: draft?.template,
+            };
+            // Dynamic import so the library is only loaded on button click (avoids SSR)
+            const { generateCvPdf } = await import("@/lib/cv/pdf/generatePdf");
+            await generateCvPdf(fullData);
+            await fetch(`/api/cv/${id}/download`, { method: "POST" }).catch(() => {});
+        } catch (err) {
+            console.error("[PDF client]", err);
             toast.error("Failed to generate PDF");
         } finally {
             setDownloading(false);
@@ -938,11 +941,12 @@ export default function CvEditorPage() {
                     </CollapsibleSection>
                 </div>
 
-                {/* Preview panel */}
+                {/* Preview panel — A4 proportioned */}
                 <div className={`w-full lg:w-1/2 ${activeTab === "form" ? "hidden lg:block" : ""}`}>
                     <div className="sticky top-32">
-                        <h3 className="font-bold text-gray-600 text-xs uppercase tracking-widest mb-3">Live Preview</h3>
-                        <div className="overflow-auto max-h-[calc(100vh-10rem)] rounded-xl border border-gray-100 shadow-sm">
+                        <h3 className="font-bold text-gray-600 text-xs uppercase tracking-widest mb-3">Live Preview (A4)</h3>
+                        {/* A4 ratio: 210mm × 297mm = 1 : 1.4142 */}
+                        <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden" style={{ aspectRatio: "210/297", overflowY: "auto" }}>
                             <CvPreview data={watchedValues} config={config} />
                         </div>
                     </div>

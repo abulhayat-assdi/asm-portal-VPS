@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 
 import React from "react";
 import { NextRequest, NextResponse } from "next/server";
-import { renderToBuffer } from "@react-pdf/renderer";
+import { pdf } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 import { CvDocument } from "@/lib/cv/pdf/generatePdf";
@@ -77,13 +77,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     };
 
     try {
-        // renderToBuffer is the Node.js API for @react-pdf/renderer
-        const buffer = await renderToBuffer(<CvDocument data={fullData} />);
+        // pdf().toBuffer() returns a Web ReadableStream<Uint8Array> — read all chunks
+        const readableStream = pdf(<CvDocument data={fullData} />).toBuffer() as unknown as ReadableStream<Uint8Array>;
+        const reader = readableStream.getReader();
+        const chunks: Uint8Array[] = [];
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) chunks.push(value);
+        }
+        const buffer = Buffer.concat(chunks.map((c) => Buffer.from(c)));
 
         const safeName = (fullData.fullName || "CV").replace(/[^a-zA-Z0-9 _-]/g, "_");
         const filename = `${safeName}_CV.pdf`;
 
-        // Increment download count (fire-and-forget)
         prisma.cvDraft
             .update({ where: { id }, data: { downloadCount: { increment: 1 } } })
             .catch(() => {});
@@ -96,9 +103,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
             },
         });
     } catch (err) {
-        console.error("[PDF] generation failed:", err instanceof Error ? err.message : err);
+        console.error("[PDF] generation error:", err instanceof Error ? err.message : err);
         return NextResponse.json(
-            { error: "PDF generation failed", detail: err instanceof Error ? err.message : "unknown" },
+            { error: "PDF generation failed", detail: err instanceof Error ? err.message : String(err) },
             { status: 500 }
         );
     }
