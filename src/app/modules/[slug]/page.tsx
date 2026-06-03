@@ -1,18 +1,47 @@
 import { notFound } from "next/navigation";
+import { prisma } from "@/lib/db";
 import { getModuleData } from "@/data/modules";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { Metadata } from 'next';
 import CurriculumTimeline from "./CurriculumTimeline";
 import BackButton from "@/components/ui/BackButton";
+import type { CourseData } from "@/data/modules/sales-mastery";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
+async function getModuleFromDB(slug: string): Promise<CourseData | null> {
+    try {
+        const rows = await prisma.$queryRaw<{ title: string; description: string; curriculum: unknown }[]>`
+            SELECT title, description, curriculum
+            FROM course_modules
+            WHERE slug = ${slug} AND is_published = true
+            LIMIT 1
+        `;
+        if (!rows.length) return null;
+        const row = rows[0];
+        return {
+            title: row.title,
+            description: row.description,
+            modules: row.curriculum as unknown as CourseData["modules"],
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function resolveModule(slug: string): Promise<CourseData | null> {
+    const fromDB = await getModuleFromDB(slug);
+    if (fromDB) return fromDB;
+    // Fallback to hardcoded TS files if DB not yet migrated or module missing
+    return getModuleData(slug);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
-  const data = getModuleData(resolvedParams.slug);
+  const data = await resolveModule(resolvedParams.slug);
   if (!data) return { title: 'Module Not Found' };
   return {
     title: `${data.title} | Sales & Marketing`,
@@ -22,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ModuleDetailsPage({ params }: Props) {
   const resolvedParams = await params;
-  const courseData = getModuleData(resolvedParams.slug);
+  const courseData = await resolveModule(resolvedParams.slug);
 
   if (!courseData) {
     notFound();
@@ -63,7 +92,7 @@ export default async function ModuleDetailsPage({ params }: Props) {
       <Header brandText="Sales & Marketing" navLinks={navLinks} ctaText="Enroll" />
 
       <main className="min-h-screen bg-[#f1f3f5] flex flex-col pt-24" style={{ backgroundImage: "linear-gradient(#e9ecef 1px, transparent 1px), linear-gradient(90deg, #e9ecef 1px, transparent 1px)", backgroundSize: "40px 40px" }}>
-        
+
         <div className="w-full px-6 lg:px-8 pt-6">
           <BackButton />
         </div>

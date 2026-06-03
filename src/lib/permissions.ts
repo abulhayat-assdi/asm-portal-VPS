@@ -27,6 +27,7 @@ export type PermissionKey =
     | "admin_testimonials"
     | "admin_success"
     | "admin_cms"
+    | "admin_course_modules"
     | "access_management";
 
 export type PermissionGroup = "teacher" | "management" | "admin" | "system";
@@ -61,6 +62,7 @@ export const PERMISSION_META: Record<PermissionKey, PermissionMeta> = {
     admin_testimonials:{ label: "Video Testimonials",     path: "/dashboard/admin/home-video-testimonials",   group: "admin",      icon: "🎥" },
     admin_success:     { label: "Success Stories",        path: "/dashboard/admin/success-stories",           group: "admin",      icon: "🎬" },
     admin_cms:         { label: "CMS / Pages",            path: "/dashboard/admin/manage-pages",              group: "admin",      icon: "🖥️" },
+    admin_course_modules: { label: "Manage Course Modules", path: "/dashboard/admin/course-modules",          group: "admin",      icon: "📚" },
     access_management: { label: "Access Management",      path: "/dashboard/admin/access-management",         group: "system",     icon: "🔑" },
 };
 
@@ -89,7 +91,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: PermissionKey[] = [
     "teachers", "batch_info",
     "admin_panel", "admin_homework", "admin_results", "admin_leave",
     "admin_notices", "admin_contact", "admin_resources", "admin_blog",
-    "admin_testimonials", "admin_success", "admin_cms",
+    "admin_testimonials", "admin_success", "admin_cms", "admin_course_modules",
 ];
 
 // Teacher-feature permissions added to admin when "Include teacher features" is checked

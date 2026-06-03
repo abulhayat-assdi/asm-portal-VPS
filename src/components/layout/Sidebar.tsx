@@ -32,6 +32,7 @@ const teacherAdminNavItems: { href: string; label: string; icon: string; permiss
     { href: "/dashboard/admin/blog",                     label: "Blog Management",    icon: "📝", permission: "admin_blog" },
     { href: "/dashboard/admin/home-video-testimonials",  label: "Home Videos",        icon: "🎥", permission: "admin_testimonials" },
     { href: "/dashboard/admin/success-stories",          label: "Success Stories",    icon: "🎬", permission: "admin_success" },
+    { href: "/dashboard/admin/course-modules",           label: "Course Modules Mgr", icon: "📚", permission: "admin_course_modules" },
     { href: "/dashboard/admin/access-management",        label: "Access Management",  icon: "🔑", permission: "access_management" },
     { href: "/dashboard/admin/cv-manager",               label: "CV Manager",         icon: "📄", permission: "admin_panel" },
 ];

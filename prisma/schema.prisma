@@ -905,6 +905,28 @@ model StudentExamBatchRecord {
 }
 
 // ============================================================
+// COURSE MODULES (Admin-managed curriculum)
+// ============================================================
+
+model CourseModule {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   @default("")
+  pdfLink     String   @default("") @map("pdf_link")
+  bullets     Json     @default("[]")  // String[]
+  curriculum  Json     @default("[]")  // SubModule[]
+  isPublished Boolean  @default(true)  @map("is_published")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt      @map("updated_at")
+
+  @@index([slug])
+  @@index([order])
+  @@map("course_modules")
+}
+
+// ============================================================
 // VIDEO STORIES (Success Stories - YouTube links)
 // ============================================================
 

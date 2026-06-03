@@ -182,7 +182,7 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                 <div style={{ flexShrink: 0, width: `${sw}%`, minWidth: `${sw}%`, backgroundColor: color, padding: "12px 10px", color: "#fff", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
 
                     {/* Photo */}
-                    {config.showPhoto && (
+                    {config.showPhoto !== false && (
                         <div style={{ alignSelf: "center" }}>
                             <div style={{ width: 52, height: 52, borderRadius: config.photoShape === "circle" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                                 {data.profilePhoto
