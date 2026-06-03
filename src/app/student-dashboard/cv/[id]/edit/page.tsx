@@ -26,6 +26,36 @@ function inputCls(extra = "") {
 }
 function labelCls() { return "block text-sm font-semibold text-gray-700 mb-1.5"; }
 
+// ─── Character counter ────────────────────────────────────────────────────────
+
+function CharCount({ cur, max }: { cur: number; max: number }) {
+    const pct = cur / max;
+    const cls = pct >= 1 ? "text-red-500 font-bold" : pct >= 0.85 ? "text-amber-500" : "text-gray-400";
+    return <span className={`text-xs ${cls}`}>{cur}/{max}</span>;
+}
+
+function FieldLabel({ label, cur, max }: { label: string; cur?: number; max?: number }) {
+    return (
+        <div className="flex justify-between items-center mb-1.5">
+            <span className="text-sm font-semibold text-gray-700">{label}</span>
+            {cur !== undefined && max !== undefined && <CharCount cur={cur} max={max} />}
+        </div>
+    );
+}
+
+// ─── Limits (keeps CV to 1 A4 page) ──────────────────────────────────────────
+
+const LIM = {
+    fullName: 50, careerObjective: 300, address: 60,
+    jobTitle: 50, company: 40, location: 30,
+    bullet: 90, bulletsPerEntry: 3, weEntries: 3,
+    trainingName: 60, institute: 50, trainingEntries: 2,
+    degree: 50, department: 40, institution: 60, eduEntries: 3,
+    refName: 40, refTitle: 40, refOrg: 50, refEntries: 4,
+    declaration: 250, signature: 40,
+    skill: 25, maxSkills: 8, hobby: 25, maxHobbies: 6, maxLanguages: 5,
+} as const;
+
 // ─── Section collapse state ──────────────────────────────────────────────────
 
 function CollapsibleSection({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
@@ -49,11 +79,15 @@ function CollapsibleSection({ title, children, defaultOpen = false }: { title: s
 
 // ─── Tag Input ────────────────────────────────────────────────────────────────
 
-function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+function TagInput({ value, onChange, placeholder, maxLen = 30, maxItems }: {
+    value: string[]; onChange: (v: string[]) => void; placeholder?: string;
+    maxLen?: number; maxItems?: number;
+}) {
     const [input, setInput] = useState("");
+    const atMax = maxItems !== undefined && value.length >= maxItems;
     const addTag = () => {
-        const tag = input.trim();
-        if (tag && !value.includes(tag)) onChange([...value, tag]);
+        const tag = input.trim().slice(0, maxLen);
+        if (tag && !value.includes(tag) && !atMax) onChange([...value, tag]);
         setInput("");
     };
     return (
@@ -66,16 +100,22 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
                     </span>
                 ))}
             </div>
-            <div className="flex gap-2">
-                <input
-                    className={inputCls("flex-1")}
-                    placeholder={placeholder ?? "Type and press Enter"}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                />
-                <button type="button" onClick={addTag} className="px-4 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857]">Add</button>
-            </div>
+            {atMax ? (
+                <p className="text-xs text-amber-600 py-1">Max {maxItems} items reached. Remove one to add more.</p>
+            ) : (
+                <div className="flex gap-2">
+                    <input
+                        className={inputCls("flex-1")}
+                        placeholder={placeholder ?? "Type and press Enter"}
+                        value={input}
+                        maxLength={maxLen}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                    />
+                    <button type="button" onClick={addTag} className="px-4 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857]">Add</button>
+                </div>
+            )}
+            {maxItems && <p className="text-xs text-gray-400 mt-1">{value.length}/{maxItems}</p>}
         </div>
     );
 }
@@ -184,7 +224,7 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                     {/* Photo */}
                     {config.showPhoto !== false && (
                         <div style={{ alignSelf: "center" }}>
-                            <div style={{ width: 52, height: 52, borderRadius: config.photoShape === "circle" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                            <div style={{ width: 52, height: 52, borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                                 {data.profilePhoto
                                     ? <img src={data.profilePhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     : <span style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff" }}>{initial}</span>}
@@ -615,12 +655,12 @@ export default function CvEditorPage() {
                     {/* Personal Info */}
                     <CollapsibleSection title="Personal Information" defaultOpen>
                         <div>
-                            <label className={labelCls()}>Full Name</label>
-                            <input {...form.register("fullName")} className={inputCls()} placeholder="Your full name" />
+                            <FieldLabel label="Full Name" cur={watchedValues.fullName?.length ?? 0} max={LIM.fullName} />
+                            <input {...form.register("fullName")} maxLength={LIM.fullName} className={inputCls()} placeholder="Your full name" />
                         </div>
                         <div>
-                            <label className={labelCls()}>Career Objective</label>
-                            <textarea {...form.register("careerObjective")} className={inputCls("min-h-[80px] resize-y")} rows={3} placeholder="Brief professional summary..." />
+                            <FieldLabel label="Career Objective" cur={watchedValues.careerObjective?.length ?? 0} max={LIM.careerObjective} />
+                            <textarea {...form.register("careerObjective")} maxLength={LIM.careerObjective} className={inputCls("min-h-[80px] resize-y")} rows={3} placeholder="Brief professional summary..." />
                         </div>
                         <div>
                             <label className={labelCls()}>Profile Photo</label>
@@ -650,8 +690,8 @@ export default function CvEditorPage() {
                             </div>
                         </div>
                         <div>
-                            <label className={labelCls()}>Address</label>
-                            <input {...form.register("address")} className={inputCls()} placeholder="City, Country" />
+                            <FieldLabel label="Address" cur={watchedValues.address?.length ?? 0} max={LIM.address} />
+                            <input {...form.register("address")} maxLength={LIM.address} className={inputCls()} placeholder="City, Country" />
                         </div>
                     </CollapsibleSection>
 
@@ -694,23 +734,23 @@ export default function CvEditorPage() {
                     </CollapsibleSection>
 
                     {/* Skills */}
-                    <CollapsibleSection title="Skills">
+                    <CollapsibleSection title={`Skills (max ${LIM.maxSkills})`}>
                         <Controller
                             control={form.control}
                             name="skills"
                             render={({ field }) => (
-                                <TagInput value={field.value} onChange={field.onChange} placeholder="Add a skill (e.g. Excel, Photoshop)" />
+                                <TagInput value={field.value} onChange={field.onChange} placeholder="Add a skill (e.g. Excel, Photoshop)" maxLen={LIM.skill} maxItems={LIM.maxSkills} />
                             )}
                         />
                     </CollapsibleSection>
 
                     {/* Languages */}
-                    <CollapsibleSection title="Languages">
+                    <CollapsibleSection title={`Languages (max ${LIM.maxLanguages})`}>
                         {langFields.map((field, index) => (
                             <div key={field.id} className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
                                 <div>
                                     <label className={labelCls()}>Language</label>
-                                    <input {...form.register(`languages.${index}.name`)} className={inputCls()} placeholder="e.g. English" />
+                                    <input {...form.register(`languages.${index}.name`)} maxLength={30} className={inputCls()} placeholder="e.g. English" />
                                 </div>
                                 <div>
                                     <label className={labelCls()}>Level</label>
@@ -722,189 +762,231 @@ export default function CvEditorPage() {
                                 <button type="button" onClick={() => removeLang(index)} className="col-span-2 text-xs text-red-500 hover:underline text-right">Remove</button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => appendLang({ name: "", level: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                            + Add Language
-                        </button>
+                        {langFields.length < LIM.maxLanguages ? (
+                            <button type="button" onClick={() => appendLang({ name: "", level: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
+                                + Add Language
+                            </button>
+                        ) : <p className="text-xs text-amber-600">Max {LIM.maxLanguages} languages reached.</p>}
                     </CollapsibleSection>
 
                     {/* Hobbies */}
-                    <CollapsibleSection title="Hobbies & Interests">
+                    <CollapsibleSection title={`Hobbies & Interests (max ${LIM.maxHobbies})`}>
                         <Controller
                             control={form.control}
                             name="hobbies"
                             render={({ field }) => (
-                                <TagInput value={field.value} onChange={field.onChange} placeholder="Add a hobby (e.g. Reading, Photography)" />
+                                <TagInput value={field.value} onChange={field.onChange} placeholder="Add a hobby (e.g. Reading, Photography)" maxLen={LIM.hobby} maxItems={LIM.maxHobbies} />
                             )}
                         />
                     </CollapsibleSection>
 
                     {/* Work Experience */}
-                    <CollapsibleSection title="Work Experience">
+                    <CollapsibleSection title={`Work Experience (max ${LIM.weEntries})`}>
                         {weFields.map((field, index) => (
                             <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
+                                    <button type="button" onClick={() => removeWe(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelCls()}>Job Title</label>
-                                        <input {...form.register(`workExperience.${index}.jobTitle`)} className={inputCls()} placeholder="Sales Manager" />
+                                        <FieldLabel label="Job Title" cur={watchedValues.workExperience?.[index]?.jobTitle?.length ?? 0} max={LIM.jobTitle} />
+                                        <input {...form.register(`workExperience.${index}.jobTitle`)} maxLength={LIM.jobTitle} className={inputCls()} placeholder="Sales Manager" />
                                     </div>
                                     <div>
-                                        <label className={labelCls()}>Company</label>
-                                        <input {...form.register(`workExperience.${index}.company`)} className={inputCls()} placeholder="Company Name" />
+                                        <FieldLabel label="Company" cur={watchedValues.workExperience?.[index]?.company?.length ?? 0} max={LIM.company} />
+                                        <input {...form.register(`workExperience.${index}.company`)} maxLength={LIM.company} className={inputCls()} placeholder="Company Name" />
                                     </div>
                                     <div>
-                                        <label className={labelCls()}>Location</label>
-                                        <input {...form.register(`workExperience.${index}.location`)} className={inputCls()} placeholder="Dhaka, BD" />
+                                        <FieldLabel label="Location" cur={watchedValues.workExperience?.[index]?.location?.length ?? 0} max={LIM.location} />
+                                        <input {...form.register(`workExperience.${index}.location`)} maxLength={LIM.location} className={inputCls()} placeholder="Dhaka, BD" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>Start Date</label>
-                                        <input {...form.register(`workExperience.${index}.startDate`)} className={inputCls()} placeholder="Jan 2022" />
+                                        <input {...form.register(`workExperience.${index}.startDate`)} maxLength={20} className={inputCls()} placeholder="Jan 2022" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>End Date</label>
-                                        <input {...form.register(`workExperience.${index}.endDate`)} className={inputCls()} placeholder="Present" />
+                                        <input {...form.register(`workExperience.${index}.endDate`)} maxLength={20} className={inputCls()} placeholder="Present" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className={labelCls()}>Bullet Points (one per line)</label>
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        <span className="text-sm font-semibold text-gray-700">Bullet Points (one per line)</span>
+                                        <span className="text-xs text-gray-400">max {LIM.bulletsPerEntry} lines · {LIM.bullet} chars each</span>
+                                    </div>
                                     <Controller
                                         control={form.control}
                                         name={`workExperience.${index}.bullets`}
-                                        render={({ field }) => (
-                                            <textarea
-                                                className={inputCls("min-h-[80px] resize-y")}
-                                                placeholder="Achieved 150% of sales target&#10;Managed a team of 5 people"
-                                                value={field.value.join("\n")}
-                                                onChange={(e) => field.onChange(e.target.value.split("\n"))}
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const limited = field.value.slice(0, LIM.bulletsPerEntry).map(b => b.slice(0, LIM.bullet));
+                                            return (
+                                                <textarea
+                                                    className={inputCls("min-h-[70px] resize-none")}
+                                                    placeholder="Achieved 150% of sales target&#10;Managed a team of 5 people"
+                                                    value={limited.join("\n")}
+                                                    rows={LIM.bulletsPerEntry}
+                                                    onChange={(e) => {
+                                                        const lines = e.target.value.split("\n").slice(0, LIM.bulletsPerEntry).map(l => l.slice(0, LIM.bullet));
+                                                        field.onChange(lines);
+                                                    }}
+                                                />
+                                            );
+                                        }}
                                     />
                                 </div>
-                                <button type="button" onClick={() => removeWe(index)} className="text-xs text-red-500 hover:underline">Remove this entry</button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => appendWe({ jobTitle: "", company: "", location: "", startDate: "", endDate: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                            + Add Work Experience
-                        </button>
+                        {weFields.length < LIM.weEntries ? (
+                            <button type="button" onClick={() => appendWe({ jobTitle: "", company: "", location: "", startDate: "", endDate: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
+                                + Add Work Experience
+                            </button>
+                        ) : <p className="text-xs text-amber-600">Max {LIM.weEntries} entries reached.</p>}
                     </CollapsibleSection>
 
                     {/* Training */}
-                    <CollapsibleSection title="Training">
+                    <CollapsibleSection title={`Training (max ${LIM.trainingEntries})`}>
                         {trainingFields.map((field, index) => (
                             <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
+                                    <button type="button" onClick={() => removeTraining(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelCls()}>Training Name</label>
-                                        <input {...form.register(`training.${index}.trainingName`)} className={inputCls()} placeholder="Digital Marketing" />
+                                        <FieldLabel label="Training Name" cur={watchedValues.training?.[index]?.trainingName?.length ?? 0} max={LIM.trainingName} />
+                                        <input {...form.register(`training.${index}.trainingName`)} maxLength={LIM.trainingName} className={inputCls()} placeholder="Digital Marketing" />
                                     </div>
                                     <div>
-                                        <label className={labelCls()}>Institute</label>
-                                        <input {...form.register(`training.${index}.institute`)} className={inputCls()} placeholder="Institute Name" />
+                                        <FieldLabel label="Institute" cur={watchedValues.training?.[index]?.institute?.length ?? 0} max={LIM.institute} />
+                                        <input {...form.register(`training.${index}.institute`)} maxLength={LIM.institute} className={inputCls()} placeholder="Institute Name" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>Year</label>
-                                        <input {...form.register(`training.${index}.year`)} className={inputCls()} placeholder="2023" />
+                                        <input {...form.register(`training.${index}.year`)} maxLength={4} className={inputCls()} placeholder="2023" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className={labelCls()}>Bullet Points (one per line)</label>
+                                    <div className="flex justify-between items-center mb-1.5">
+                                        <span className="text-sm font-semibold text-gray-700">Bullet Points (one per line)</span>
+                                        <span className="text-xs text-gray-400">max {LIM.bulletsPerEntry} lines · {LIM.bullet} chars each</span>
+                                    </div>
                                     <Controller
                                         control={form.control}
                                         name={`training.${index}.bullets`}
-                                        render={({ field }) => (
-                                            <textarea
-                                                className={inputCls("min-h-[60px] resize-y")}
-                                                placeholder="Learned Google Ads&#10;Completed Facebook Ads certification"
-                                                value={field.value.join("\n")}
-                                                onChange={(e) => field.onChange(e.target.value.split("\n"))}
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const limited = field.value.slice(0, LIM.bulletsPerEntry).map(b => b.slice(0, LIM.bullet));
+                                            return (
+                                                <textarea
+                                                    className={inputCls("resize-none")}
+                                                    placeholder="Learned Google Ads&#10;Completed certification"
+                                                    value={limited.join("\n")}
+                                                    rows={LIM.bulletsPerEntry}
+                                                    onChange={(e) => {
+                                                        const lines = e.target.value.split("\n").slice(0, LIM.bulletsPerEntry).map(l => l.slice(0, LIM.bullet));
+                                                        field.onChange(lines);
+                                                    }}
+                                                />
+                                            );
+                                        }}
                                     />
                                 </div>
-                                <button type="button" onClick={() => removeTraining(index)} className="text-xs text-red-500 hover:underline">Remove this entry</button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => appendTraining({ trainingName: "", institute: "", year: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                            + Add Training
-                        </button>
+                        {trainingFields.length < LIM.trainingEntries ? (
+                            <button type="button" onClick={() => appendTraining({ trainingName: "", institute: "", year: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
+                                + Add Training
+                            </button>
+                        ) : <p className="text-xs text-amber-600">Max {LIM.trainingEntries} entries reached.</p>}
                     </CollapsibleSection>
 
                     {/* Education */}
-                    <CollapsibleSection title="Education">
+                    <CollapsibleSection title={`Education (max ${LIM.eduEntries})`}>
                         {eduFields.map((field, index) => (
                             <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
+                                    <button type="button" onClick={() => removeEdu(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelCls()}>Degree</label>
-                                        <input {...form.register(`education.${index}.degree`)} className={inputCls()} placeholder="BBA, BSc in CS" />
+                                        <FieldLabel label="Degree" cur={watchedValues.education?.[index]?.degree?.length ?? 0} max={LIM.degree} />
+                                        <input {...form.register(`education.${index}.degree`)} maxLength={LIM.degree} className={inputCls()} placeholder="BBA, BSc in CS" />
                                     </div>
                                     <div>
-                                        <label className={labelCls()}>Department</label>
-                                        <input {...form.register(`education.${index}.department`)} className={inputCls()} placeholder="Marketing" />
+                                        <FieldLabel label="Department" cur={watchedValues.education?.[index]?.department?.length ?? 0} max={LIM.department} />
+                                        <input {...form.register(`education.${index}.department`)} maxLength={LIM.department} className={inputCls()} placeholder="Marketing" />
                                     </div>
                                     <div className="col-span-2">
-                                        <label className={labelCls()}>Institution</label>
-                                        <input {...form.register(`education.${index}.institution`)} className={inputCls()} placeholder="University Name" />
+                                        <FieldLabel label="Institution" cur={watchedValues.education?.[index]?.institution?.length ?? 0} max={LIM.institution} />
+                                        <input {...form.register(`education.${index}.institution`)} maxLength={LIM.institution} className={inputCls()} placeholder="University Name" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>GPA</label>
-                                        <input {...form.register(`education.${index}.gpa`)} className={inputCls()} placeholder="3.8" />
+                                        <input {...form.register(`education.${index}.gpa`)} maxLength={5} className={inputCls()} placeholder="3.80" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>Year</label>
-                                        <input {...form.register(`education.${index}.year`)} className={inputCls()} placeholder="2022" />
+                                        <input {...form.register(`education.${index}.year`)} maxLength={4} className={inputCls()} placeholder="2022" />
                                     </div>
                                 </div>
-                                <button type="button" onClick={() => removeEdu(index)} className="text-xs text-red-500 hover:underline">Remove this entry</button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => appendEdu({ degree: "", department: "", institution: "", gpa: "", year: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                            + Add Education
-                        </button>
+                        {eduFields.length < LIM.eduEntries ? (
+                            <button type="button" onClick={() => appendEdu({ degree: "", department: "", institution: "", gpa: "", year: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
+                                + Add Education
+                            </button>
+                        ) : <p className="text-xs text-amber-600">Max {LIM.eduEntries} entries reached.</p>}
                     </CollapsibleSection>
 
                     {/* References */}
-                    <CollapsibleSection title="References">
+                    <CollapsibleSection title={`References (max ${LIM.refEntries})`}>
                         {refFields.map((field, index) => (
                             <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs font-bold text-gray-500">Ref {index + 1}</span>
+                                    <button type="button" onClick={() => removeRef(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                                </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className={labelCls()}>Name</label>
-                                        <input {...form.register(`references.${index}.name`)} className={inputCls()} placeholder="Dr. John Doe" />
+                                        <FieldLabel label="Name" cur={watchedValues.references?.[index]?.name?.length ?? 0} max={LIM.refName} />
+                                        <input {...form.register(`references.${index}.name`)} maxLength={LIM.refName} className={inputCls()} placeholder="Dr. John Doe" />
                                     </div>
                                     <div>
-                                        <label className={labelCls()}>Title / Designation</label>
-                                        <input {...form.register(`references.${index}.title`)} className={inputCls()} placeholder="Professor" />
+                                        <FieldLabel label="Title / Designation" cur={watchedValues.references?.[index]?.title?.length ?? 0} max={LIM.refTitle} />
+                                        <input {...form.register(`references.${index}.title`)} maxLength={LIM.refTitle} className={inputCls()} placeholder="Professor" />
                                     </div>
                                     <div>
-                                        <label className={labelCls()}>Organization</label>
-                                        <input {...form.register(`references.${index}.organization`)} className={inputCls()} placeholder="University Name" />
+                                        <FieldLabel label="Organization" cur={watchedValues.references?.[index]?.organization?.length ?? 0} max={LIM.refOrg} />
+                                        <input {...form.register(`references.${index}.organization`)} maxLength={LIM.refOrg} className={inputCls()} placeholder="University Name" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>Phone</label>
-                                        <input {...form.register(`references.${index}.phone`)} className={inputCls()} placeholder="01XXXXXXXXX" />
+                                        <input {...form.register(`references.${index}.phone`)} maxLength={15} className={inputCls()} placeholder="01XXXXXXXXX" />
                                     </div>
                                     <div>
                                         <label className={labelCls()}>Email</label>
-                                        <input {...form.register(`references.${index}.email`)} className={inputCls()} placeholder="ref@email.com" />
+                                        <input {...form.register(`references.${index}.email`)} maxLength={60} className={inputCls()} placeholder="ref@email.com" />
                                     </div>
                                 </div>
-                                <button type="button" onClick={() => removeRef(index)} className="text-xs text-red-500 hover:underline">Remove this entry</button>
                             </div>
                         ))}
-                        <button type="button" onClick={() => appendRef({ name: "", phone: "", email: "", title: "", organization: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                            + Add Reference
-                        </button>
+                        {refFields.length < LIM.refEntries ? (
+                            <button type="button" onClick={() => appendRef({ name: "", phone: "", email: "", title: "", organization: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
+                                + Add Reference
+                            </button>
+                        ) : <p className="text-xs text-amber-600">Max {LIM.refEntries} references reached.</p>}
                     </CollapsibleSection>
 
                     {/* Declaration & Signature */}
                     <CollapsibleSection title="Declaration & Signature">
                         <div>
-                            <label className={labelCls()}>Declaration</label>
-                            <textarea {...form.register("declaration")} className={inputCls("min-h-[80px] resize-y")} placeholder="I hereby declare that the information provided above is true and accurate to the best of my knowledge." />
+                            <FieldLabel label="Declaration" cur={watchedValues.declaration?.length ?? 0} max={LIM.declaration} />
+                            <textarea {...form.register("declaration")} maxLength={LIM.declaration} className={inputCls("min-h-[70px] resize-none")} rows={3} placeholder="I hereby declare that the information provided above is true and accurate to the best of my knowledge." />
                         </div>
                         <div>
-                            <label className={labelCls()}>Signature (name or text)</label>
-                            <input {...form.register("signature")} className={inputCls()} placeholder="Your name" />
+                            <FieldLabel label="Signature (name or text)" cur={watchedValues.signature?.length ?? 0} max={LIM.signature} />
+                            <input {...form.register("signature")} maxLength={LIM.signature} className={inputCls()} placeholder="Your name" />
                         </div>
                     </CollapsibleSection>
 
