@@ -19,6 +19,7 @@ export interface BatchStudent {
     companyName?: string;
     businessName?: string;
     salary?: number;
+    photo?: string;
     batchType?: "Running" | "Completed";
     isPublic?: boolean;
     completedAt?: string;
@@ -121,6 +122,18 @@ export const saveBatchInfo = async (
     if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to save batch data.");
+    }
+};
+
+export const updateStudentPhoto = async (batchName: string, roll: string, photo: string | null): Promise<void> => {
+    const res = await fetch("/api/batch-info/photo", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ batchName, roll, photo }),
+    });
+    if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || "Failed to update photo.");
     }
 };
 

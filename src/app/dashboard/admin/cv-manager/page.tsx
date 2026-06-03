@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { CvPreview } from "@/components/cv/CvPreview";
+import type { CvFormData } from "@/lib/cv/schemas";
+import type { TemplateConfig } from "@/lib/cv/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -207,7 +209,6 @@ function TemplateModal({
 
 export default function CvManagerPage() {
     const { userProfile } = useAuth();
-    const router = useRouter();
     const [tab, setTab] = useState<"cvs" | "templates">("cvs");
 
     // CVs state
@@ -224,6 +225,13 @@ export default function CvManagerPage() {
     const [editTemplate, setEditTemplate] = useState<Partial<CvTemplate> | null>(null);
     const [showTemplateModal, setShowTemplateModal] = useState(false);
     const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+
+    // CV Preview Modal state
+    const [previewDraftId, setPreviewDraftId] = useState<string | null>(null);
+    const [previewData, setPreviewData] = useState<CvFormData | null>(null);
+    const [previewConfig, setPreviewConfig] = useState<TemplateConfig | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
+    const [previewStudentName, setPreviewStudentName] = useState("");
 
     const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
 
@@ -257,6 +265,60 @@ export default function CvManagerPage() {
 
     useEffect(() => { fetchDrafts(draftPage, searchQ); }, [draftPage, searchQ, fetchDrafts]);
     useEffect(() => { if (tab === "templates") fetchTemplates(); }, [tab, fetchTemplates]);
+
+    const handleViewCv = async (draft: CvDraftAdmin) => {
+        setPreviewDraftId(draft.id);
+        setPreviewStudentName(draft.user.displayName);
+        setPreviewLoading(true);
+        setPreviewData(null);
+        setPreviewConfig(null);
+        try {
+            const res = await fetch(`/api/cv/${draft.id}`);
+            const data = await res.json();
+            const defaultConfig: TemplateConfig = {
+                primaryColor: "#1e3a5f", sidebarColor: "#1e3a5f",
+                sidebarWidth: 38, fontFamily: "Helvetica",
+                photoShape: "circle", showPhoto: true,
+            };
+            const cfg: TemplateConfig = { ...defaultConfig, ...(data.template?.config ?? {}) };
+            setPreviewConfig(cfg);
+            setPreviewData({
+                title: data.title ?? "",
+                fullName: data.fullName ?? "",
+                profilePhoto: data.profilePhoto ?? "",
+                careerObjective: data.careerObjective ?? "",
+                phone: data.phone ?? "",
+                email: data.email ?? "",
+                address: data.address ?? "",
+                dateOfBirth: data.dateOfBirth ?? "",
+                bloodGroup: data.bloodGroup ?? "",
+                religion: data.religion ?? "",
+                maritalStatus: data.maritalStatus ?? "",
+                nationality: data.nationality ?? "",
+                skills: data.skills ?? [],
+                languages: data.languages ?? [],
+                hobbies: data.hobbies ?? [],
+                workExperience: data.workExperience ?? [],
+                training: data.training ?? [],
+                education: data.education ?? [],
+                references: data.references ?? [],
+                declaration: data.declaration ?? "",
+                signature: data.signature ?? "",
+                sectionOrder: data.sectionOrder ?? [],
+                templateId: data.templateId ?? "",
+            });
+        } catch {
+            toast.error("Failed to load CV");
+            setPreviewDraftId(null);
+        } finally {
+            setPreviewLoading(false);
+        }
+    };
+
+    const handlePreviewDownload = () => {
+        if (!previewDraftId) return;
+        window.open(`/api/cv/${previewDraftId}/pdf`, "_blank");
+    };
 
     const handleDeleteDraft = async (id: string) => {
         if (!confirm("Delete this CV permanently?")) return;
@@ -378,7 +440,7 @@ export default function CvManagerPage() {
                                             <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <button
-                                                        onClick={() => router.push(`/student-dashboard/cv/${draft.id}/edit`)}
+                                                        onClick={() => handleViewCv(draft)}
                                                         className="px-3 py-1.5 bg-[#059669] text-white text-xs font-bold rounded-lg hover:bg-[#047857]"
                                                     >
                                                         View
@@ -472,6 +534,49 @@ export default function CvManagerPage() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            )}
+
+            {/* CV Preview Modal */}
+            {previewDraftId && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
+                            <div>
+                                <h3 className="no-gradient font-bold text-gray-900 text-base">{previewStudentName} — CV Preview</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handlePreviewDownload}
+                                    disabled={previewLoading}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1e3a5f] text-white text-sm font-bold rounded-xl hover:bg-[#152d4a] disabled:opacity-50"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Download PDF
+                                </button>
+                                <button
+                                    onClick={() => { setPreviewDraftId(null); setPreviewData(null); setPreviewConfig(null); }}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* CV Preview area — A4 proportioned */}
+                        <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+                            {previewLoading && (
+                                <div className="flex items-center justify-center h-64">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#059669]" />
+                                </div>
+                            )}
+                            {!previewLoading && previewData && previewConfig && (
+                                <div className="mx-auto rounded-xl border border-gray-200 shadow overflow-hidden" style={{ aspectRatio: "210/297", maxWidth: 560 }}>
+                                    <CvPreview data={previewData} config={previewConfig} />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

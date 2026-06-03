@@ -1,10 +1,12 @@
 export const DEFAULT_SECTION_ORDER = [
+    'careerObjective',
     'workExperience',
     'training',
     'education',
-    'languages',
     'references',
+    'declaration',
     'skills',
+    'languages',
     'hobbies',
 ] as const;
 

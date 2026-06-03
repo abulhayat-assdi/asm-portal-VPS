@@ -1,11 +1,20 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo } from "@/services/batchInfoService";
+import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo, updateStudentPhoto } from "@/services/batchInfoService";
 import Button from "@/components/ui/Button";
 import * as XLSX from "xlsx";
+
+function toDriveImg(url: string): string {
+    if (url && url.includes("drive.google.com") && url.includes("/d/")) {
+        const id = url.split("/d/")[1].split("/")[0];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
+    }
+    return url;
+}
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 
@@ -124,6 +133,11 @@ export default function AllBatchInfoPage() {
 
     // Address Preview Modal State
     const [viewingAddress, setViewingAddress] = useState<{ name: string; address: string } | null>(null);
+
+    // Photo Edit Modal State
+    const [photoEditStudent, setPhotoEditStudent] = useState<StudentBatchInfo | null>(null);
+    const [photoInputUrl, setPhotoInputUrl] = useState("");
+    const [savingPhoto, setSavingPhoto] = useState(false);
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -382,6 +396,25 @@ export default function AllBatchInfoPage() {
             alert("Failed to save batch data. Please check console for details.");
         } finally {
             setIsAdding(false);
+        }
+    };
+
+    const handleSavePhoto = async () => {
+        if (!photoEditStudent) return;
+        setSavingPhoto(true);
+        try {
+            await updateStudentPhoto(photoEditStudent.batchName, photoEditStudent.roll, photoInputUrl.trim() || null);
+            setAllStudents(prev => prev.map(s =>
+                s.batchName === photoEditStudent.batchName && s.roll === photoEditStudent.roll
+                    ? { ...s, photo: photoInputUrl.trim() || undefined }
+                    : s
+            ));
+            setPhotoEditStudent(null);
+        } catch (err) {
+            alert("Failed to save photo. Please try again.");
+            console.error(err);
+        } finally {
+            setSavingPhoto(false);
         }
     };
 
@@ -646,6 +679,78 @@ export default function AllBatchInfoPage() {
                 </div>
             )}
 
+            {/* Photo Edit Modal */}
+            {photoEditStudent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setPhotoEditStudent(null)}>
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+                        <div className="bg-[#1e3a5f] px-5 py-4 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-white font-bold text-base">Edit Student Photo</h3>
+                                <p className="text-blue-200 text-xs mt-0.5">{photoEditStudent.name} — Roll {photoEditStudent.roll}</p>
+                            </div>
+                            <button onClick={() => setPhotoEditStudent(null)} className="text-blue-200 hover:text-white transition-colors">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-4">
+                            {/* Preview */}
+                            <div className="flex justify-center">
+                                {photoInputUrl.trim() ? (
+                                    <div className="w-24 h-24 rounded-full overflow-hidden relative border-4 border-emerald-200 shadow-md">
+                                        <Image src={toDriveImg(photoInputUrl.trim())} alt="Preview" fill sizes="96px" className="object-cover" />
+                                    </div>
+                                ) : (
+                                    <div className="w-24 h-24 rounded-full bg-gray-100 border-4 border-dashed border-gray-300 flex items-center justify-center">
+                                        <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Google Drive Share Link</label>
+                                <input
+                                    type="text"
+                                    value={photoInputUrl}
+                                    onChange={e => setPhotoInputUrl(e.target.value)}
+                                    placeholder="https://drive.google.com/file/d/.../view"
+                                    className="block w-full py-2.5 px-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-[#059669] focus:ring-1 focus:ring-[#059669] outline-none text-sm transition-all"
+                                />
+                                <p className="text-xs text-gray-400 mt-1.5">গুগল ড্রাইভে আপলোড করে "Anyone with the link" শেয়ার করুন, তারপর লিংকটি এখানে পেস্ট করুন।</p>
+                            </div>
+
+                            <div className="flex gap-3 pt-1">
+                                <button
+                                    onClick={handleSavePhoto}
+                                    disabled={savingPhoto}
+                                    className="flex-1 py-2.5 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] transition-colors disabled:opacity-60"
+                                >
+                                    {savingPhoto ? "Saving..." : "Save Photo"}
+                                </button>
+                                {photoEditStudent.photo && (
+                                    <button
+                                        onClick={() => { setPhotoInputUrl(""); }}
+                                        className="px-4 py-2.5 text-red-600 bg-red-50 text-sm font-semibold rounded-xl hover:bg-red-100 transition-colors border border-red-100"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setPhotoEditStudent(null)}
+                                    className="px-4 py-2.5 text-gray-600 bg-gray-100 text-sm font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Export Selection Modal */}
             {isExportModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setIsExportModalOpen(false)}>
@@ -811,6 +916,7 @@ export default function AllBatchInfoPage() {
                         <table className="w-full text-left border-collapse">
                             <thead className="sticky top-0 z-10">
                                 <tr className="bg-[#1e3a5f] text-white text-xs uppercase tracking-wider">
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] w-16">Photo</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Roll</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[150px]">Name</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Phone</th>
@@ -830,7 +936,7 @@ export default function AllBatchInfoPage() {
                             <tbody>
                                 {searchResults.length === 0 ? (
                                     <tr>
-                                        <td colSpan={13} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={14} className="px-6 py-12 text-center text-gray-500">
                                             <NoSymbolIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                                             <p>No students found.</p>
                                         </td>
@@ -841,6 +947,26 @@ export default function AllBatchInfoPage() {
                                             key={student.id}
                                             className={idx % 2 === 0 ? "bg-white hover:bg-gray-50 transition-colors" : "bg-[#f9fafb] hover:bg-gray-50 transition-colors"}
                                         >
+                                            <td className="px-4 py-3 border-b border-gray-200 text-center">
+                                                <button
+                                                    onClick={() => { setPhotoEditStudent(student); setPhotoInputUrl(student.photo || ""); }}
+                                                    className="mx-auto block"
+                                                    title="Edit photo"
+                                                >
+                                                    {student.photo ? (
+                                                        <div className="w-9 h-9 rounded-full overflow-hidden relative border-2 border-emerald-200 mx-auto">
+                                                            <Image src={toDriveImg(student.photo)} alt={student.name} fill sizes="36px" className="object-cover" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-9 h-9 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center mx-auto hover:border-[#059669] hover:bg-emerald-50 transition-colors">
+                                                            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            </td>
                                             <td className="px-4 py-3 text-sm text-gray-900 border-b border-gray-200">{student.roll}</td>
                                             <td className="px-4 py-3 text-sm text-gray-900 font-semibold border-b border-gray-200">{student.name}</td>
                                             <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.phone}</td>

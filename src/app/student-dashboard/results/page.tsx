@@ -1,8 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { getStudentResult, ExamResult } from "@/services/resultService";
+
+function toDriveImg(url: string): string {
+    if (url && url.includes("drive.google.com") && url.includes("/d/")) {
+        const id = url.split("/d/")[1].split("/")[0];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
+    }
+    return url;
+}
 
 const FIXED_SUBJECTS: { key: string; label: string }[] = [
     { key: "sales", label: "Sales" },
@@ -60,7 +69,11 @@ export default function StudentResultsPage() {
         );
     }
 
-    const hasGridData = result?.examRecords && result.examRecords.length > 0;
+    const hasExamData = result?.examRecords && result.examRecords.length > 0;
+    const hasPresentationData =
+        result?.presentationRecords && result.presentationRecords.length > 0 &&
+        result?.presentationColumns && result.presentationColumns.length > 0;
+    const hasAnyData = hasExamData || hasPresentationData;
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto pb-12">
@@ -76,7 +89,7 @@ export default function StudentResultsPage() {
                 </div>
             </div>
 
-            {!hasGridData ? (
+            {!hasAnyData ? (
                 <div className="bg-white rounded-2xl p-16 text-center shadow-sm border border-gray-100 flex flex-col items-center justify-center relative overflow-hidden">
                      <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 relative z-10">
                         <DocumentTextIcon className="w-10 h-10 text-emerald-500" />
@@ -87,99 +100,186 @@ export default function StudentResultsPage() {
                      </p>
                 </div>
             ) : (
-                <div className="space-y-6">
+                <div className="space-y-8">
                     {/* Profile Header Card */}
                     <div className="bg-white rounded-2xl p-8 shadow-sm border border-emerald-100 relative overflow-hidden flex items-center gap-8">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full opacity-50 -translate-y-1/2 translate-x-1/3"></div>
-                        <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 border-4 border-white shadow-sm relative z-10">
-                            <UserCircleIcon className="w-16 h-16 text-[#059669]" />
+                        <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center shrink-0 border-4 border-white shadow-sm relative z-10 overflow-hidden">
+                            {userProfile?.profileImageUrl ? (
+                                <Image
+                                    src={toDriveImg(userProfile.profileImageUrl)}
+                                    alt={result!.name}
+                                    fill
+                                    sizes="96px"
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <UserCircleIcon className="w-16 h-16 text-[#059669]" />
+                            )}
                         </div>
                         <div className="relative z-10 flex-grow">
-                            <h2 className="text-3xl font-black text-gray-900 tracking-tight uppercase">{result.name}</h2>
+                            <h2 className="text-3xl font-black text-gray-900 tracking-tight uppercase">{result!.name}</h2>
                             <div className="flex flex-wrap gap-x-8 gap-y-2 mt-3">
                                 <div>
                                     <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Roll Number</p>
-                                    <p className="text-xl font-bold text-gray-700">#{result.roll}</p>
+                                    <p className="text-xl font-bold text-gray-700">#{result!.roll}</p>
                                 </div>
                                 <div className="hidden sm:block w-px h-8 bg-gray-200 mt-1"></div>
                                 <div>
                                     <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider">Batch Name</p>
-                                    <p className="text-xl font-bold text-gray-700">{result.batchName}</p>
+                                    <p className="text-xl font-bold text-gray-700">{result!.batchName}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* The Grid */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        {/* Desktop View */}
-                        <div className="hidden md:block overflow-x-auto w-full">
-                            <table className="w-full text-center border-collapse min-w-[900px]">
-                                <thead>
-                                    <tr className="bg-[#8cc63f] text-black">
-                                        <th className="px-4 py-4 border border-[#7db037] font-bold text-left whitespace-nowrap text-[15px] shadow-sm tracking-wide">Exam Name</th>
-                                        {FIXED_SUBJECTS.map(s => (
-                                            <th key={s.key} className="px-3 py-4 border border-[#7db037] font-semibold text-[14px] leading-snug">
-                                                {s.label.includes("&") ? (
-                                                    <>{s.label.split("&")[0].trim()}<br />{"& " + s.label.split("&")[1].trim()}</>
-                                                ) : s.label}
-                                            </th>
-                                        ))}
-                                        {(result.customColumns || []).map(col => (
-                                            <th key={col.id} className="px-3 py-4 border border-[#7db037] font-semibold text-[14px]">{col.label}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {result.examRecords!.map((record, index) => (
-                                        <tr key={record.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-emerald-50/50 transition-colors`}>
-                                            <td className="px-4 py-3.5 border border-gray-200 font-bold text-gray-800 text-left whitespace-nowrap">
-                                                {record.examName}
-                                            </td>
-                                            {FIXED_SUBJECTS.map(s => (
-                                                <td key={s.key} className="px-3 py-3.5 border border-gray-200 text-gray-700 font-medium text-[15px]">
-                                                    {record.subjects[s.key] || "-"}
-                                                </td>
+                    {/* ── Exam Results Section ── */}
+                    {hasExamData && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-7 bg-[#8cc63f] rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">Exam Results</h2>
+                            </div>
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                {/* Desktop View */}
+                                <div className="hidden md:block overflow-x-auto w-full">
+                                    <table className="w-full text-center border-collapse min-w-[900px]">
+                                        <thead>
+                                            <tr className="bg-[#8cc63f] text-black">
+                                                <th className="px-4 py-4 border border-[#7db037] font-bold text-left whitespace-nowrap text-[15px] shadow-sm tracking-wide">Exam Name</th>
+                                                {FIXED_SUBJECTS.map(s => {
+                                                    const label = result!.fixedSubjectLabels?.[s.key] || s.label;
+                                                    return (
+                                                        <th key={s.key} className="px-3 py-4 border border-[#7db037] font-semibold text-[14px] leading-snug">
+                                                            {label.includes("&") ? (
+                                                                <>{label.split("&")[0].trim()}<br />{"& " + label.split("&")[1].trim()}</>
+                                                            ) : label}
+                                                        </th>
+                                                    );
+                                                })}
+                                                {(result!.customColumns || []).map(col => (
+                                                    <th key={col.id} className="px-3 py-4 border border-[#7db037] font-semibold text-[14px]">{col.label}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {result!.examRecords!.map((record, index) => (
+                                                <tr key={record.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-emerald-50/50 transition-colors`}>
+                                                    <td className="px-4 py-3.5 border border-gray-200 font-bold text-gray-800 text-left whitespace-nowrap">
+                                                        {record.examName}
+                                                    </td>
+                                                    {FIXED_SUBJECTS.map(s => (
+                                                        <td key={s.key} className="px-3 py-3.5 border border-gray-200 text-gray-700 font-medium text-[15px]">
+                                                            {record.subjects[s.key] || "-"}
+                                                        </td>
+                                                    ))}
+                                                    {(result!.customColumns || []).map(col => (
+                                                        <td key={col.id} className="px-3 py-3.5 border border-gray-200 text-gray-700 font-medium text-[15px]">
+                                                            {record.subjects[col.id] || "-"}
+                                                        </td>
+                                                    ))}
+                                                </tr>
                                             ))}
-                                            {(result.customColumns || []).map(col => (
-                                                <td key={col.id} className="px-3 py-3.5 border border-gray-200 text-gray-700 font-medium text-[15px]">
-                                                    {record.subjects[col.id] || "-"}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </tbody>
+                                    </table>
+                                </div>
 
-                        {/* Mobile View */}
-                        <div className="md:hidden flex flex-col divide-y-4 divide-gray-100 bg-gray-50">
-                            {result.examRecords!.map((record) => {
-                                const allSubjects = [
-                                    ...FIXED_SUBJECTS.map(s => ({ label: s.label, value: record.subjects[s.key] })),
-                                    ...(result.customColumns || []).map(col => ({ label: col.label, value: record.subjects[col.id] })),
-                                ];
-                                return (
-                                    <div key={record.id} className="bg-white">
-                                        <div className="bg-[#8cc63f] text-black font-bold px-4 py-3 text-lg border-b border-[#7db037] shadow-sm flex items-center justify-between">
-                                            <span>{record.examName}</span>
-                                            <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </div>
-                                        <div className="flex flex-col">
-                                            {allSubjects.map((item, idx) => (
-                                                <div key={idx} className="flex justify-between items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-emerald-50/30 transition-colors">
-                                                    <span className="font-semibold text-gray-600 text-[14px]">{item.label}</span>
-                                                    <span className="font-bold text-gray-900 border border-gray-200 px-3 py-1 bg-gray-50 rounded-md min-w-[3rem] text-center text-[15px]">{item.value || "-"}</span>
+                                {/* Mobile View */}
+                                <div className="md:hidden flex flex-col divide-y-4 divide-gray-100 bg-gray-50">
+                                    {result!.examRecords!.map((record) => {
+                                        const allSubjects = [
+                                            ...FIXED_SUBJECTS.map(s => ({
+                                                label: result!.fixedSubjectLabels?.[s.key] || s.label,
+                                                value: record.subjects[s.key]
+                                            })),
+                                            ...(result!.customColumns || []).map(col => ({ label: col.label, value: record.subjects[col.id] })),
+                                        ];
+                                        return (
+                                            <div key={record.id} className="bg-white">
+                                                <div className="bg-[#8cc63f] text-black font-bold px-4 py-3 text-lg border-b border-[#7db037] shadow-sm flex items-center justify-between">
+                                                    <span>{record.examName}</span>
+                                                    <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                                <div className="flex flex-col">
+                                                    {allSubjects.map((item, idx) => (
+                                                        <div key={idx} className="flex justify-between items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-emerald-50/30 transition-colors">
+                                                            <span className="font-semibold text-gray-600 text-[14px]">{item.label}</span>
+                                                            <span className="font-bold text-gray-900 border border-gray-200 px-3 py-1 bg-gray-50 rounded-md min-w-[3rem] text-center text-[15px]">{item.value || "-"}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* ── Final Project Presentation Results Section ── */}
+                    {hasPresentationData && (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-7 bg-purple-500 rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">Final Project Presentation Results</h2>
+                            </div>
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                {/* Desktop View */}
+                                <div className="hidden md:block overflow-x-auto w-full">
+                                    <table className="w-full text-center border-collapse" style={{ minWidth: `${400 + result!.presentationColumns!.length * 150}px` }}>
+                                        <thead>
+                                            <tr className="bg-[#8cc63f] text-black">
+                                                <th className="px-4 py-4 border border-[#7db037] font-bold text-left whitespace-nowrap text-[15px] shadow-sm tracking-wide">Presentation</th>
+                                                {result!.presentationColumns!.map(col => (
+                                                    <th key={col.id} className="px-3 py-4 border border-[#7db037] font-semibold text-[14px] leading-snug">
+                                                        {col.label}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {result!.presentationRecords!.map((record, index) => (
+                                                <tr key={record.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-purple-50/30 transition-colors`}>
+                                                    <td className="px-4 py-3.5 border border-gray-200 font-bold text-gray-800 text-left whitespace-nowrap">
+                                                        {record.presentationName}
+                                                    </td>
+                                                    {result!.presentationColumns!.map(col => (
+                                                        <td key={col.id} className="px-3 py-3.5 border border-gray-200 text-gray-700 font-medium text-[15px]">
+                                                            {record.criteria[col.id] || "-"}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Mobile View */}
+                                <div className="md:hidden flex flex-col divide-y-4 divide-gray-100 bg-gray-50">
+                                    {result!.presentationRecords!.map((record) => (
+                                        <div key={record.id} className="bg-white">
+                                            <div className="bg-[#8cc63f] text-black font-bold px-4 py-3 text-lg border-b border-[#7db037] shadow-sm flex items-center justify-between">
+                                                <span>{record.presentationName}</span>
+                                                <svg className="w-5 h-5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                                                </svg>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                {result!.presentationColumns!.map((col) => (
+                                                    <div key={col.id} className="flex justify-between items-center px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-purple-50/30 transition-colors">
+                                                        <span className="font-semibold text-gray-600 text-[14px]">{col.label}</span>
+                                                        <span className="font-bold text-gray-900 border border-gray-200 px-3 py-1 bg-gray-50 rounded-md min-w-[3rem] text-center text-[15px]">{record.criteria[col.id] || "-"}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

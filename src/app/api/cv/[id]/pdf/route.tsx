@@ -3,9 +3,9 @@ export const runtime = "nodejs";
 
 import React from "react";
 import { NextRequest, NextResponse } from "next/server";
-import { pdf } from "@react-pdf/renderer";
+import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, isAdmin } from "@/lib/auth";
 import { CvDocument } from "@/lib/cv/pdf/generatePdf";
 import type { CvDraftFull } from "@/lib/cv/schemas";
 import type { TemplateConfig } from "@/lib/cv/constants";
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     if (!draft) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (draft.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (draft.userId !== user.id && !isAdmin(user)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const defaultConfig: TemplateConfig = {
         primaryColor: "#1e3a5f",
@@ -77,16 +77,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     };
 
     try {
-        // pdf().toBuffer() returns a Web ReadableStream<Uint8Array> — read all chunks
-        const readableStream = pdf(<CvDocument data={fullData} />).toBuffer() as unknown as ReadableStream<Uint8Array>;
-        const reader = readableStream.getReader();
-        const chunks: Uint8Array[] = [];
-        for (;;) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (value) chunks.push(value);
-        }
-        const buffer = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+        const buffer = await renderToBuffer(<CvDocument data={fullData} />);
 
         const safeName = (fullData.fullName || "CV").replace(/[^a-zA-Z0-9 _-]/g, "_");
         const filename = `${safeName}_CV.pdf`;

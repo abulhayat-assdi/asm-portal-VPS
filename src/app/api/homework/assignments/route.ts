@@ -16,7 +16,12 @@ export async function GET(req: NextRequest) {
 
     const where: any = {};
     if (teacherUid) where.teacherUid = teacherUid;
-    if (batchName) where.batchName = batchName;
+    if (batchName) {
+        // Student context: return assignments for this batch OR "all" batches, excluding expired ones
+        const today = new Date().toISOString().split("T")[0];
+        where.batchName = { in: [batchName, "all"] };
+        where.deadlineDate = { gte: today };
+    }
 
     const assignments = await prisma.homeworkAssignment.findMany({
         where,

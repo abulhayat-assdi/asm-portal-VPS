@@ -13,13 +13,27 @@ export interface ExamRecord {
     subjects: Record<string, string>;
 }
 
+export interface PresentationColumn {
+    id: string;
+    label: string;
+}
+
+export interface PresentationRecord {
+    id: string;
+    presentationName: string;
+    criteria: Record<string, string>;
+}
+
 export interface ExamResult {
     id: string;
     batchName: string;
     roll: string;
     name: string;
+    fixedSubjectLabels?: Record<string, string>;
     customColumns?: CustomColumn[];
     examRecords?: ExamRecord[];
+    presentationColumns?: PresentationColumn[];
+    presentationRecords?: PresentationRecord[];
     marks?: number | string;
     remarks?: string;
     updatedAt?: string;
@@ -32,6 +46,12 @@ export const createDefaultExamRecord = (examName = ""): ExamRecord => ({
         sales: "", service: "", careerPlanning: "", ai: "",
         metaMarketing: "", msOffice: "", landingPage: ""
     },
+});
+
+export const createDefaultPresentationRecord = (presentationName = ""): PresentationRecord => ({
+    id: Math.random().toString(36).substring(2, 9),
+    presentationName,
+    criteria: {},
 });
 
 export const saveBatchResults = async (batchName: string, results: Omit<ExamResult, "id">[]): Promise<void> => {

@@ -50,13 +50,13 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { batchName, roll, name, customColumns, examRecords, marks, remarks } = body;
+        const { batchName, roll, name, fixedSubjectLabels, customColumns, examRecords, presentationColumns, presentationRecords, marks, remarks } = body;
 
         if (!batchName || !roll) {
             return NextResponse.json({ error: "batchName and roll required" }, { status: 400 });
         }
 
-        const data = { customColumns, examRecords, marks, remarks };
+        const data = { fixedSubjectLabels, customColumns, examRecords, presentationColumns, presentationRecords, marks, remarks };
 
         const record = await prisma.studentExamBatchRecord.upsert({
             where: { batchName_roll: { batchName, roll } },

@@ -49,31 +49,22 @@ export async function POST(req: NextRequest) {
         }
 
         await Promise.all(
-            results.map((r: any) =>
-                prisma.studentExamBatchRecord.upsert({
+            results.map((r: any) => {
+                const data = {
+                    fixedSubjectLabels: r.fixedSubjectLabels,
+                    customColumns: r.customColumns,
+                    examRecords: r.examRecords,
+                    presentationColumns: r.presentationColumns,
+                    presentationRecords: r.presentationRecords,
+                    marks: r.marks,
+                    remarks: r.remarks,
+                };
+                return prisma.studentExamBatchRecord.upsert({
                     where: { batchName_roll: { batchName, roll: r.roll } },
-                    update: {
-                        name: r.name || "",
-                        data: {
-                            customColumns: r.customColumns,
-                            examRecords: r.examRecords,
-                            marks: r.marks,
-                            remarks: r.remarks,
-                        },
-                    },
-                    create: {
-                        batchName,
-                        roll: r.roll,
-                        name: r.name || "",
-                        data: {
-                            customColumns: r.customColumns,
-                            examRecords: r.examRecords,
-                            marks: r.marks,
-                            remarks: r.remarks,
-                        },
-                    },
-                })
-            )
+                    update: { name: r.name || "", data },
+                    create: { batchName, roll: r.roll, name: r.name || "", data },
+                });
+            })
         );
 
         return NextResponse.json({ success: true, count: results.length });

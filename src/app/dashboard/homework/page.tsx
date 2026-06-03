@@ -83,8 +83,8 @@ export default function HomeworkViewPage() {
             }
 
             // Fetch assignments created by this teacher (Admin acts as a teacher here too)
-            if ((isTeacher || isAdmin) && userProfile.displayName) {
-                const asgmts = await getHomeworkAssignmentsByTeacher(userProfile.displayName);
+            if ((isTeacher || isAdmin) && userProfile.uid) {
+                const asgmts = await getHomeworkAssignmentsByTeacher(userProfile.uid);
                 setAssignments(asgmts);
             }
 

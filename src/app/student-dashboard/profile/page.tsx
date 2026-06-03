@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { StudentBatchInfo } from "@/services/batchInfoService";
 import { submitUpdateRequest } from "@/services/studentUpdateService";
+
+function toDriveImg(url: string): string {
+    if (url && url.includes("drive.google.com") && url.includes("/d/")) {
+        const id = url.split("/d/")[1].split("/")[0];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
+    }
+    return url;
+}
 
 export default function StudentProfilePage() {
     const { userProfile, loading } = useAuth();
@@ -158,8 +167,18 @@ export default function StudentProfilePage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5278] p-6 text-white flex items-center justify-between">
                     <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-3xl font-black shadow-inner">
-                            {userProfile?.displayName?.charAt(0).toUpperCase() || "?"}
+                        <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-3xl font-black shadow-inner overflow-hidden relative">
+                            {userProfile?.profileImageUrl ? (
+                                <Image
+                                    src={toDriveImg(userProfile.profileImageUrl)}
+                                    alt={userProfile.displayName || ""}
+                                    fill
+                                    sizes="64px"
+                                    className="object-cover"
+                                />
+                            ) : (
+                                userProfile?.displayName?.charAt(0).toUpperCase() || "?"
+                            )}
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold no-gradient text-white">{userProfile?.displayName}</h2>

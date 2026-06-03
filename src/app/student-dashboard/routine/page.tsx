@@ -1,22 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRoutinesByBatch, BatchRoutineEntry } from "@/services/routineManagerService";
+import { getRoutineConfig, RoutineConfig, CustomCategory, DEFAULT_CATEGORIES } from "@/services/routineConfigService";
 
 const DAYS_ORDER = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
-const CARD_THEMES = [
-    { header: "bg-gradient-to-br from-violet-600 to-indigo-500", light: "bg-violet-50", border: "border-violet-100", badge: "bg-violet-100 text-violet-700", timeBg: "bg-violet-600" },
-    { header: "bg-gradient-to-br from-rose-500 to-pink-500",     light: "bg-rose-50",   border: "border-rose-100",   badge: "bg-rose-100 text-rose-700",     timeBg: "bg-rose-500"   },
-    { header: "bg-gradient-to-br from-emerald-500 to-teal-500",  light: "bg-emerald-50",border: "border-emerald-100",badge: "bg-emerald-100 text-emerald-700", timeBg: "bg-emerald-500"},
-    { header: "bg-gradient-to-br from-orange-500 to-amber-400",  light: "bg-orange-50", border: "border-orange-100", badge: "bg-orange-100 text-orange-700",   timeBg: "bg-orange-500" },
-    { header: "bg-gradient-to-br from-sky-500 to-cyan-400",      light: "bg-sky-50",    border: "border-sky-100",    badge: "bg-sky-100 text-sky-700",         timeBg: "bg-sky-500"    },
-    { header: "bg-gradient-to-br from-fuchsia-600 to-purple-500",light: "bg-fuchsia-50",border: "border-fuchsia-100",badge: "bg-fuchsia-100 text-fuchsia-700", timeBg: "bg-fuchsia-600"},
-    { header: "bg-gradient-to-br from-lime-500 to-green-500",    light: "bg-lime-50",   border: "border-lime-100",   badge: "bg-lime-100 text-lime-700",       timeBg: "bg-lime-500"   },
-];
-
-// Parse time string to minutes for sorting
 const parseTimeToMinutes = (timeStr: string): number => {
     if (!timeStr) return 9999;
     const cleaned = timeStr.trim().toUpperCase();
@@ -31,32 +21,189 @@ const parseTimeToMinutes = (timeStr: string): number => {
     return hours * 60 + minutes;
 };
 
+const toOrdinal = (n: number): string => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+type ColorTheme = {
+    id: string;
+    keywords: string[];
+    bg: string;
+    border: string;
+    text: string;
+    dot: string;
+    label: string;
+};
+
+const COLOR_THEMES: ColorTheme[] = [
+    { id: "sales",   keywords: ["sales", "mkt", "marketing", "lab"],     bg: "#EFF6FF", border: "#2563EB", text: "#1E40AF", dot: "#2563EB", label: "Sales & Mkt. / Lab" },
+    { id: "dawah",   keywords: ["dawah"],                                  bg: "#F0FDF4", border: "#16A34A", text: "#14532D", dot: "#16A34A", label: "Dawah Class" },
+    { id: "content", keywords: ["content"],                                bg: "#FFF0F3", border: "#EC4899", text: "#9D174D", dot: "#EC4899", label: "Content Mkt." },
+    { id: "office",  keywords: ["ms office", "office"],                   bg: "#FFFBEB", border: "#D97706", text: "#92400E", dot: "#D97706", label: "MS Office" },
+    { id: "study",   keywords: ["study practice", "study"],               bg: "#F5F3FF", border: "#7C3AED", text: "#4C1D95", dot: "#7C3AED", label: "Study Practice" },
+    { id: "english", keywords: ["english"],                                bg: "#F0F9FF", border: "#0284C7", text: "#075985", dot: "#0284C7", label: "English Class" },
+    { id: "landing", keywords: ["landing page", "landing"],               bg: "#ECFEFF", border: "#0891B2", text: "#164E63", dot: "#0891B2", label: "Landing Page" },
+    { id: "guest",   keywords: ["guest session", "guest", "expert"],      bg: "#EEF2FF", border: "#4338CA", text: "#312E81", dot: "#4338CA", label: "Guest Session" },
+    { id: "brand",   keywords: ["branding"],                               bg: "#FDF4FF", border: "#9333EA", text: "#581C87", dot: "#9333EA", label: "Branding" },
+    { id: "sports",  keywords: ["sports", "rec", "recreational"],         bg: "#FFF1F2", border: "#DC2626", text: "#991B1B", dot: "#DC2626", label: "Sports & Rec." },
+    { id: "field",   keywords: ["field practical", "field"],              bg: "#FFFBEB", border: "#F59E0B", text: "#78350F", dot: "#F59E0B", label: "Field Practical" },
+    { id: "quran",   keywords: ["quran", "qur"],                          bg: "#F0FDF4", border: "#10B981", text: "#064E3B", dot: "#10B981", label: "Quran Class" },
+];
+
+const BREAK_KEYWORDS = ["prayer", "break", "lunch", "jumu", "tiffin", "rest"];
+
+const isBreakSubject = (subject: string): boolean =>
+    BREAK_KEYWORDS.some(k => subject.toLowerCase().trim().includes(k));
+
+const getColorTheme = (subject: string): ColorTheme | null => {
+    const s = subject.toLowerCase().trim();
+    for (const theme of COLOR_THEMES) {
+        for (const kw of theme.keywords) {
+            if (s.includes(kw)) return theme;
+        }
+    }
+    return null;
+};
+
+// Build ColorTheme from a CustomCategory (single hex color)
+const buildThemeFromCustom = (cat: CustomCategory): ColorTheme => ({
+    id: cat.id,
+    keywords: cat.keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean),
+    bg: cat.color + "18",
+    border: cat.color,
+    text: cat.color,
+    dot: cat.color,
+    label: cat.label,
+});
+
+const getColorThemeFromCustom = (subject: string, customs: CustomCategory[]): ColorTheme | null => {
+    const s = subject.toLowerCase().trim();
+    for (const cat of customs) {
+        const kws = cat.keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
+        for (const kw of kws) {
+            if (kw && s.includes(kw)) return buildThemeFromCustom(cat);
+        }
+    }
+    return null;
+};
+
+const normalizeDay = (day: string): string =>
+    DAYS_ORDER.find(d => d.toLowerCase() === day?.toLowerCase().trim()) ?? day;
+
+type EntryWithMeta = BatchRoutineEntry & { classNum: string };
+
+const enrichEntries = (entries: BatchRoutineEntry[]): EntryWithMeta[] => {
+    const indexed = entries.map((e, i) => ({ e, i }));
+    const sorted = [...indexed].sort((a, b) => {
+        const dA = DAYS_ORDER.indexOf(normalizeDay(a.e.dayOfWeek));
+        const dB = DAYS_ORDER.indexOf(normalizeDay(b.e.dayOfWeek));
+        if (dA !== dB) return dA - dB;
+        return parseTimeToMinutes(a.e.startTime) - parseTimeToMinutes(b.e.startTime);
+    });
+    const counters: Record<string, number> = {};
+    const nums: string[] = new Array(entries.length).fill("");
+    sorted.forEach(({ e, i }) => {
+        if (isBreakSubject(e.subject) || e.subject.includes("(")) return;
+        const key = e.subject.toLowerCase().trim();
+        counters[key] = (counters[key] || 0) + 1;
+        nums[i] = toOrdinal(counters[key]);
+    });
+    return entries.map((e, i) => ({ ...e, classNum: nums[i] }));
+};
+
 export default function StudentRoutinePage() {
     const { userProfile, loading: authLoading } = useAuth();
-    const [routines, setRoutines] = useState<BatchRoutineEntry[]>([]);
+    const [entries, setEntries] = useState<EntryWithMeta[]>([]);
+    const [config, setConfig] = useState<RoutineConfig | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchRoutine = async () => {
+        const load = async () => {
             if (!userProfile?.studentBatchName) { setLoading(false); return; }
             try {
-                const data = await getRoutinesByBatch(userProfile.studentBatchName);
-                setRoutines(data);
-            } catch (error) {
-                console.error("Error fetching routine:", error);
+                const [raw, cfg] = await Promise.all([
+                    getRoutinesByBatch(userProfile.studentBatchName),
+                    getRoutineConfig(userProfile.studentBatchName),
+                ]);
+                setEntries(enrichEntries(raw));
+                setConfig(cfg);
+            } catch (err) {
+                console.error("Error loading routine:", err);
             } finally {
                 setLoading(false);
             }
         };
-        if (!authLoading) fetchRoutine();
+        if (!authLoading) load();
     }, [userProfile, authLoading]);
+
+    // Admin-configured hidden categories
+    const hiddenByConfig = useMemo(
+        () => new Set(config?.hiddenCategories ?? []),
+        [config]
+    );
+
+    // Active categories: custom from config, or fall back to defaults
+    const activeCategories = useMemo(
+        () => (config?.customCategories?.length ? config.customCategories : DEFAULT_CATEGORIES),
+        [config]
+    );
+
+    // Resolve color theme — prefers custom categories, then hardcoded fallback
+    const resolveTheme = useCallback(
+        (subject: string): ColorTheme | null =>
+            getColorThemeFromCustom(subject, activeCategories) ?? getColorTheme(subject),
+        [activeCategories]
+    );
+
+    // Filter entries based on admin config (breaks always visible)
+    const visibleEntries = useMemo(() => {
+        if (hiddenByConfig.size === 0) return entries;
+        return entries.filter(e => {
+            if (isBreakSubject(e.subject)) return true;
+            const theme = resolveTheme(e.subject);
+            if (!theme) return true;
+            return !hiddenByConfig.has(theme.id);
+        });
+    }, [entries, hiddenByConfig, resolveTheme]);
+
+    // Pivot table from visible entries
+    const { uniqueTimeSlots, lookup } = useMemo(() => {
+        const slotSet = new Set<string>();
+        const map: Record<string, Record<string, EntryWithMeta>> = {};
+        visibleEntries.forEach(entry => {
+            if (!entry.startTime) return;
+            const key = `${entry.startTime}|||${entry.endTime ?? ""}`;
+            slotSet.add(key);
+            if (!map[key]) map[key] = {};
+            map[key][normalizeDay(entry.dayOfWeek)] = entry;
+        });
+        const sorted = Array.from(slotSet).sort((a, b) =>
+            parseTimeToMinutes(a.split("|||")[0]) - parseTimeToMinutes(b.split("|||")[0])
+        );
+        return { uniqueTimeSlots: sorted, lookup: map };
+    }, [visibleEntries]);
+
+    // Legend from visible entries only
+    const legendItems = useMemo(() => {
+        const seen: Record<string, { id: string; label: string; dot: string; count: number }> = {};
+        visibleEntries.forEach(e => {
+            if (isBreakSubject(e.subject)) return;
+            const theme = resolveTheme(e.subject);
+            if (!theme) return;
+            if (!seen[theme.id]) seen[theme.id] = { id: theme.id, label: theme.label, dot: theme.dot, count: 0 };
+            seen[theme.id].count++;
+        });
+        return Object.values(seen);
+    }, [visibleEntries, resolveTheme]);
 
     if (authLoading || loading) {
         return (
             <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
                 <div className="relative w-16 h-16">
-                    <div className="absolute inset-0 rounded-full border-4 border-emerald-100"></div>
-                    <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 animate-spin"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-blue-100" />
+                    <div className="absolute inset-0 rounded-full border-4 border-t-blue-600 animate-spin" />
                 </div>
                 <p className="text-sm text-gray-400 font-medium animate-pulse">Loading your routine...</p>
             </div>
@@ -67,153 +214,188 @@ export default function StudentRoutinePage() {
         return (
             <div className="p-8 max-w-lg mx-auto text-center mt-16">
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5 text-4xl">🎓</div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">No Batch Assigned</h1>
+                <h1 className="no-gradient text-2xl font-bold text-gray-800 mb-2">No Batch Assigned</h1>
                 <p className="text-gray-500 text-sm">Please contact the admin to assign you to a batch.</p>
             </div>
         );
     }
 
-    // Group by day
-    const groupedRoutines: Record<string, BatchRoutineEntry[]> = {};
-    DAYS_ORDER.forEach(day => { groupedRoutines[day] = []; });
-    routines.forEach(r => {
-        const match = DAYS_ORDER.find(d => d.toLowerCase() === r.dayOfWeek?.toLowerCase().trim());
-        const key = match || r.dayOfWeek;
-        if (key) {
-            if (!groupedRoutines[key]) groupedRoutines[key] = [];
-            groupedRoutines[key].push(r);
-        }
-    });
-
-    // Sort each day's classes by start time ascending
-    Object.keys(groupedRoutines).forEach(day => {
-        groupedRoutines[day].sort((a, b) =>
-            parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime)
+    if (entries.length === 0) {
+        return (
+            <div className="p-8 max-w-lg mx-auto text-center mt-16">
+                <div className="text-5xl mb-4">📅</div>
+                <h1 className="no-gradient text-2xl font-bold text-gray-800 mb-2">No Routine Yet</h1>
+                <p className="text-gray-500 text-sm">Your batch routine hasn&apos;t been posted yet.</p>
+            </div>
         );
-    });
+    }
 
-    const availableDays = Object.keys(groupedRoutines)
-        .filter(day => groupedRoutines[day].length > 0)
-        .sort((a, b) => {
-            const iA = DAYS_ORDER.indexOf(a), iB = DAYS_ORDER.indexOf(b);
-            if (iA !== -1 && iB !== -1) return iA - iB;
-            return iA !== -1 ? -1 : iB !== -1 ? 1 : a.localeCompare(b);
-        });
+    const displayTitle = config?.title || userProfile.studentBatchName;
 
-    const totalClasses = routines.length;
+    // Inline styles to fully bypass the global h1/h2 gradient CSS
+    const titleStyle: React.CSSProperties = {
+        color: "#FFFFFF",
+        fontSize: "clamp(1.5rem, 2.5vw, 2.4rem)",
+        fontWeight: 800,
+        letterSpacing: "0.02em",
+        lineHeight: 1.25,
+    };
+    const subtitleStyle: React.CSSProperties = {
+        color: "#93C5FD",
+        fontSize: "0.875rem",
+        fontWeight: 500,
+        marginTop: 8,
+    };
 
     return (
-        <div className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-slate-50 via-white to-slate-50 p-4 md:p-6">
-            {/* Decorative BG blobs */}
-            <div className="fixed top-0 right-0 w-96 h-96 bg-violet-200 opacity-20 rounded-full blur-3xl pointer-events-none -z-0"></div>
-            <div className="fixed bottom-0 left-0 w-80 h-80 bg-emerald-200 opacity-20 rounded-full blur-3xl pointer-events-none -z-0"></div>
+        <div className="min-h-screen bg-slate-100 p-3 md:p-6">
+            <div className="max-w-[1400px] mx-auto">
+                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
 
-            <div className="max-w-6xl mx-auto relative z-10">
-
-                {/* Page Header */}
-                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Class Routine</h1>
-                        <p className="text-gray-500 mt-1 flex flex-wrap items-center gap-2 text-sm font-medium">
-                            Weekly schedule for
-                            <span className="bg-violet-100 text-violet-700 px-2.5 py-0.5 rounded-full font-bold border border-violet-200 text-xs">
-                                {userProfile.studentBatchName}
-                            </span>
-                        </p>
+                    {/* Title Header — use div not h1 to avoid global gradient override */}
+                    <div style={{ backgroundColor: "#0D1B4A", textAlign: "center", padding: "32px 24px" }}>
+                        <div style={titleStyle}>{displayTitle}</div>
+                        {config?.subtitle && <div style={subtitleStyle}>{config.subtitle}</div>}
                     </div>
-                    <div className="flex gap-2 flex-shrink-0">
-                        <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-center shadow-sm">
-                            <div className="text-xl font-black text-violet-600">{availableDays.length}</div>
-                            <div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Days</div>
-                        </div>
-                        <div className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-center shadow-sm">
-                            <div className="text-xl font-black text-emerald-600">{totalClasses}</div>
-                            <div className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Classes</div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Routine Grid */}
-                {availableDays.length === 0 ? (
-                    <div className="bg-white rounded-3xl p-16 text-center shadow-lg border border-gray-100">
-                        <div className="text-5xl mb-4">📅</div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">No Routine Yet</h3>
-                        <p className="text-gray-400 text-sm">Your batch routine hasn&apos;t been posted yet.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {availableDays.map((day, idx) => {
-                            const classes = groupedRoutines[day];
-                            const theme = CARD_THEMES[idx % CARD_THEMES.length];
+                    {/* Routine Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse" style={{ minWidth: 900 }}>
+                            <colgroup>
+                                <col style={{ width: 150 }} />
+                                {DAYS_ORDER.map(d => <col key={d} style={{ minWidth: 140 }} />)}
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    {["Time", ...DAYS_ORDER].map(h => (
+                                        <th
+                                            key={h}
+                                            style={{
+                                                backgroundColor: "#1E3A8A",
+                                                color: "#FFFFFF",
+                                                border: "1px solid #2D4FA0",
+                                                padding: "14px 12px",
+                                                fontSize: 13,
+                                                fontWeight: 700,
+                                                textAlign: "center",
+                                            }}
+                                        >
+                                            {h}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {uniqueTimeSlots.map(slot => {
+                                    const [startTime, endTime] = slot.split("|||");
+                                    const dayEntries = lookup[slot] ?? {};
+                                    const presentEntries = Object.values(dayEntries);
+                                    const uniqueSubjects = new Set(presentEntries.map(e => e.subject.toLowerCase().trim()));
+                                    const isSpanning = uniqueSubjects.size === 1 && presentEntries.length >= 4;
 
-                            return (
-                                <div
-                                    key={day}
-                                    className="bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 group"
-                                >
-                                    {/* Day Header */}
-                                    <div className={`${theme.header} px-5 py-4 relative overflow-hidden`}>
-                                        <div className="absolute -top-5 -right-5 w-20 h-20 bg-white/10 rounded-full group-hover:scale-125 transition-transform duration-700"></div>
-                                        <div className="absolute -bottom-6 -left-3 w-16 h-16 bg-black/10 rounded-full"></div>
-                                        <div className="relative z-10 flex items-center justify-between">
-                                            <div>
-                                                <h2 className="text-xl font-black text-white tracking-tight no-gradient">{day}</h2>
-                                                <p className="text-white/70 text-xs font-semibold mt-0.5 uppercase tracking-wider no-gradient">
-                                                    {classes.length} {classes.length === 1 ? "class" : "classes"}
-                                                </p>
-                                            </div>
-                                            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-white font-black text-base border border-white/30">
-                                                {classes.length}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    const timeCell = (
+                                        <td key="time" style={{ border: "1px solid #E2E8F0", backgroundColor: "#F8FAFC", padding: "10px 12px", textAlign: "center", verticalAlign: "middle" }}>
+                                            <div style={{ fontSize: 12, fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap" }}>{startTime}</div>
+                                            {endTime && <>
+                                                <div style={{ fontSize: 11, color: "#94A3B8", margin: "3px 0" }}>—</div>
+                                                <div style={{ fontSize: 12, fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap" }}>{endTime}</div>
+                                            </>}
+                                        </td>
+                                    );
 
-                                    {/* Classes List */}
-                                    <div className="p-3 space-y-2">
-                                        {classes.map((cls, cIdx) => (
-                                            <div
-                                                key={cIdx}
-                                                className={`flex items-stretch gap-0 rounded-xl border ${theme.border} overflow-hidden hover:shadow-sm transition-shadow duration-200`}
-                                            >
-                                                {/* Time column — left accent block */}
-                                                <div className={`${theme.timeBg} flex-shrink-0 w-[62px] flex flex-col items-center justify-center py-3 px-1 text-white`}>
-                                                    <span className="text-xs font-black leading-tight text-center">{cls.startTime || "—"}</span>
-                                                    {cls.endTime && (
-                                                        <>
-                                                            <span className="text-[10px] opacity-60 leading-none my-0.5">|</span>
-                                                            <span className="text-xs font-black leading-tight text-center">{cls.endTime}</span>
-                                                        </>
-                                                    )}
-                                                </div>
+                                    if (isSpanning) {
+                                        const entry = presentEntries[0];
+                                        return (
+                                            <tr key={slot}>
+                                                {timeCell}
+                                                <td colSpan={DAYS_ORDER.length} style={{ border: "1px solid #E2E8F0", backgroundColor: "#F1F5F9", padding: "14px 20px", textAlign: "center", verticalAlign: "middle" }}>
+                                                    <span style={{ fontSize: 13, fontWeight: 600, color: "#475569", fontStyle: "italic" }}>
+                                                        {entry.subject}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
 
-                                                {/* Content column */}
-                                                <div className={`flex-1 min-w-0 ${theme.light} px-3 py-2.5`}>
-                                                    <h3 className="font-bold text-gray-900 text-sm leading-snug truncate">
-                                                        {cls.subject || "No Subject"}
-                                                    </h3>
-                                                    <div className="flex items-center gap-1 mt-1">
-                                                        <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                                        </svg>
-                                                        <span className="text-xs text-gray-500 font-medium truncate">{cls.teacherName || "TBA"}</span>
-                                                    </div>
-                                                    {cls.room && (
-                                                        <div className="flex items-center gap-1 mt-0.5">
-                                                            <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                            </svg>
-                                                            <span className="text-xs text-gray-400 font-semibold truncate">{cls.room}</span>
+                                    return (
+                                        <tr key={slot}>
+                                            {timeCell}
+                                            {DAYS_ORDER.map(day => {
+                                                const entry = dayEntries[day];
+                                                if (!entry) {
+                                                    return (
+                                                        <td key={day} style={{ border: "1px solid #E2E8F0", backgroundColor: "#FAFAFA", textAlign: "center", color: "#CBD5E1", fontSize: 16, verticalAlign: "middle" }}>
+                                                            —
+                                                        </td>
+                                                    );
+                                                }
+                                                const theme = resolveTheme(entry.subject);
+                                                if (isBreakSubject(entry.subject)) {
+                                                    return (
+                                                        <td key={day} style={{ border: "1px solid #E2E8F0", backgroundColor: "#F1F5F9", padding: "12px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                                                            <span style={{ fontSize: 12, color: "#64748B", fontStyle: "italic", fontWeight: 500 }}>{entry.subject}</span>
+                                                        </td>
+                                                    );
+                                                }
+                                                return (
+                                                    <td key={day} style={{ border: "1px solid #E2E8F0", padding: 0, verticalAlign: "middle" }}>
+                                                        <div style={{
+                                                            minHeight: 84,
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            justifyContent: "center",
+                                                            padding: "12px 16px",
+                                                            borderLeft: `4px solid ${theme?.border ?? "#CBD5E1"}`,
+                                                            backgroundColor: theme?.bg ?? "#FFFFFF",
+                                                        }}>
+                                                            <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", lineHeight: 1.4 }}>
+                                                                {entry.subject}
+                                                            </div>
+                                                            {entry.classNum && (
+                                                                <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: theme?.text ?? "#64748B" }}>
+                                                                    ({entry.classNum} Class)
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     </div>
-                )}
+
+                    {/* Legend — read-only, no checkboxes */}
+                    {legendItems.length > 0 && (
+                        <div style={{ padding: "20px 24px", borderTop: "1px solid #E5E7EB" }}>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px 24px", justifyContent: "center" }}>
+                                {legendItems.map(item => (
+                                    <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                        <div style={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: item.dot, flexShrink: 0 }} />
+                                        <span style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
+                                            {item.label}
+                                        </span>
+                                        <span style={{ fontSize: 12, color: "#9CA3AF" }}>
+                                            ({item.count} {item.count === 1 ? "Session" : "Classes"})
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    {config?.footerText && (
+                        <div style={{ padding: "0 24px 24px", textAlign: "center" }}>
+                            <div style={{ height: 1, backgroundColor: "#E5E7EB", margin: "0 16px 16px" }} />
+                            <span style={{ fontSize: 13, color: "#6B7280", fontStyle: "italic", fontWeight: 500 }}>
+                                — {config.footerText} —
+                            </span>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

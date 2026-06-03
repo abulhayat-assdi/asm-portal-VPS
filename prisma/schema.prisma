@@ -261,6 +261,7 @@ model BatchStudent {
   companyName        String          @default("") @map("company_name")
   businessName       String          @default("") @map("business_name")
   salary             Float           @default(0)
+  photo              String?
   batchType          BatchType       @default(Running) @map("batch_type")
   isPublic           Boolean         @default(true) @map("is_public")
   createdAt          DateTime        @default(now()) @map("created_at")
@@ -884,6 +885,22 @@ model BatchRoutineEntry {
 
   @@index([batch])
   @@map("batch_routine_entries")
+}
+
+// ============================================================
+// ROUTINE CONFIG (per-batch display settings for class routine)
+// ============================================================
+
+model RoutineConfig {
+  id         String   @id @default(uuid())
+  batch      String   @unique
+  title      String   @default("")
+  subtitle   String   @default("")
+  footerText String   @default("") @map("footer_text")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("routine_configs")
 }
 
 // ============================================================

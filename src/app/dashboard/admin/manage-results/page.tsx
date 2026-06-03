@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { getAllBatchInfo, StudentBatchInfo } from "@/services/batchInfoService";
-import { saveSingleResult, ExamResult, getAllExamResults, createDefaultExamRecord, ExamRecord, CustomColumn } from "@/services/resultService";
+import {
+    saveSingleResult, ExamResult, getAllExamResults, createDefaultExamRecord, ExamRecord,
+    CustomColumn, PresentationColumn, PresentationRecord, createDefaultPresentationRecord
+} from "@/services/resultService";
 
 const FIXED_SUBJECTS = [
     { key: "sales", label: "Sales" },
@@ -42,8 +45,17 @@ export default function ManageResultsPage() {
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingStudent, setEditingStudent] = useState<StudentBatchInfo | null>(null);
     const [editingResultId, setEditingResultId] = useState<string>("");
+    const [activeTab, setActiveTab] = useState<"exam" | "presentation">("exam");
+
+    // Exam tab state
+    const [fixedSubjectLabels, setFixedSubjectLabels] = useState<Record<string, string>>({});
     const [editingRecords, setEditingRecords] = useState<ExamRecord[]>([]);
     const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+
+    // Presentation tab state
+    const [presentationColumns, setPresentationColumns] = useState<PresentationColumn[]>([]);
+    const [presentationRecords, setPresentationRecords] = useState<PresentationRecord[]>([]);
+
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -85,7 +97,10 @@ export default function ManageResultsPage() {
     const openEditModal = (student: StudentBatchInfo, result?: ExamResult) => {
         setEditingStudent(student);
         setEditingResultId(result?.id || "");
+        setActiveTab("exam");
 
+        // Exam tab
+        setFixedSubjectLabels(result?.fixedSubjectLabels || {});
         if (result?.examRecords && result.examRecords.length > 0) {
             setEditingRecords(result.examRecords);
         } else {
@@ -95,9 +110,18 @@ export default function ManageResultsPage() {
                 createDefaultExamRecord("Final Exam"),
             ]);
         }
-
         setCustomColumns(result?.customColumns || []);
+
+        // Presentation tab
+        setPresentationColumns(result?.presentationColumns || []);
+        setPresentationRecords(result?.presentationRecords || []);
+
         setEditModalOpen(true);
+    };
+
+    // ── Exam tab handlers ──────────────────────────────────────
+    const handleFixedSubjectLabelChange = (key: string, label: string) => {
+        setFixedSubjectLabels(prev => ({ ...prev, [key]: label }));
     };
 
     const handleAddRow = () => {
@@ -141,6 +165,47 @@ export default function ManageResultsPage() {
         }));
     };
 
+    // ── Presentation tab handlers ──────────────────────────────
+    const handleAddPresentationColumn = () => {
+        const newCol: PresentationColumn = {
+            id: Math.random().toString(36).substring(2, 9),
+            label: `Criteria ${presentationColumns.length + 1}`,
+        };
+        setPresentationColumns([...presentationColumns, newCol]);
+    };
+
+    const handleRemovePresentationColumn = (colId: string) => {
+        setPresentationColumns(presentationColumns.filter(c => c.id !== colId));
+        setPresentationRecords(presentationRecords.map(record => {
+            const newCriteria = { ...record.criteria };
+            delete newCriteria[colId];
+            return { ...record, criteria: newCriteria };
+        }));
+    };
+
+    const handlePresentationColumnLabelChange = (colId: string, label: string) => {
+        setPresentationColumns(presentationColumns.map(c => c.id === colId ? { ...c, label } : c));
+    };
+
+    const handleAddPresentationRow = () => {
+        setPresentationRecords([...presentationRecords, createDefaultPresentationRecord(`Presentation ${presentationRecords.length + 1}`)]);
+    };
+
+    const handleRemovePresentationRow = (id: string) => {
+        setPresentationRecords(presentationRecords.filter(r => r.id !== id));
+    };
+
+    const handlePresentationCellChange = (recordId: string, field: string, value: string) => {
+        setPresentationRecords(records => records.map(record => {
+            if (record.id === recordId) {
+                if (field === "presentationName") return { ...record, presentationName: value };
+                return { ...record, criteria: { ...record.criteria, [field]: value } };
+            }
+            return record;
+        }));
+    };
+
+    // ── Save ──────────────────────────────────────────────────
     const handleSaveStudentResult = async () => {
         if (!editingStudent) return;
         setSaving(true);
@@ -150,8 +215,11 @@ export default function ManageResultsPage() {
                 batchName: editingStudent.batchName,
                 roll: editingStudent.roll,
                 name: editingStudent.name,
+                fixedSubjectLabels: Object.keys(fixedSubjectLabels).length > 0 ? fixedSubjectLabels : undefined,
                 examRecords: editingRecords,
                 customColumns,
+                presentationColumns: presentationColumns.length > 0 ? presentationColumns : undefined,
+                presentationRecords: presentationRecords.length > 0 ? presentationRecords : undefined,
             };
             await saveSingleResult(newResult);
             const refreshedResults = await getAllExamResults();
@@ -215,7 +283,7 @@ export default function ManageResultsPage() {
                                         <td className="px-4 py-3 border-b border-gray-200 font-semibold text-gray-700"># {student.roll}</td>
                                         <td className="px-4 py-3 border-b border-gray-200 text-gray-900">{student.name}</td>
                                         <td className="px-4 py-3 border-b border-gray-200">
-                                            {result?.examRecords ? (
+                                            {result?.examRecords || result?.presentationRecords ? (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Results Added</span>
                                             ) : (
                                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">No Result Yet</span>
@@ -254,110 +322,239 @@ export default function ManageResultsPage() {
                             </button>
                         </div>
 
+                        {/* Tabs */}
+                        <div className="flex border-b border-gray-200 bg-white px-5">
+                            <button
+                                onClick={() => setActiveTab("exam")}
+                                className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors -mb-px ${
+                                    activeTab === "exam"
+                                        ? "border-[#8cc63f] text-[#5a8a2e]"
+                                        : "border-transparent text-gray-500 hover:text-gray-700"
+                                }`}
+                            >
+                                Exam Results
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("presentation")}
+                                className={`px-5 py-3 text-sm font-semibold border-b-2 transition-colors -mb-px ${
+                                    activeTab === "presentation"
+                                        ? "border-[#8cc63f] text-[#5a8a2e]"
+                                        : "border-transparent text-gray-500 hover:text-gray-700"
+                                }`}
+                            >
+                                Final Project Presentation
+                            </button>
+                        </div>
+
                         {/* Modal Body */}
                         <div className="p-6 overflow-auto bg-gray-50/50 flex-grow">
-                            <div className="bg-white border border-[#8cc63f]/30 rounded-xl overflow-x-auto shadow-sm text-sm">
-                                <table className="w-full text-center border-collapse" style={{ minWidth: `${550 + customColumns.length * 130}px` }}>
-                                    <thead>
-                                        <tr className="bg-[#8cc63f] text-black">
-                                            <th className="p-3 border border-[#7db037] font-bold text-left whitespace-nowrap w-[160px]">Exam</th>
-                                            {FIXED_SUBJECTS.map(s => (
-                                                <th key={s.key} className="p-3 border border-[#7db037] font-medium leading-tight">
-                                                    {s.label.includes("&") ? (
-                                                        <>
-                                                            {s.label.split("&")[0].trim()}<br />
-                                                            {"& " + s.label.split("&")[1].trim()}
-                                                        </>
-                                                    ) : s.label}
-                                                </th>
-                                            ))}
-                                            {customColumns.map(col => (
-                                                <th key={col.id} className="p-2 border border-[#7db037] w-[130px]">
-                                                    <div className="flex items-center gap-1">
-                                                        <input
-                                                            value={col.label}
-                                                            onChange={e => handleColumnLabelChange(col.id, e.target.value)}
-                                                            className="bg-white/60 text-black text-center w-full px-1 py-0.5 rounded font-medium focus:ring-1 focus:ring-black outline-none border border-transparent hover:border-black/20 text-sm"
-                                                            placeholder="Column Name"
-                                                        />
-                                                        <button
-                                                            onClick={() => handleRemoveColumn(col.id)}
-                                                            className="text-red-700 hover:text-red-900 flex-shrink-0"
-                                                            title="Remove Column"
-                                                        >
-                                                            <XMarkIcon className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </th>
-                                            ))}
-                                            <th className="p-2 border border-[#7db037] w-[40px]"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {editingRecords.map(record => (
-                                            <tr key={record.id} className="hover:bg-gray-50 transition-colors bg-white">
-                                                <td className="border border-gray-200 p-0">
-                                                    <input
-                                                        type="text"
-                                                        value={record.examName}
-                                                        onChange={e => handleCellChange(record.id, "examName", e.target.value)}
-                                                        className="w-full p-3 font-semibold text-gray-800 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
-                                                        placeholder="e.g. 1st Monthly Exam"
-                                                    />
-                                                </td>
-                                                {FIXED_SUBJECTS.map(s => (
-                                                    <td key={s.key} className="border border-gray-200 p-0">
-                                                        <input
-                                                            type="text"
-                                                            value={record.subjects[s.key] || ""}
-                                                            onChange={e => handleCellChange(record.id, s.key, e.target.value)}
-                                                            className="w-full p-3 text-center text-gray-700 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
-                                                            placeholder="-"
-                                                        />
-                                                    </td>
-                                                ))}
-                                                {customColumns.map(col => (
-                                                    <td key={col.id} className="border border-gray-200 p-0">
-                                                        <input
-                                                            type="text"
-                                                            value={record.subjects[col.id] || ""}
-                                                            onChange={e => handleCellChange(record.id, col.id, e.target.value)}
-                                                            className="w-full p-3 text-center text-gray-700 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
-                                                            placeholder="-"
-                                                        />
-                                                    </td>
-                                                ))}
-                                                <td className="border border-gray-200 p-0 text-center">
-                                                    <button
-                                                        onClick={() => handleRemoveRow(record.id)}
-                                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors w-full h-full flex items-center justify-center"
-                                                        title="Remove Row"
-                                                    >
-                                                        <TrashIcon className="w-5 h-5" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
 
-                            <div className="mt-4 flex flex-wrap gap-3">
-                                <button
-                                    onClick={handleAddRow}
-                                    className="flex items-center gap-2 text-sm font-semibold text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors border border-emerald-200"
-                                >
-                                    <PlusIcon className="w-4 h-4" />
-                                    Add Exam Row
-                                </button>
-                                <button
-                                    onClick={handleAddColumn}
-                                    className="flex items-center gap-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors border border-blue-200"
-                                >
-                                    <PlusIcon className="w-4 h-4" />
-                                    Add Column
-                                </button>
-                            </div>
+                            {/* ── EXAM TAB ── */}
+                            {activeTab === "exam" && (
+                                <>
+                                    <p className="text-xs text-gray-400 mb-3">Click any header cell to rename the subject. Click any mark cell to edit the score.</p>
+                                    <div className="bg-white border border-[#8cc63f]/30 rounded-xl overflow-x-auto shadow-sm text-sm">
+                                        <table className="w-full text-center border-collapse" style={{ minWidth: `${550 + customColumns.length * 130}px` }}>
+                                            <thead>
+                                                <tr className="bg-[#8cc63f] text-black">
+                                                    <th className="p-3 border border-[#7db037] font-bold text-left whitespace-nowrap w-[160px]">Exam</th>
+                                                    {FIXED_SUBJECTS.map(s => (
+                                                        <th key={s.key} className="p-2 border border-[#7db037] min-w-[100px]">
+                                                            <input
+                                                                value={fixedSubjectLabels[s.key] ?? s.label}
+                                                                onChange={e => handleFixedSubjectLabelChange(s.key, e.target.value)}
+                                                                className="bg-white/60 text-black text-center w-full px-1 py-0.5 rounded font-medium focus:ring-1 focus:ring-black outline-none border border-transparent hover:border-black/20 text-sm leading-tight"
+                                                                placeholder={s.label}
+                                                            />
+                                                        </th>
+                                                    ))}
+                                                    {customColumns.map(col => (
+                                                        <th key={col.id} className="p-2 border border-[#7db037] w-[130px]">
+                                                            <div className="flex items-center gap-1">
+                                                                <input
+                                                                    value={col.label}
+                                                                    onChange={e => handleColumnLabelChange(col.id, e.target.value)}
+                                                                    className="bg-white/60 text-black text-center w-full px-1 py-0.5 rounded font-medium focus:ring-1 focus:ring-black outline-none border border-transparent hover:border-black/20 text-sm"
+                                                                    placeholder="Column Name"
+                                                                />
+                                                                <button
+                                                                    onClick={() => handleRemoveColumn(col.id)}
+                                                                    className="text-red-700 hover:text-red-900 flex-shrink-0"
+                                                                    title="Remove Column"
+                                                                >
+                                                                    <XMarkIcon className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </th>
+                                                    ))}
+                                                    <th className="p-2 border border-[#7db037] w-[40px]"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {editingRecords.map(record => (
+                                                    <tr key={record.id} className="hover:bg-gray-50 transition-colors bg-white">
+                                                        <td className="border border-gray-200 p-0">
+                                                            <input
+                                                                type="text"
+                                                                value={record.examName}
+                                                                onChange={e => handleCellChange(record.id, "examName", e.target.value)}
+                                                                className="w-full p-3 font-semibold text-gray-800 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
+                                                                placeholder="e.g. 1st Monthly Exam"
+                                                            />
+                                                        </td>
+                                                        {FIXED_SUBJECTS.map(s => (
+                                                            <td key={s.key} className="border border-gray-200 p-0">
+                                                                <input
+                                                                    type="text"
+                                                                    value={record.subjects[s.key] || ""}
+                                                                    onChange={e => handleCellChange(record.id, s.key, e.target.value)}
+                                                                    className="w-full p-3 text-center text-gray-700 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
+                                                                    placeholder="-"
+                                                                />
+                                                            </td>
+                                                        ))}
+                                                        {customColumns.map(col => (
+                                                            <td key={col.id} className="border border-gray-200 p-0">
+                                                                <input
+                                                                    type="text"
+                                                                    value={record.subjects[col.id] || ""}
+                                                                    onChange={e => handleCellChange(record.id, col.id, e.target.value)}
+                                                                    className="w-full p-3 text-center text-gray-700 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
+                                                                    placeholder="-"
+                                                                />
+                                                            </td>
+                                                        ))}
+                                                        <td className="border border-gray-200 p-0 text-center">
+                                                            <button
+                                                                onClick={() => handleRemoveRow(record.id)}
+                                                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors w-full h-full flex items-center justify-center"
+                                                                title="Remove Row"
+                                                            >
+                                                                <TrashIcon className="w-5 h-5" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap gap-3">
+                                        <button
+                                            onClick={handleAddRow}
+                                            className="flex items-center gap-2 text-sm font-semibold text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors border border-emerald-200"
+                                        >
+                                            <PlusIcon className="w-4 h-4" />
+                                            Add Exam Row
+                                        </button>
+                                        <button
+                                            onClick={handleAddColumn}
+                                            className="flex items-center gap-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors border border-blue-200"
+                                        >
+                                            <PlusIcon className="w-4 h-4" />
+                                            Add Column
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* ── PRESENTATION TAB ── */}
+                            {activeTab === "presentation" && (
+                                <>
+                                    <p className="text-xs text-gray-400 mb-3">Add criteria columns (e.g. Slide Quality, Delivery, Content), then add presentation rows and enter marks.</p>
+
+                                    {presentationColumns.length === 0 && presentationRecords.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-16 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-white">
+                                            <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                                            </svg>
+                                            <p className="font-medium text-gray-500">No presentation results yet</p>
+                                            <p className="text-sm mt-1">Start by adding criteria columns, then add presentation rows.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-white border border-[#8cc63f]/30 rounded-xl overflow-x-auto shadow-sm text-sm">
+                                            <table className="w-full text-center border-collapse" style={{ minWidth: `${300 + presentationColumns.length * 150}px` }}>
+                                                <thead>
+                                                    <tr className="bg-[#8cc63f] text-black">
+                                                        <th className="p-3 border border-[#7db037] font-bold text-left whitespace-nowrap w-[200px]">Presentation</th>
+                                                        {presentationColumns.map(col => (
+                                                            <th key={col.id} className="p-2 border border-[#7db037] min-w-[140px]">
+                                                                <div className="flex items-center gap-1">
+                                                                    <input
+                                                                        value={col.label}
+                                                                        onChange={e => handlePresentationColumnLabelChange(col.id, e.target.value)}
+                                                                        className="bg-white/60 text-black text-center w-full px-1 py-0.5 rounded font-medium focus:ring-1 focus:ring-black outline-none border border-transparent hover:border-black/20 text-sm"
+                                                                        placeholder="Criteria Name"
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleRemovePresentationColumn(col.id)}
+                                                                        className="text-red-700 hover:text-red-900 flex-shrink-0"
+                                                                        title="Remove Column"
+                                                                    >
+                                                                        <XMarkIcon className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                            </th>
+                                                        ))}
+                                                        <th className="p-2 border border-[#7db037] w-[40px]"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {presentationRecords.map(record => (
+                                                        <tr key={record.id} className="hover:bg-gray-50 transition-colors bg-white">
+                                                            <td className="border border-gray-200 p-0">
+                                                                <input
+                                                                    type="text"
+                                                                    value={record.presentationName}
+                                                                    onChange={e => handlePresentationCellChange(record.id, "presentationName", e.target.value)}
+                                                                    className="w-full p-3 font-semibold text-gray-800 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
+                                                                    placeholder="e.g. Presentation 1"
+                                                                />
+                                                            </td>
+                                                            {presentationColumns.map(col => (
+                                                                <td key={col.id} className="border border-gray-200 p-0">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={record.criteria[col.id] || ""}
+                                                                        onChange={e => handlePresentationCellChange(record.id, col.id, e.target.value)}
+                                                                        className="w-full p-3 text-center text-gray-700 bg-transparent focus:bg-white outline-none focus:ring-2 focus:ring-[#8cc63f]"
+                                                                        placeholder="-"
+                                                                    />
+                                                                </td>
+                                                            ))}
+                                                            <td className="border border-gray-200 p-0 text-center">
+                                                                <button
+                                                                    onClick={() => handleRemovePresentationRow(record.id)}
+                                                                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors w-full h-full flex items-center justify-center"
+                                                                    title="Remove Row"
+                                                                >
+                                                                    <TrashIcon className="w-5 h-5" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-4 flex flex-wrap gap-3">
+                                        <button
+                                            onClick={handleAddPresentationRow}
+                                            className="flex items-center gap-2 text-sm font-semibold text-[#059669] bg-emerald-50 hover:bg-emerald-100 px-4 py-2.5 rounded-xl transition-colors border border-emerald-200"
+                                        >
+                                            <PlusIcon className="w-4 h-4" />
+                                            Add Presentation Row
+                                        </button>
+                                        <button
+                                            onClick={handleAddPresentationColumn}
+                                            className="flex items-center gap-2 text-sm font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-2.5 rounded-xl transition-colors border border-purple-200"
+                                        >
+                                            <PlusIcon className="w-4 h-4" />
+                                            Add Criteria Column
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* Modal Footer */}

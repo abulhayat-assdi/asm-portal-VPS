@@ -127,8 +127,8 @@ export default function CvListPage() {
                             <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5278] p-5 text-white">
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
-                                        <h3 className="font-bold text-lg truncate">{draft.title}</h3>
-                                        <p className="text-blue-200 text-sm mt-0.5">{draft.template?.name ?? "Unknown template"}</p>
+                                        <h3 className="no-gradient font-bold text-lg truncate" style={{ color: "#ffffff" }}>{draft.template?.name ?? "Unknown template"}</h3>
+                                        <p className="no-gradient text-sm mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.6)" }}>{draft.title}</p>
                                     </div>
                                     {draft.isPublic && (
                                         <span className="flex-shrink-0 bg-green-400/20 text-green-200 text-xs font-bold px-2 py-1 rounded-full border border-green-300/30">

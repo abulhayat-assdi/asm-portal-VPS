@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AdminRoute from "@/components/auth/AdminRoute";
 import { useConfirm } from "@/contexts/ConfirmContext";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Types ───────────────────────────────────────────────────
 interface ModuleClass {
@@ -47,6 +48,7 @@ const EMPTY_FORM: FormData = {
 // ─── Main Page ───────────────────────────────────────────────
 export default function CourseModulesAdminPage() {
     const confirm = useConfirm();
+    const { success, error: toastError, warning, showResults } = useToast();
     const [modules, setModules] = useState<CourseModule[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -89,9 +91,9 @@ export default function CourseModulesAdminPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             await load();
-            alert(data.message);
+            success("Database Ready!", data.message);
         } catch (err: unknown) {
-            alert("Setup failed: " + (err instanceof Error ? err.message : "Unknown error"));
+            toastError("Setup Failed", err instanceof Error ? err.message : "Unknown error");
         } finally {
             setSettingUp(false);
         }
@@ -110,9 +112,15 @@ export default function CourseModulesAdminPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             await load();
-            alert("Import সম্পন্ন!\n" + (data.results as string[]).join("\n"));
+            const resultItems = (data.results as string[]).map(r => ({
+                text: r,
+                status: r.includes("created") ? "created" as const
+                      : r.includes("skipped") ? "skipped" as const
+                      : "error" as const,
+            }));
+            showResults("Import সম্পন্ন!", resultItems);
         } catch (err: unknown) {
-            alert("Seed failed: " + (err instanceof Error ? err.message : "Unknown error"));
+            toastError("Import Failed", err instanceof Error ? err.message : "Unknown error");
         } finally {
             setSeeding(false);
         }
@@ -148,14 +156,14 @@ export default function CourseModulesAdminPage() {
             if (!res.ok) throw new Error("Delete failed");
             await load();
         } catch {
-            alert("Delete failed");
+            toastError("Delete Failed", "Module delete করা সম্ভব হয়নি।");
         }
     };
 
     // ── Save ─────────────────────────────────────────────────
     const handleSave = async () => {
         if (!form.slug.trim() || !form.title.trim()) {
-            alert("Title এবং Slug অবশ্যই দিতে হবে।");
+            warning("Required Fields", "Title এবং Slug অবশ্যই দিতে হবে।");
             return;
         }
         setSaving(true);
@@ -186,8 +194,9 @@ export default function CourseModulesAdminPage() {
             if (!res.ok) throw new Error(data.error ?? "Save failed");
             await load();
             setMode("list");
+            success("Saved!", editingId ? "Module সফলভাবে আপডেট হয়েছে।" : "নতুন module তৈরি হয়েছে।");
         } catch (err: unknown) {
-            alert("Save failed: " + (err instanceof Error ? err.message : "Unknown error"));
+            toastError("Save Failed", err instanceof Error ? err.message : "Unknown error");
         } finally {
             setSaving(false);
         }
