@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { CvPreview } from "@/components/cv/CvPreview";
-import type { CvFormData } from "@/lib/cv/schemas";
+import type { CvFormData, CvDraftFull } from "@/lib/cv/schemas";
 import type { TemplateConfig } from "@/lib/cv/constants";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ export default function CvManagerPage() {
 
     // CV Preview Modal state
     const [previewDraftId, setPreviewDraftId] = useState<string | null>(null);
-    const [previewData, setPreviewData] = useState<CvFormData | null>(null);
+    const [previewData, setPreviewData] = useState<CvDraftFull | null>(null);
     const [previewConfig, setPreviewConfig] = useState<TemplateConfig | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewStudentName, setPreviewStudentName] = useState("");
