@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useForm, useFieldArray, Controller, type Resolver } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import toast from "react-hot-toast";
@@ -10,6 +10,7 @@ import compressImage from "browser-image-compression";
 import { cvFormSchema, type CvFormData, type CvDraftFull } from "@/lib/cv/schemas";
 import {
     SECTION_LABELS,
+    MAIN_SECTION_KEYS,
     BLOOD_GROUPS,
     MARITAL_STATUSES,
     LANGUAGE_PROFICIENCY_LEVELS,
@@ -126,9 +127,19 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
     const sw = config.sidebarWidth || 38;
     const color = config.sidebarColor || "#1e3a5f";
     const initial = data.fullName?.charAt(0)?.toUpperCase() ?? "?";
-    const sections = data.sectionOrder?.length
-        ? data.sectionOrder
-        : ["workExperience", "training", "education", "languages", "references", "skills", "hobbies"];
+
+    // Build ordered section list — only main column sections, in user-specified order
+    const rawOrder: string[] = Array.isArray(data.sectionOrder) && data.sectionOrder.length
+        ? (data.sectionOrder as string[])
+        : ["careerObjective", "workExperience", "training", "education", "references", "declaration"];
+
+    // Keep only main-column keys (skip sidebar items — they always show in sidebar)
+    const sidebarKeys = ["skills", "languages", "hobbies"];
+    const mainOrder = rawOrder.filter(k => !sidebarKeys.includes(k));
+    // Append any main key not already in list (backwards compat)
+    for (const k of ["careerObjective", "workExperience", "training", "education", "references", "declaration"]) {
+        if (!mainOrder.includes(k)) mainOrder.push(k);
+    }
 
     const sSH: React.CSSProperties = {
         color: "rgba(255,255,255,0.75)", fontWeight: 700, fontSize: "0.5rem",
@@ -149,11 +160,19 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
         { label: "Nationality",   value: data.nationality },
     ].filter(f => f.value);
 
-    function renderMainSection(key: string) {
+    // ── Fully dynamic main section renderer ──────────────────────────────────
+    function renderSection(key: string) {
         switch (key) {
+            case "careerObjective":
+                return data.careerObjective ? (
+                    <div>
+                        <h4 style={mSH(color)}>Career Objective</h4>
+                        <p style={{ fontSize: "0.58rem", color: "#333", lineHeight: 1.6 }}>{data.careerObjective}</p>
+                    </div>
+                ) : null;
             case "workExperience":
                 return data.workExperience?.length ? (
-                    <div key="we">
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.workExperience}</h4>
                         {data.workExperience.map((item, i) => (
                             <div key={i} style={{ marginBottom: 6 }}>
@@ -166,7 +185,7 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                 ) : null;
             case "training":
                 return data.training?.length ? (
-                    <div key="tr">
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.training}</h4>
                         {data.training.map((item, i) => (
                             <div key={i} style={{ marginBottom: 6 }}>
@@ -179,7 +198,7 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                 ) : null;
             case "education":
                 return data.education?.length ? (
-                    <div key="edu">
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.education}</h4>
                         {data.education.map((item, i) => (
                             <div key={i} style={{ marginBottom: 6 }}>
@@ -195,7 +214,7 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                 ) : null;
             case "references":
                 return data.references?.length ? (
-                    <div key="ref">
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.references}</h4>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                             {data.references.map((ref, i) => (
@@ -210,6 +229,13 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                         </div>
                     </div>
                 ) : null;
+            case "declaration":
+                return data.declaration ? (
+                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 6 }}>
+                        <p style={{ fontSize: "0.55rem", color: "#444", lineHeight: 1.5, fontStyle: "italic" }}>{data.declaration}</p>
+                        {data.signature && <p style={{ fontSize: "0.6rem", color: "#222", fontWeight: 700, textAlign: "right", marginTop: 4 }}>{data.signature}</p>}
+                    </div>
+                ) : null;
             default: return null;
         }
     }
@@ -220,8 +246,6 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
 
                 {/* ── Sidebar ── */}
                 <div style={{ flexShrink: 0, width: `${sw}%`, minWidth: `${sw}%`, backgroundColor: color, padding: "12px 10px", color: "#fff", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
-
-                    {/* Photo */}
                     {config.showPhoto !== false && (
                         <div style={{ alignSelf: "center" }}>
                             <div style={{ width: 52, height: 52, borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -232,7 +256,6 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                         </div>
                     )}
                     {data.fullName && <p style={{ fontWeight: 900, textAlign: "center", fontSize: "0.68rem", lineHeight: 1.3, color: "#fff" }}>{data.fullName}</p>}
-
                     {(data.phone || data.email || data.address) && (
                         <div>
                             <p style={sSH}>Contact</p>
@@ -241,16 +264,12 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                             {data.address && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem" }}>⌂ {data.address}</p>}
                         </div>
                     )}
-
                     {data.skills?.length > 0 && (
                         <div>
                             <p style={sSH}>Skills</p>
-                            {data.skills.map((sk, i) => (
-                                <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>• {sk}</p>
-                            ))}
+                            {data.skills.map((sk, i) => <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>• {sk}</p>)}
                         </div>
                     )}
-
                     {data.languages?.length > 0 && (
                         <div>
                             <p style={sSH}>Languages</p>
@@ -262,16 +281,12 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                             ))}
                         </div>
                     )}
-
                     {data.hobbies?.length > 0 && (
                         <div>
                             <p style={sSH}>Hobbies</p>
-                            {data.hobbies.map((h, i) => (
-                                <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>• {h}</p>
-                            ))}
+                            {data.hobbies.map((h, i) => <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.55rem", marginBottom: 2 }}>• {h}</p>)}
                         </div>
                     )}
-
                     {personalData.length > 0 && (
                         <div>
                             <p style={sSH}>Personal Data</p>
@@ -285,25 +300,14 @@ function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig 
                     )}
                 </div>
 
-                {/* ── Main ── */}
+                {/* ── Main — sections rendered in sectionOrder ── */}
                 <div style={{ flex: 1, minWidth: 0, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
                     {data.fullName && <p style={{ fontWeight: 900, fontSize: "0.9rem", color, marginBottom: 2 }}>{data.fullName}</p>}
-
-                    {data.careerObjective && (
-                        <div>
-                            <h4 style={mSH(color)}>Career Objective</h4>
-                            <p style={{ fontSize: "0.58rem", color: "#333", lineHeight: 1.6 }}>{data.careerObjective}</p>
-                        </div>
-                    )}
-
-                    {sections.filter(k => !["skills", "hobbies", "languages"].includes(k)).map(renderMainSection)}
-
-                    {data.declaration && (
-                        <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: 6, marginTop: 4 }}>
-                            <p style={{ fontSize: "0.55rem", color: "#444", lineHeight: 1.5, fontStyle: "italic" }}>{data.declaration}</p>
-                            {data.signature && <p style={{ fontSize: "0.6rem", color: "#222", fontWeight: 700, textAlign: "right", marginTop: 4 }}>{data.signature}</p>}
-                        </div>
-                    )}
+                    {mainOrder.map(key => (
+                        <React.Fragment key={key}>
+                            {renderSection(key)}
+                        </React.Fragment>
+                    ))}
                 </div>
             </div>
         </div>
@@ -571,12 +575,20 @@ export default function CvEditorPage() {
 
     // Drag-and-drop section reorder
     const handleDragEnd = (result: DropResult) => {
-        if (!result.destination) return;
-        const current = form.getValues("sectionOrder");
-        const reordered = Array.from(current);
-        const [moved] = reordered.splice(result.source.index, 1);
-        reordered.splice(result.destination.index, 0, moved);
-        form.setValue("sectionOrder", reordered, { shouldDirty: true });
+        if (!result.destination || result.source.index === result.destination.index) return;
+
+        // Work on only the visible (main-column) portion of sectionOrder
+        const fullOrder = [...(form.getValues("sectionOrder") ?? [])];
+        const sidebarKeys = ["skills", "languages", "hobbies"];
+        const mainKeys = fullOrder.filter(k => MAIN_SECTION_KEYS.includes(k as typeof MAIN_SECTION_KEYS[number]));
+        const sidebarRemainder = fullOrder.filter(k => sidebarKeys.includes(k));
+
+        // Reorder the visible list
+        const [moved] = mainKeys.splice(result.source.index, 1);
+        mainKeys.splice(result.destination.index, 0, moved);
+
+        // Reconstruct full order: main keys + sidebar keys appended at end
+        form.setValue("sectionOrder", [...mainKeys, ...sidebarRemainder], { shouldDirty: true, shouldValidate: false });
     };
 
     // Restore from version
@@ -593,8 +605,9 @@ export default function CvEditorPage() {
         );
     }
 
-    const sectionOrder = form.watch("sectionOrder");
-    const watchedValues = form.watch();
+    // useWatch is more reliably reactive than form.watch() for DnD updates
+    const sectionOrder = useWatch({ control: form.control, name: "sectionOrder" }) ?? [];
+    const watchedValues = { ...form.watch(), sectionOrder };
 
     return (
         <div className="max-w-screen-xl mx-auto pb-12">
@@ -992,12 +1005,17 @@ export default function CvEditorPage() {
 
                     {/* Section Reorder */}
                     <CollapsibleSection title="Section Order (Drag to Reorder)">
-                        <p className="text-xs text-gray-500 mb-3">Drag sections to change their order in the CV.</p>
+                        <p className="text-xs text-gray-500 mb-3">
+                            Drag to reorder main column sections. Skills, Languages, Hobbies are always in the sidebar.
+                        </p>
                         <DragDropContext onDragEnd={handleDragEnd}>
                             <Droppable droppableId="sections">
                                 {(provided) => (
                                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                                        {sectionOrder.map((key, index) => (
+                                        {/* Only show main-column sections in DnD */}
+                                        {[...sectionOrder]
+                                            .filter(k => MAIN_SECTION_KEYS.includes(k as typeof MAIN_SECTION_KEYS[number]))
+                                            .map((key, index) => (
                                             <Draggable key={key} draggableId={key} index={index}>
                                                 {(drag, snapshot) => (
                                                     <div

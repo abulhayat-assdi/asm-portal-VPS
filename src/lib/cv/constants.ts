@@ -11,14 +11,21 @@ export const DEFAULT_SECTION_ORDER = [
 export type SectionKey = (typeof DEFAULT_SECTION_ORDER)[number];
 
 export const SECTION_LABELS: Record<string, string> = {
-    workExperience: 'Work Experience',
-    training: 'Training',
-    education: 'Education',
-    languages: 'Languages',
-    references: 'References',
-    skills: 'Skills',
-    hobbies: 'Hobbies',
+    careerObjective: 'Career Objective',
+    workExperience:  'Work Experience',
+    training:        'Training',
+    education:       'Education',
+    languages:       'Languages',
+    references:      'References',
+    skills:          'Skills',
+    hobbies:         'Hobbies',
+    declaration:     'Declaration',
 };
+
+// Sections that always live in the sidebar (cannot be moved to main column)
+export const SIDEBAR_SECTION_KEYS = ['skills', 'languages', 'hobbies'] as const;
+// Sections that can be reordered in the main column
+export const MAIN_SECTION_KEYS = ['careerObjective', 'workExperience', 'training', 'education', 'references', 'declaration'] as const;
 
 export const MAX_CV_VERSIONS = 20;
 export const AUTOSAVE_DEBOUNCE_MS = 1500;

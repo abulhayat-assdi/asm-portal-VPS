@@ -227,11 +227,16 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
         { label: 'Nationality', value: data.nationality },
     ].filter(f => f.value);
 
-    const sectionOrder: string[] = Array.isArray(data.sectionOrder) && data.sectionOrder.length
+    const sidebarKeys = ['skills', 'hobbies', 'languages'];
+    const defaultOrder = ['careerObjective', 'workExperience', 'training', 'education', 'references', 'declaration'];
+    const rawOrder: string[] = Array.isArray(data.sectionOrder) && data.sectionOrder.length
         ? (data.sectionOrder as string[])
-        : ['workExperience', 'training', 'education', 'references'];
-
-    const mainSections = sectionOrder.filter(k => !['skills', 'hobbies', 'languages'].includes(k));
+        : defaultOrder;
+    // Main column only — append any missing default keys at end
+    const mainSections: string[] = rawOrder.filter(k => !sidebarKeys.includes(k));
+    for (const k of defaultOrder) {
+        if (!mainSections.includes(k)) mainSections.push(k);
+    }
 
     return (
         <Document title={data.fullName ? `${data.fullName} — CV` : 'CV'} author={data.fullName ?? ''}>
@@ -330,26 +335,28 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                 {/* ── Main ── */}
                 <View style={s.main}>
 
-                    {/* Name */}
+                    {/* Name — always at top */}
                     {data.fullName && <Text style={s.mainName}>{data.fullName}</Text>}
 
-                    {/* Career Objective */}
-                    {data.careerObjective && (
-                        <MSection title="Career Objective" s={s}>
-                            <Text style={s.objectiveTxt}>{data.careerObjective}</Text>
-                        </MSection>
-                    )}
-
-                    {/* Dynamic sections */}
-                    {mainSections.map(key => renderMainSection(key, data, s))}
-
-                    {/* Declaration */}
-                    {data.declaration && (
-                        <View style={s.declaration}>
-                            <Text style={s.declarationTxt}>{data.declaration}</Text>
-                            {data.signature && <Text style={s.signatureTxt}>{data.signature}</Text>}
-                        </View>
-                    )}
+                    {/* All main sections rendered in sectionOrder */}
+                    {mainSections.map(key => {
+                        if (key === 'careerObjective' && data.careerObjective) {
+                            return (
+                                <MSection key="co" title="Career Objective" s={s}>
+                                    <Text style={s.objectiveTxt}>{data.careerObjective}</Text>
+                                </MSection>
+                            );
+                        }
+                        if (key === 'declaration' && data.declaration) {
+                            return (
+                                <View key="dec" style={s.declaration}>
+                                    <Text style={s.declarationTxt}>{data.declaration}</Text>
+                                    {data.signature && <Text style={s.signatureTxt}>{data.signature}</Text>}
+                                </View>
+                            );
+                        }
+                        return renderMainSection(key, data, s);
+                    })}
                 </View>
             </Page>
         </Document>
