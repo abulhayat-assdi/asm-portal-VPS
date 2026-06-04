@@ -37,7 +37,6 @@ const teacherAdminNavItems: { href: string; label: string; icon: string; permiss
     { href: "/dashboard/admin/hero-images",              label: "Hero Images",        icon: "🖼️", permission: "admin_cms" },
     { href: "/dashboard/admin/access-management",        label: "Access Management",  icon: "🔑", permission: "access_management" },
     { href: "/dashboard/admin/cv-manager",               label: "CV Manager",         icon: "📄", permission: "admin_panel" },
-    { href: "/dashboard/settings/branding",             label: "ব্র্যান্ডিং সেটিংস",    icon: "🎨", permission: "admin_panel" },
 ];
 
 const studentNavItems: { href: string; label: string; icon: string; permission: null }[] = [
