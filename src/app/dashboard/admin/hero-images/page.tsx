@@ -43,7 +43,7 @@ export default function HeroImagesPage() {
             } else {
                 const errText = data.error || `Server error (${res.status})`;
                 setApiError(errText);
-                console.error("[HeroImages] API error:", errText);
+                console.warn("[HeroImages] API error:", errText);
             }
         } catch (e) {
             const errText = e instanceof Error ? e.message : "Network error";
