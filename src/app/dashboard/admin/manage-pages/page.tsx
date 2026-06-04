@@ -6,7 +6,6 @@ import { getPageContent } from "@/services/cmsService";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
-import Image from "next/image";
 
 const PAGES = [
     { id: "home_page", label: "Home Page" },
@@ -52,6 +51,7 @@ interface PageContent {
     socialGroups?: SocialGroup[];
     logoUrl?: string;
     logoStoragePath?: string;
+    siteName?: string;
 }
 
 export default function ManagePages() {
@@ -103,6 +103,16 @@ export default function ManagePages() {
         }
     };
 
+    const saveSiteSettings = async (updated: PageContent) => {
+        await fetch("/api/admin/cms", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pageId: "site_settings", content: updated }),
+        });
+        // Notify Sidebar to re-fetch
+        window.dispatchEvent(new Event("site-settings-changed"));
+    };
+
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -110,15 +120,27 @@ export default function ManagePages() {
         const ALLOWED = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]);
         if (!ALLOWED.has(file.type)) {
             setMessage({ type: "error", text: "শুধুমাত্র JPG, PNG, GIF, WebP বা SVG ফাইল আপলোড করা যাবে" });
+            if (logoInputRef.current) logoInputRef.current.value = "";
             return;
         }
         if (file.size > 2 * 1024 * 1024) {
             setMessage({ type: "error", text: "লোগো ফাইল সর্বোচ্চ 2MB হতে হবে" });
+            if (logoInputRef.current) logoInputRef.current.value = "";
             return;
         }
 
         setUploadingLogo(true);
+        setMessage(null);
         try {
+            // Delete old logo file if it exists (resources/logo/ path)
+            const oldPath = content?.logoStoragePath || "";
+            if (oldPath && oldPath.startsWith("resources/logo/")) {
+                await fetch(`/api/storage/delete?path=${encodeURIComponent(oldPath)}`, {
+                    method: "DELETE",
+                }).catch(() => {});
+            }
+
+            // Upload new logo
             const formData = new FormData();
             formData.append("file", file);
             formData.append("category", "resource");
@@ -128,25 +150,19 @@ export default function ManagePages() {
             const data = await res.json();
 
             if (res.ok && data.fileUrl) {
-                const updated = {
+                const updated: PageContent = {
                     ...content,
                     logoUrl: data.fileUrl,
                     logoStoragePath: data.storagePath,
                 };
                 setContent(updated);
-
-                // Auto-save logo
-                await fetch("/api/admin/cms", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ pageId: "site_settings", content: updated }),
-                });
-                setMessage({ type: "success", text: "লোগো আপলোড ও সেভ সম্পন্ন!" });
+                await saveSiteSettings(updated);
+                setMessage({ type: "success", text: "লোগো আপলোড ও সেভ সম্পন্ন! সাইডবারে এখনই দেখা যাবে।" });
             } else {
-                setMessage({ type: "error", text: data.error || "Upload failed" });
+                setMessage({ type: "error", text: data.error || "আপলোড ব্যর্থ হয়েছে" });
             }
         } catch {
-            setMessage({ type: "error", text: "Logo upload failed" });
+            setMessage({ type: "error", text: "লোগো আপলোড ব্যর্থ হয়েছে" });
         } finally {
             setUploadingLogo(false);
             if (logoInputRef.current) logoInputRef.current.value = "";
@@ -155,14 +171,25 @@ export default function ManagePages() {
 
     const handleRemoveLogo = async () => {
         if (!confirm("লোগো রিমুভ করলে ডিফল্ট SVG লোগো দেখাবে। নিশ্চিত?")) return;
-        const updated = { ...content, logoUrl: "", logoStoragePath: "" };
+
+        // Delete file from disk
+        const oldPath = content?.logoStoragePath || "";
+        if (oldPath && oldPath.startsWith("resources/logo/")) {
+            await fetch(`/api/storage/delete?path=${encodeURIComponent(oldPath)}`, {
+                method: "DELETE",
+            }).catch(() => {});
+        }
+
+        const updated: PageContent = { ...content, logoUrl: "", logoStoragePath: "" };
         setContent(updated);
-        await fetch("/api/admin/cms", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pageId: "site_settings", content: updated }),
-        });
-        setMessage({ type: "success", text: "লোগো রিমুভ করা হয়েছে। ডিফল্ট SVG দেখাবে।" });
+        await saveSiteSettings(updated);
+        setMessage({ type: "success", text: "লোগো রিমুভ করা হয়েছে। ডিফল্ট SVG লোগো দেখাবে।" });
+    };
+
+    const handleSaveSiteName = async () => {
+        const updated: PageContent = { ...content };
+        await saveSiteSettings(updated);
+        setMessage({ type: "success", text: "সাইটের নাম সেভ হয়েছে!" });
     };
 
     const updateSocialLink = (groupId: string, linkIdx: number, field: keyof SocialLink, value: string) => {
@@ -461,70 +488,111 @@ export default function ManagePages() {
                 {/* ═══ OTHER PAGES (Modules, Instructors, Success Stories, Blog) ═══ */}
                 {["modules_page", "instructors_page", "success_stories_page", "blog_page"].includes(selectedPage) && renderPageHeaderEditor()}
 
-                {/* ═══ SITE SETTINGS (Logo) ═══ */}
+                {/* ═══ SITE SETTINGS (Logo + Site Name) ═══ */}
                 {selectedPage === "site_settings" && (
-                    <Card className="p-6">
-                        <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                            <div className="w-2 h-6 bg-purple-500 rounded-full"></div>
-                            <h2 className="text-xl font-bold text-gray-800">সাইট লোগো</h2>
-                        </div>
+                    <>
+                        {/* Site Name Card */}
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-purple-500 rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">সাইটের নাম</h2>
+                            </div>
+                            <p className="text-sm text-gray-500 mb-4">
+                                সাইডবারে লোগোর পাশে যে নাম দেখায় সেটা পরিবর্তন করুন। খালি রাখলে ডিফল্ট &ldquo;SALES MARKETING&rdquo; দেখাবে।
+                            </p>
+                            <div className="flex gap-3 items-end">
+                                <div className="flex-1">
+                                    <Input
+                                        label="সাইটের নাম (ঐচ্ছিক)"
+                                        placeholder="যেমন: Sales & Marketing"
+                                        value={content?.siteName || ""}
+                                        onChange={(e) => setContent({ ...content!, siteName: e.target.value })}
+                                    />
+                                </div>
+                                <Button
+                                    onClick={handleSaveSiteName}
+                                    className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold mb-0.5"
+                                >
+                                    সেভ করুন
+                                </Button>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2">
+                                দীর্ঘ নাম হলে সাইডবারে দুই লাইনে দেখাবে। সর্বোচ্চ ২০-২৫ অক্ষর প্রস্তাবিত।
+                            </p>
+                        </Card>
 
-                        {/* Current Logo */}
-                        <div className="mb-6">
-                            <p className="text-sm font-medium text-gray-700 mb-3">বর্তমান লোগো</p>
-                            {content?.logoUrl ? (
-                                <div className="flex items-center gap-4">
-                                    <div className="relative w-32 h-16 bg-[#0D1B2A] rounded-xl flex items-center justify-center p-3">
-                                        <Image
-                                            src={content.logoUrl}
-                                            alt="Site Logo"
-                                            fill
-                                            className="object-contain p-2"
-                                        />
+                        {/* Logo Card */}
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-purple-500 rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">সাইট লোগো</h2>
+                            </div>
+
+                            {/* Current Logo Preview */}
+                            <div className="mb-6">
+                                <p className="text-sm font-medium text-gray-700 mb-3">বর্তমান লোগো</p>
+                                <div className="flex items-center gap-5">
+                                    <div className="w-36 h-20 bg-[#0D1B2A] rounded-xl flex items-center justify-center p-3 flex-shrink-0 border border-gray-700">
+                                        {content?.logoUrl ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
+                                            <img
+                                                src={content.logoUrl}
+                                                alt="Site Logo"
+                                                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                                            />
+                                        ) : (
+                                            <div className="text-white text-xs font-bold text-center">
+                                                <div className="text-2xl mb-1">🎓</div>
+                                                <div className="leading-tight">SALES<br />MARKETING</div>
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
-                                        <p className="text-sm text-gray-600 mb-2">আপলোড করা ইমেজ লোগো সক্রিয়</p>
-                                        <button
-                                            onClick={handleRemoveLogo}
-                                            className="text-sm text-red-500 hover:underline"
-                                        >
-                                            লোগো রিমুভ করুন (ডিফল্ট SVG-তে ফিরে যাবে)
-                                        </button>
+                                        {content?.logoUrl ? (
+                                            <>
+                                                <p className="text-sm font-semibold text-green-600 mb-1">✓ কাস্টম লোগো সক্রিয়</p>
+                                                <p className="text-xs text-gray-400 mb-3 break-all">{content.logoUrl}</p>
+                                                <button
+                                                    onClick={handleRemoveLogo}
+                                                    className="text-sm text-red-500 hover:text-red-700 hover:underline font-medium"
+                                                >
+                                                    লোগো রিমুভ করুন (ডিফল্ট SVG-তে ফিরে যাবে)
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">ডিফল্ট SVG লোগো ব্যবহৃত হচ্ছে</p>
+                                        )}
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="flex items-center gap-4">
-                                    <div className="w-32 h-16 bg-[#0D1B2A] rounded-xl flex items-center justify-center px-4">
-                                        <div className="text-white text-xs font-bold text-center">
-                                            <div className="text-lg mb-0.5">🎓</div>
-                                            <div>SALES<br />MARKETING</div>
-                                        </div>
-                                    </div>
-                                    <p className="text-sm text-gray-500">ডিফল্ট SVG লোগো ব্যবহৃত হচ্ছে</p>
-                                </div>
-                            )}
-                        </div>
+                            </div>
 
-                        {/* Upload new logo */}
-                        <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2">নতুন লোগো আপলোড করুন</p>
-                            <p className="text-xs text-gray-400 mb-3">JPG, PNG, WebP বা SVG — সর্বোচ্চ 2MB। প্রস্তাবিত: transparent background PNG।</p>
-                            <input
-                                ref={logoInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
-                                onChange={handleLogoUpload}
-                                disabled={uploadingLogo}
-                                className="w-full px-4 py-2 border rounded-lg text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
-                            />
-                            {uploadingLogo && (
-                                <div className="flex items-center gap-2 text-purple-600 mt-2">
-                                    <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-                                    <span className="text-sm font-semibold">আপলোড হচ্ছে...</span>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
+                            {/* Upload New Logo */}
+                            <div className="border-t pt-5">
+                                <p className="text-sm font-semibold text-gray-700 mb-1">
+                                    {content?.logoUrl ? "লোগো রিপ্লেস করুন" : "নতুন লোগো আপলোড করুন"}
+                                </p>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    JPG, PNG, WebP বা SVG — সর্বোচ্চ 2MB।
+                                    প্রস্তাবিত: transparent background PNG, ন্যূনতম 200×200px।
+                                    {content?.logoUrl && " নতুন আপলোড করলে পুরনো স্বয়ংক্রিয়ভাবে মুছে যাবে।"}
+                                </p>
+                                <input
+                                    ref={logoInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                                    onChange={handleLogoUpload}
+                                    disabled={uploadingLogo}
+                                    className="w-full px-4 py-2.5 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-600 cursor-pointer hover:border-purple-300 hover:bg-purple-50/30 transition-colors file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                                {uploadingLogo && (
+                                    <div className="flex items-center gap-2 text-purple-600 mt-3">
+                                        <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                        <span className="text-sm font-semibold">আপলোড হচ্ছে...</span>
+                                    </div>
+                                )}
+                            </div>
+                        </Card>
+                    </>
                 )}
             </div>
 

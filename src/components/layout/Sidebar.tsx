@@ -56,9 +56,33 @@ export default function Sidebar() {
     const router = useRouter();
     const { userProfile, logout, loading, hasPermission } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [siteLogoUrl, setSiteLogoUrl] = useState<string | null>(null);
+    const [siteName, setSiteName] = useState<string | null>(null);
 
     // Notifications hook
     const { counts, markPageAsVisited } = useSidebarNotifications();
+
+    // Fetch site settings (logo + name)
+    const fetchSiteSettings = async () => {
+        try {
+            const res = await fetch("/api/site-settings");
+            if (res.ok) {
+                const data = await res.json();
+                setSiteLogoUrl(data.logoUrl || null);
+                setSiteName(data.siteName || null);
+            }
+        } catch {
+            // silently fail — defaults will show
+        }
+    };
+
+    useEffect(() => {
+        fetchSiteSettings();
+        // Re-fetch when admin saves site settings
+        const handler = () => fetchSiteSettings();
+        window.addEventListener("site-settings-changed", handler);
+        return () => window.removeEventListener("site-settings-changed", handler);
+    }, []);
 
     // Mark current path as visited
     useEffect(() => {
@@ -131,13 +155,16 @@ export default function Sidebar() {
                         onClick={() => setIsMobileMenuOpen(false)}
                     >
                         <div suppressHydrationWarning className="bg-[#0D1B2A] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm transition-all duration-300 ease-in-out group-hover:shadow-md group-hover:-translate-y-0.5">
-                            {/* New Brand Logo */}
-                            <BrandLogo size={36} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
-
-                            {/* Text */}
-                            <div suppressHydrationWarning className="text-white font-bold text-sm leading-tight tracking-wide">
-                                SALES <br />MARKETING
-                            </div>
+                            <BrandLogo size={36} primaryColor="#FFFFFF" arrowColor="#4CAF50" logoUrl={siteLogoUrl} />
+                            {siteName ? (
+                                <div suppressHydrationWarning className="text-white font-bold text-sm leading-tight tracking-wide">
+                                    {siteName}
+                                </div>
+                            ) : (
+                                <div suppressHydrationWarning className="text-white font-bold text-sm leading-tight tracking-wide">
+                                    SALES <br />MARKETING
+                                </div>
+                            )}
                         </div>
                     </Link>
                 </div>
