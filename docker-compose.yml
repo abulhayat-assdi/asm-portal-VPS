@@ -26,6 +26,8 @@ services:
       SMTP_PASS: ${SMTP_PASS}
       SMTP_FROM: ${SMTP_FROM}
       LOCAL_STORAGE_PATH: /app/storage
+      NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-tasm-skill.asf.bd}
+      SAAS_OWNER_EMAIL: ${SAAS_OWNER_EMAIL}
     depends_on:
       - db
     ports:

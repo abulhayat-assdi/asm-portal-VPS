@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { signJWT } from '@/lib/auth';
 import { COOKIES } from '@/lib/constants';
 import { PORTAL_OWNER_EMAIL } from '@/lib/permissions';
+import { getTenantBySlug, getTenantSlugFromHeaders } from '@/lib/tenant';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -65,10 +66,15 @@ export async function POST(req: NextRequest) {
 
         const { email, password } = parsed.data;
 
-        // 1. Find user in DB
-        const user = await prisma.user.findUnique({
-            where: { email: email.toLowerCase().trim(), deletedAt: null },
-        });
+        // Resolve tenant from subdomain
+        const tenantSlug = getTenantSlugFromHeaders(req.headers) || 'tasm-skill';
+        const tenant = await getTenantBySlug(tenantSlug);
+
+        // 1. Find user in DB (scoped to tenant if tenantId is known)
+        const userQuery = tenant
+            ? { email: email.toLowerCase().trim(), tenantId: tenant.id, deletedAt: null }
+            : { email: email.toLowerCase().trim(), deletedAt: null };
+        const user = await prisma.user.findFirst({ where: userQuery });
 
         if (!user) {
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
@@ -90,12 +96,14 @@ export async function POST(req: NextRequest) {
         });
         if (enforceRole.role) user.role = enforceRole.role;
 
-        // 4. Sign JWT
+        // 4. Sign JWT (include tenantId for multi-tenant scoping)
         const token = await signJWT({
             id: user.id,
             email: user.email,
             displayName: user.displayName,
             role: user.role,
+            tenantId: user.tenantId ?? undefined,
+            tenantSlug: tenant?.slug ?? undefined,
             teacherId: user.teacherId ?? undefined,
             studentBatchName: user.studentBatchName ?? undefined,
             studentRoll: user.studentRoll ?? undefined,

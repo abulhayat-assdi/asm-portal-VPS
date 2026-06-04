@@ -9,6 +9,8 @@ export interface JWTPayload {
     email: string;
     displayName: string;
     role: string;
+    tenantId?: string;
+    tenantSlug?: string;
     teacherId?: string;
     studentBatchName?: string;
     studentRoll?: string;
@@ -116,3 +118,12 @@ export const isSuperAdmin = (user: JWTPayload) =>
 
 export const isTeacherOrAdmin = (user: JWTPayload) =>
     user.role === 'teacher' || user.role === 'admin' || user.role === 'super_admin';
+
+/**
+ * Check if the user is the SaaS platform owner.
+ * The SaaS owner can manage all tenants from /saas-admin.
+ */
+export const isSaasOwner = (user: JWTPayload): boolean => {
+    const ownerEmail = process.env.SAAS_OWNER_EMAIL;
+    return !!ownerEmail && user.email === ownerEmail;
+};

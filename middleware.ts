@@ -14,6 +14,7 @@ const PUBLIC_API_ROUTES = [
     '/api/setup',
     '/api/cv/public/',
     '/api/cv/admin/templates',
+    '/api/saas/',
 ];
 
 const isPublicAssetPath = (pathname: string) =>
@@ -31,11 +32,50 @@ const verifyAndGetRole = async (token: string): Promise<string | undefined> => {
     }
 };
 
+// Reserved subdomains that route to SaaS-owner pages, not tenant portals
+const RESERVED_SUBDOMAINS = new Set(['www', 'saas-admin', 'api', 'mail', 'ftp']);
+const DEFAULT_TENANT_SLUG = 'tasm-skill';
+
+function extractTenantSlug(host: string): string {
+    const hostname = host.split(':')[0];
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd';
+
+    // localhost or IP → use default tenant
+    if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        return DEFAULT_TENANT_SLUG;
+    }
+
+    const suffix = '.' + baseDomain;
+    if (hostname.endsWith(suffix)) {
+        const sub = hostname.slice(0, hostname.length - suffix.length);
+        if (sub && !RESERVED_SUBDOMAINS.has(sub)) return sub;
+    }
+
+    // Main domain (no subdomain) → default tenant
+    return DEFAULT_TENANT_SLUG;
+}
+
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    const host = request.headers.get('host') || '';
+
+    // ── Tenant slug injection (no DB call — API routes resolve the slug) ──
+    const tenantSlug = extractTenantSlug(host);
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set('x-tenant-slug', tenantSlug);
+
+    // ── SaaS admin routes — protected by separate saas-owner check ──
+    if (pathname.startsWith('/saas-admin')) {
+        const session = request.cookies.get(COOKIES.SESSION)?.value;
+        const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 50;
+        if (!hasSession) {
+            return NextResponse.redirect(new URL('/login', request.url));
+        }
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    }
 
     if (isPublicAssetPath(pathname) || PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {
-        return NextResponse.next();
+        return NextResponse.next({ request: { headers: requestHeaders } });
     }
 
     const isDashboardPath = pathname.startsWith(APP_PATHS.DASHBOARD);
@@ -44,7 +84,6 @@ export async function middleware(request: NextRequest) {
     const isApiRequest = pathname.startsWith('/api');
 
     const session = request.cookies.get(COOKIES.SESSION)?.value;
-    // A valid JWT has exactly 3 dot-separated parts
     const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 50;
     const role = hasSession ? await verifyAndGetRole(session!) : undefined;
 
@@ -67,13 +106,14 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    return NextResponse.next();
+    return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {
     matcher: [
         '/dashboard/:path*',
         '/student-dashboard/:path*',
+        '/saas-admin/:path*',
         '/login',
         '/student-login',
         '/api/:path*',
