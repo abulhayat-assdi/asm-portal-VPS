@@ -7,6 +7,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { getImageUrl } from "@/lib/getImageUrl";
 
+const FALLBACK_IMAGES = [
+    getImageUrl("home/hero-slide-1.jpg"),
+    getImageUrl("home/hero-slide-2.jpg"),
+    getImageUrl("home/audience-bg.jpg"),
+];
+
 interface HeroSectionProps {
     badge?: string;
     heading?: string;
@@ -18,6 +24,7 @@ interface HeroSectionProps {
     onPrimaryClick?: () => void;
     onSecondaryClick?: () => void;
     className?: string;
+    heroImages?: string[];
 }
 
 export default function HeroSection({
@@ -31,12 +38,9 @@ export default function HeroSection({
     onPrimaryClick,
     onSecondaryClick,
     className = "",
+    heroImages,
 }: HeroSectionProps) {
-    const backgroundImages = [
-        getImageUrl("home/hero-slide-1.jpg"),
-        getImageUrl("home/hero-slide-2.jpg"),
-        getImageUrl("home/audience-bg.jpg"),
-    ];
+    const backgroundImages = (heroImages && heroImages.length > 0) ? heroImages : FALLBACK_IMAGES;
 
     const [currentIndex, setCurrentIndex] = useState(0);
 

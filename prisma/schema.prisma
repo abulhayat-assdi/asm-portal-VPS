@@ -106,12 +106,48 @@ enum ActorRole {
   TEACHER
 }
 
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  DELETED
+}
+
+// ============================================================
+// TENANTS (SaaS Multi-tenancy)
+// ============================================================
+
+model Tenant {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  name         String
+  tagline      String?
+  logo         String?
+  favicon      String?
+  primaryColor String       @default("#1a56db") @map("primary_color")
+  accentColor  String       @default("#f3f4f6") @map("accent_color")
+  status       TenantStatus @default(ACTIVE)
+  plan         String       @default("basic")
+  ownerName    String       @map("owner_name")
+  ownerEmail   String       @map("owner_email")
+  ownerPhone   String?      @map("owner_phone")
+  settings     Json         @default("{}")
+  trialEndsAt  DateTime?    @map("trial_ends_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([status])
+  @@map("tenants")
+}
+
 // ============================================================
 // AUTHENTICATION
 // ============================================================
 
 model User {
   id               String    @id @default(uuid())
+  tenantId         String?   @map("tenant_id")
   email            String    @unique
   passwordHash     String    @map("password_hash")
   displayName      String    @map("display_name")
@@ -131,6 +167,7 @@ model User {
   chatMessages        ChatMessage[]
   cvDrafts            CvDraft[]
 
+  @@index([tenantId])
   @@index([email])
   @@index([role])
   @@index([studentBatchName, studentRoll])
@@ -158,6 +195,7 @@ model PasswordResetToken {
 
 model Teacher {
   id                   String   @id @default(uuid())
+  tenantId             String?  @map("tenant_id")
   teacherId            String   @unique @map("teacher_id")
   name                 String
   designation          String   @default("")
@@ -175,6 +213,7 @@ model Teacher {
   leaves       Leave[]
   leaveSettings LeaveSettings?
 
+  @@index([tenantId])
   @@index([teacherId])
   @@index([order])
   @@map("teachers")
@@ -186,6 +225,7 @@ model Teacher {
 
 model Class {
   id             String      @id @default(uuid())
+  tenantId       String?     @map("tenant_id")
   teacherUid     String      @map("teacher_uid")
   teacherName    String      @map("teacher_name")
   date           String
@@ -200,6 +240,7 @@ model Class {
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([teacherUid])
   @@index([status])
   @@index([date])
@@ -209,6 +250,7 @@ model Class {
 
 model ClassSchedule {
   id          String         @id @default(uuid())
+  tenantId    String?        @map("tenant_id")
   teacherId   String         @map("teacher_id")
   teacherName String         @map("teacher_name")
   date        String
@@ -220,6 +262,7 @@ model ClassSchedule {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([teacherId])
   @@index([date])
   @@index([batch])
@@ -232,6 +275,7 @@ model ClassSchedule {
 
 model Batch {
   id        String      @id @default(uuid())
+  tenantId  String?     @map("tenant_id")
   name      String      @unique
   status    BatchStatus @default(active)
   createdAt DateTime    @default(now()) @map("created_at")
@@ -239,12 +283,14 @@ model Batch {
 
   students BatchStudent[]
 
+  @@index([tenantId])
   @@index([status])
   @@map("batches")
 }
 
 model BatchStudent {
   id                 String          @id @default(uuid())
+  tenantId           String?         @map("tenant_id")
   batchId            String          @map("batch_id")
   batchName          String          @map("batch_name")
   roll               String
@@ -270,6 +316,7 @@ model BatchStudent {
   batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@unique([batchName, roll])
+  @@index([tenantId])
   @@index([batchName])
   @@index([batchType])
   @@index([courseStatus])
@@ -282,6 +329,7 @@ model BatchStudent {
 
 model Notice {
   id            String   @id @default(uuid())
+  tenantId      String?  @map("tenant_id")
   title         String
   description   String
   date          String
@@ -291,12 +339,14 @@ model Notice {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([createdAt])
   @@map("notices")
 }
 
 model StudentNotice {
   id            String   @id @default(uuid())
+  tenantId      String?  @map("tenant_id")
   title         String
   description   String
   date          String
@@ -306,6 +356,7 @@ model StudentNotice {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([createdAt])
   @@map("student_notices")
 }
@@ -316,6 +367,7 @@ model StudentNotice {
 
 model HomeworkSubmission {
   id               String   @id @default(uuid())
+  tenantId         String?  @map("tenant_id")
   studentUid       String   @map("student_uid")
   studentName      String   @map("student_name")
   studentRoll      String   @map("student_roll")
@@ -334,6 +386,7 @@ model HomeworkSubmission {
   submittedAt      DateTime @default(now()) @map("submitted_at")
   deletedAt        DateTime? @map("deleted_at")
 
+  @@index([tenantId])
   @@index([studentUid])
   @@index([teacherName])
   @@index([studentBatchName])
@@ -343,6 +396,7 @@ model HomeworkSubmission {
 
 model HomeworkAssignment {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   teacherUid  String   @map("teacher_uid")
   teacherName String   @map("teacher_name")
   title       String
@@ -351,6 +405,7 @@ model HomeworkAssignment {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([teacherUid])
   @@index([batchName])
   @@index([deadlineDate])
@@ -363,6 +418,7 @@ model HomeworkAssignment {
 
 model Feedback {
   id            String         @id @default(uuid())
+  tenantId      String?        @map("tenant_id")
   studentName   String         @map("student_name")
   batch         String
   role          String         @default("")
@@ -375,6 +431,7 @@ model Feedback {
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([status])
   @@index([createdAt])
   @@map("feedback")
@@ -386,6 +443,7 @@ model Feedback {
 
 model ContactMessage {
   id               String        @id @default(uuid())
+  tenantId         String?       @map("tenant_id")
   subject          String
   message          String
   studentUid       String        @map("student_uid")
@@ -399,6 +457,7 @@ model ContactMessage {
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([studentUid])
   @@index([status])
   @@map("contact_messages")
@@ -406,6 +465,7 @@ model ContactMessage {
 
 model ChatThread {
   id               String    @id @default(uuid())
+  tenantId         String?   @map("tenant_id")
   studentUid       String    @unique @map("student_uid")
   studentName      String    @map("student_name")
   studentEmail     String    @map("student_email")
@@ -420,6 +480,7 @@ model ChatThread {
 
   messages ChatMessage[]
 
+  @@index([tenantId])
   @@index([lastMessageTime])
   @@map("chat_threads")
 }
@@ -447,6 +508,7 @@ model ChatMessage {
 
 model ActivityLog {
   id          String    @id @default(uuid())
+  tenantId    String?   @map("tenant_id")
   actorUid    String    @map("actor_uid")
   actorRole   ActorRole @map("actor_role")
   actionType  String    @map("action_type")
@@ -457,6 +519,7 @@ model ActivityLog {
 
   actor User? @relation(fields: [actorUid], references: [id], onDelete: SetNull)
 
+  @@index([tenantId])
   @@index([actorUid])
   @@index([createdAt])
   @@index([actionType])
@@ -509,6 +572,7 @@ model LeaveSettings {
 
 model Resource {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   title       String
   description String?
   fileType    String   @map("file_type")
@@ -520,12 +584,14 @@ model Resource {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([createdAt])
   @@map("resources")
 }
 
 model ModuleFolder {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   moduleId    String   @map("module_id")
   moduleTitle String   @map("module_title")
   name        String
@@ -536,12 +602,14 @@ model ModuleFolder {
 
   resources ModuleResource[]
 
+  @@index([tenantId])
   @@index([moduleTitle])
   @@map("module_folders")
 }
 
 model ModuleResource {
   id                 String       @id @default(uuid())
+  tenantId           String?      @map("tenant_id")
   moduleId           String       @map("module_id")
   moduleTitle        String       @map("module_title")
   teacherName        String       @map("teacher_name")
@@ -562,6 +630,7 @@ model ModuleResource {
 
   folder ModuleFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId])
   @@index([moduleTitle])
   @@index([teacherUid])
   @@index([folderId])
@@ -574,6 +643,7 @@ model ModuleResource {
 
 model Post {
   id              String     @id @default(uuid())
+  tenantId        String?    @map("tenant_id")
   title           String
   slug            String     @unique
   excerpt         String     @default("")
@@ -590,6 +660,7 @@ model Post {
 
   comments BlogComment[]
 
+  @@index([tenantId])
   @@index([status])
   @@index([slug])
   @@index([createdAt])
@@ -616,6 +687,7 @@ model BlogComment {
 
 model ExamResult {
   id               String   @id @default(uuid())
+  tenantId         String?  @map("tenant_id")
   studentUid       String   @map("student_uid")
   studentName      String   @map("student_name")
   studentRoll      String   @map("student_roll")
@@ -628,6 +700,7 @@ model ExamResult {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([studentUid])
   @@index([studentBatchName])
   @@map("exam_results")
@@ -639,6 +712,7 @@ model ExamResult {
 
 model Routine {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   batchName   String   @map("batch_name")
   fileUrl     String   @map("file_url")
   storagePath String   @map("storage_path")
@@ -647,6 +721,7 @@ model Routine {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([batchName])
   @@map("routines")
 }
@@ -657,6 +732,7 @@ model Routine {
 
 model Policy {
   id            String   @id @default(uuid())
+  tenantId      String?  @map("tenant_id")
   title         String
   content       String   @default("")
   category      String?
@@ -673,6 +749,7 @@ model Policy {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([kind])
   @@index([sortOrder])
   @@map("policies")
@@ -684,12 +761,14 @@ model Policy {
 
 model CmsContent {
   id        String   @id @default(uuid())
+  tenantId  String?  @map("tenant_id")
   key       String   @unique
   value     Json
   updatedBy String?  @map("updated_by")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@map("cms_content")
 }
 
@@ -699,6 +778,7 @@ model CmsContent {
 
 model SuccessStory {
   id            String   @id @default(uuid())
+  tenantId      String?  @map("tenant_id")
   name          String
   batch         String
   role          String   @default("")
@@ -711,6 +791,7 @@ model SuccessStory {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([isPublished])
   @@map("success_stories")
 }
@@ -721,6 +802,7 @@ model SuccessStory {
 
 model VideoTestimonial {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   title       String
   videoUrl    String   @map("video_url")
   videoId     String   @default("") @map("video_id")
@@ -732,6 +814,7 @@ model VideoTestimonial {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([isPublished])
   @@index([order])
   @@map("video_testimonials")
@@ -832,6 +915,7 @@ model CvVersion {
 
 model DailyTrackerReport {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   batchName   String   @map("batch_name")
   date        String
   reportData  Json     @map("report_data")
@@ -839,6 +923,7 @@ model DailyTrackerReport {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([batchName])
   @@index([date])
   @@map("daily_tracker_reports")
@@ -850,6 +935,7 @@ model DailyTrackerReport {
 
 model StudentUpdateRequest {
   id               String    @id @default(uuid())
+  tenantId         String?   @map("tenant_id")
   studentUid       String    @map("student_uid")
   studentName      String    @map("student_name")
   studentBatchName String    @map("student_batch_name")
@@ -862,6 +948,7 @@ model StudentUpdateRequest {
   reviewedAt       DateTime? @map("reviewed_at")
   submittedAt      DateTime  @default(now()) @map("submitted_at")
 
+  @@index([tenantId])
   @@index([studentUid])
   @@index([status])
   @@map("student_update_requests")
@@ -873,6 +960,7 @@ model StudentUpdateRequest {
 
 model BatchRoutineEntry {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   batch       String
   dayOfWeek   String   @map("day_of_week")
   startTime   String   @map("start_time")
@@ -883,6 +971,7 @@ model BatchRoutineEntry {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([batch])
   @@map("batch_routine_entries")
 }
@@ -893,6 +982,7 @@ model BatchRoutineEntry {
 
 model RoutineConfig {
   id         String   @id @default(uuid())
+  tenantId   String?  @map("tenant_id")
   batch      String   @unique
   title      String   @default("")
   subtitle   String   @default("")
@@ -900,6 +990,7 @@ model RoutineConfig {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@map("routine_configs")
 }
 
@@ -909,6 +1000,7 @@ model RoutineConfig {
 
 model StudentExamBatchRecord {
   id        String   @id @default(uuid())
+  tenantId  String?  @map("tenant_id")
   batchName String   @map("batch_name")
   roll      String
   name      String
@@ -917,6 +1009,7 @@ model StudentExamBatchRecord {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([batchName, roll])
+  @@index([tenantId])
   @@index([batchName])
   @@map("student_exam_batch_records")
 }
@@ -927,6 +1020,7 @@ model StudentExamBatchRecord {
 
 model CourseModule {
   id          String   @id @default(cuid())
+  tenantId    String?  @map("tenant_id")
   slug        String   @unique
   title       String
   description String   @default("")
@@ -938,9 +1032,29 @@ model CourseModule {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt      @map("updated_at")
 
+  @@index([tenantId])
   @@index([slug])
   @@index([order])
   @@map("course_modules")
+}
+
+// ============================================================
+// HERO IMAGES (Homepage background slider)
+// ============================================================
+
+model HeroImage {
+  id          String   @id @default(uuid())
+  url         String
+  storagePath String   @map("storage_path")
+  label       String?
+  order       Int      @default(0)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([order])
+  @@index([isActive])
+  @@map("hero_images")
 }
 
 // ============================================================
@@ -949,6 +1063,7 @@ model CourseModule {
 
 model VideoStory {
   id          String   @id @default(uuid())
+  tenantId    String?  @map("tenant_id")
   youtubeUrl  String   @map("youtube_url")
   videoId     String   @map("video_id")
   title       String
@@ -959,6 +1074,7 @@ model VideoStory {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([tenantId])
   @@index([order])
   @@map("video_stories")
 }

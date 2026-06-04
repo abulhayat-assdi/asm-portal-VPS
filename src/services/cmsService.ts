@@ -8,6 +8,9 @@ import {
     defaultInstructorsPageContent
 } from "@/lib/defaultCmsContent";
 
+// Re-export for external use
+export { defaultContactPageContent };
+
 // ============================================================
 // cmsService — All Firestore calls replaced with API calls
 // ============================================================
@@ -32,7 +35,7 @@ export const getPageContent = async (pageId: string): Promise<object> => {
         const data = await res.json();
         const d = def as any;
 
-        // Safe merge of sections — same logic as before
+        // Safe merge of sections — DB values override defaults
         return {
             ...d,
             ...data,
@@ -44,6 +47,11 @@ export const getPageContent = async (pageId: string): Promise<object> => {
             aboutSection: { ...(d.aboutSection || {}), ...(data.aboutSection || {}) },
             whySection: { ...(d.whySection || {}), ...(data.whySection || {}) },
             ctaSection: { ...(d.ctaSection || {}), ...(data.ctaSection || {}) },
+            contactInfo: { ...(d.contactInfo || {}), ...(data.contactInfo || {}) },
+            // Arrays: if DB has data, use it; otherwise use defaults
+            socialGroups: (data.socialGroups && Array.isArray(data.socialGroups) && data.socialGroups.length > 0)
+                ? data.socialGroups
+                : (d.socialGroups || []),
         };
     } catch (error) {
         console.error(`Error fetching page content for ${pageId}:`, error);

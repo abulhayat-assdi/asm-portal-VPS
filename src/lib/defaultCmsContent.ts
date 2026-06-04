@@ -61,10 +61,38 @@ export const defaultContactPageContent = {
     title: "Get in Touch",
     subtitle: "Choose the most convenient way to reach us.",
   },
+  contactInfo: {
+    email: "abul.hayat@skill.assunnahfoundation.org",
+    emailDescription: "For inquiries and course information",
+    phone: "01862534626",
+    phoneDescription: "Available at 9 am to 5 pm",
+    locationName: "আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউট",
+    locationAddress: "আলি নগর গেটের বিপরীত পাশের বিল্ডিং, সাতারকুল রোড, উত্তর বাড্ডা, ঢাকা।",
+  },
   socialHeader: {
     title: "Our Social Presence",
     subtitle: "আমাদের সাথে সোশ্যাল মিডিয়ায় যুক্ত থাকুন এবং সর্বশেষ আপডেট পান।",
-  }
+  },
+  socialGroups: [
+    {
+      id: "skill",
+      title: "As Sunnah Skill Development Institute",
+      links: [
+        { platform: "facebook", label: "Facebook Page", url: "https://www.facebook.com/assunnahskill", displayText: "facebook.com/assunnahskill" },
+        { platform: "youtube", label: "YouTube Channel", url: "https://www.youtube.com/@assunnahskill", displayText: "youtube.com/@assunnahskill" },
+        { platform: "website", label: "Official Website", url: "https://asm-internal-portal.web.app", displayText: "asm-internal-portal.web.app" },
+      ],
+    },
+    {
+      id: "foundation",
+      title: "As Sunnah Foundation",
+      links: [
+        { platform: "facebook", label: "Facebook Page", url: "https://www.facebook.com/assunnahfoundationbd", displayText: "facebook.com/assunnahfoundationbd" },
+        { platform: "youtube", label: "YouTube Channel", url: "https://www.youtube.com/@As-Sunnah-Foundation-BD", displayText: "youtube.com/@As-Sunnah-Foundation-BD" },
+        { platform: "website", label: "Official Website", url: "https://assunnahfoundation.org", displayText: "assunnahfoundation.org" },
+      ],
+    },
+  ],
 };
 
 export const defaultBlogPageContent = {

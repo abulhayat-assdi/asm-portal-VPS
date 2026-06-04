@@ -1,25 +1,38 @@
 import React from "react";
+import Image from "next/image";
 
 interface BrandLogoProps {
     size?: number;
     className?: string;
-    /** Color for bars and graduation cap. Default: white */
     primaryColor?: string;
-    /** Color for the growth arrow. Default: green */
     arrowColor?: string;
+    logoUrl?: string | null;
 }
 
-/**
- * The official ASM brand logo:
- * Graduation cap + upward arrow + bar chart
- * Default: white bars/cap, green arrow (works on dark backgrounds)
- */
 export default function BrandLogo({
     size = 40,
     className = "",
     primaryColor = "#FFFFFF",
     arrowColor = "#4CAF50",
+    logoUrl,
 }: BrandLogoProps) {
+    if (logoUrl) {
+        return (
+            <div
+                className={className}
+                style={{ width: size, height: size, position: "relative", flexShrink: 0 }}
+            >
+                <Image
+                    src={logoUrl}
+                    alt="Brand Logo"
+                    fill
+                    className="object-contain"
+                    sizes={`${size}px`}
+                />
+            </div>
+        );
+    }
+
     return (
         <svg
             width={size}
@@ -34,9 +47,8 @@ export default function BrandLogo({
             <rect x="30" y="42" width="18" height="52" rx="2" fill={primaryColor} />
             <rect x="54" y="28" width="18" height="66" rx="2" fill={primaryColor} />
 
-            {/* Upward Arrow: shaft */}
+            {/* Upward Arrow */}
             <line x1="60" y1="65" x2="88" y2="22" stroke={arrowColor} strokeWidth="7" strokeLinecap="round" />
-            {/* Arrow head */}
             <polyline points="72,18 88,22 83,37" fill="none" stroke={arrowColor} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
 
             {/* Graduation Cap */}
@@ -48,4 +60,3 @@ export default function BrandLogo({
         </svg>
     );
 }
-

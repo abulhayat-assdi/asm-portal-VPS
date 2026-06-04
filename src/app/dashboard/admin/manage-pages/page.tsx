@@ -1,21 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPageContent } from "@/services/cmsService";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
+import Image from "next/image";
 
 const PAGES = [
     { id: "home_page", label: "Home Page" },
     { id: "about_page", label: "About Page" },
+    { id: "contact_page", label: "Contact & Q&A" },
     { id: "modules_page", label: "Modules Page" },
     { id: "instructors_page", label: "Instructors Page" },
     { id: "success_stories_page", label: "Success Stories" },
-    { id: "contact_page", label: "Contact Page" },
     { id: "blog_page", label: "Blog Page" },
+    { id: "site_settings", label: "Site Settings (Logo)" },
 ];
+
+interface SocialLink {
+    platform: string;
+    label: string;
+    url: string;
+    displayText: string;
+}
+
+interface SocialGroup {
+    id: string;
+    title: string;
+    links: SocialLink[];
+}
 
 interface PageContent {
     header?: { title?: string; subtitle?: string };
@@ -26,6 +41,17 @@ interface PageContent {
     whySection?: { title?: string };
     ctaSection?: { text?: string; buttonText?: string };
     socialHeader?: { title?: string; subtitle?: string };
+    contactInfo?: {
+        email?: string;
+        emailDescription?: string;
+        phone?: string;
+        phoneDescription?: string;
+        locationName?: string;
+        locationAddress?: string;
+    };
+    socialGroups?: SocialGroup[];
+    logoUrl?: string;
+    logoStoragePath?: string;
 }
 
 export default function ManagePages() {
@@ -34,12 +60,14 @@ export default function ManagePages() {
     const [content, setContent] = useState<PageContent | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const fetchContent = async () => {
             setLoading(true);
-            setContent(null); // Clear previous content to prevent desync edits
+            setContent(null);
             try {
                 const data = await getPageContent(selectedPage);
                 setContent(data);
@@ -49,7 +77,6 @@ export default function ManagePages() {
                 setLoading(false);
             }
         };
-
         fetchContent();
     }, [selectedPage]);
 
@@ -57,31 +84,105 @@ export default function ManagePages() {
         if (!user) return;
         setSaving(true);
         setMessage(null);
-
         try {
             const response = await fetch("/api/admin/cms", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    pageId: selectedPage,
-                    content: content
-                })
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pageId: selectedPage, content }),
             });
-
             const result = await response.json();
             if (response.ok) {
-                setMessage({ type: "success", text: "Page content updated successfully and live cache purged!" });
+                setMessage({ type: "success", text: "Page content updated successfully!" });
             } else {
                 throw new Error(result.error || "Failed to update content");
             }
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "An error occurred";
-            setMessage({ type: "error", text: errorMessage });
+            setMessage({ type: "error", text: error instanceof Error ? error.message : "An error occurred" });
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const ALLOWED = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]);
+        if (!ALLOWED.has(file.type)) {
+            setMessage({ type: "error", text: "শুধুমাত্র JPG, PNG, GIF, WebP বা SVG ফাইল আপলোড করা যাবে" });
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            setMessage({ type: "error", text: "লোগো ফাইল সর্বোচ্চ 2MB হতে হবে" });
+            return;
+        }
+
+        setUploadingLogo(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("category", "resource");
+            formData.append("path", "logo");
+
+            const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
+            const data = await res.json();
+
+            if (res.ok && data.fileUrl) {
+                const updated = {
+                    ...content,
+                    logoUrl: data.fileUrl,
+                    logoStoragePath: data.storagePath,
+                };
+                setContent(updated);
+
+                // Auto-save logo
+                await fetch("/api/admin/cms", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ pageId: "site_settings", content: updated }),
+                });
+                setMessage({ type: "success", text: "লোগো আপলোড ও সেভ সম্পন্ন!" });
+            } else {
+                setMessage({ type: "error", text: data.error || "Upload failed" });
+            }
+        } catch {
+            setMessage({ type: "error", text: "Logo upload failed" });
+        } finally {
+            setUploadingLogo(false);
+            if (logoInputRef.current) logoInputRef.current.value = "";
+        }
+    };
+
+    const handleRemoveLogo = async () => {
+        if (!confirm("লোগো রিমুভ করলে ডিফল্ট SVG লোগো দেখাবে। নিশ্চিত?")) return;
+        const updated = { ...content, logoUrl: "", logoStoragePath: "" };
+        setContent(updated);
+        await fetch("/api/admin/cms", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ pageId: "site_settings", content: updated }),
+        });
+        setMessage({ type: "success", text: "লোগো রিমুভ করা হয়েছে। ডিফল্ট SVG দেখাবে।" });
+    };
+
+    const updateSocialLink = (groupId: string, linkIdx: number, field: keyof SocialLink, value: string) => {
+        setContent(prev => {
+            if (!prev) return prev;
+            const groups = (prev.socialGroups || []).map(g => {
+                if (g.id !== groupId) return g;
+                const links = g.links.map((l, i) => i === linkIdx ? { ...l, [field]: value } : l);
+                return { ...g, links };
+            });
+            return { ...prev, socialGroups: groups };
+        });
+    };
+
+    const updateGroupTitle = (groupId: string, title: string) => {
+        setContent(prev => {
+            if (!prev) return prev;
+            const groups = (prev.socialGroups || []).map(g => g.id === groupId ? { ...g, title } : g);
+            return { ...prev, socialGroups: groups };
+        });
     };
 
     if (loading) {
@@ -93,7 +194,6 @@ export default function ManagePages() {
         );
     }
 
-    // Helper for page headers (About, Modules, etc.)
     const renderPageHeaderEditor = () => (
         <Card className="p-6">
             <div className="flex items-center gap-2 mb-4 border-b pb-2">
@@ -128,19 +228,15 @@ export default function ManagePages() {
                     <h1 className="text-3xl font-bold text-gray-900">Manage Public Pages</h1>
                     <p className="text-gray-500 mt-1">Live website content management with instant revalidation</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <select
-                        value={selectedPage}
-                        onChange={(e) => setSelectedPage(e.target.value)}
-                        className="px-4 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#059669] font-bold text-gray-700 shadow-sm transition-all cursor-pointer hover:border-[#059669]"
-                    >
-                        {PAGES.map((page) => (
-                            <option key={page.id} value={page.id}>
-                                {page.label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                <select
+                    value={selectedPage}
+                    onChange={(e) => setSelectedPage(e.target.value)}
+                    className="px-4 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#059669] font-bold text-gray-700 shadow-sm transition-all cursor-pointer hover:border-[#059669]"
+                >
+                    {PAGES.map((page) => (
+                        <option key={page.id} value={page.id}>{page.label}</option>
+                    ))}
+                </select>
             </div>
 
             {message && (
@@ -159,7 +255,9 @@ export default function ManagePages() {
             )}
 
             <div className="space-y-8 animate-in fade-in duration-500">
-                {selectedPage === "home_page" ? (
+
+                {/* ═══ HOME PAGE ═══ */}
+                {selectedPage === "home_page" && (
                     <>
                         <Card className="p-6">
                             <div className="flex items-center gap-2 mb-4 border-b pb-2">
@@ -167,210 +265,291 @@ export default function ManagePages() {
                                 <h2 className="text-xl font-bold text-gray-800">Hero Section</h2>
                             </div>
                             <div className="space-y-4">
-                                <Input
-                                    label="Heading"
-                                    value={content?.hero?.heading || ""}
-                                    onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, heading: e.target.value } })}
-                                />
-                                <Input
-                                    label="Subheading"
-                                    value={content?.hero?.subheading || ""}
-                                    onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, subheading: e.target.value } })}
-                                />
+                                <Input label="Heading" value={content?.hero?.heading || ""} onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, heading: e.target.value } })} />
+                                <Input label="Subheading" value={content?.hero?.subheading || ""} onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, subheading: e.target.value } })} />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Primary Button Text"
-                                        value={content?.hero?.primaryButtonText || ""}
-                                        onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, primaryButtonText: e.target.value } })}
-                                    />
-                                    <Input
-                                        label="Secondary Button Text"
-                                        value={content?.hero?.secondaryButtonText || ""}
-                                        onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, secondaryButtonText: e.target.value } })}
-                                    />
+                                    <Input label="Primary Button Text" value={content?.hero?.primaryButtonText || ""} onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, primaryButtonText: e.target.value } })} />
+                                    <Input label="Secondary Button Text" value={content?.hero?.secondaryButtonText || ""} onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, secondaryButtonText: e.target.value } })} />
                                 </div>
                             </div>
                         </Card>
-
                         <Card className="p-6">
                             <div className="flex items-center gap-2 mb-4 border-b pb-2">
                                 <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
                                 <h2 className="text-xl font-bold text-gray-800">Target Audience Section</h2>
                             </div>
                             <div className="space-y-4">
-                                <Input
-                                    label="Title"
-                                    value={content?.targetAudience?.title || ""}
-                                    onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, title: e.target.value } })}
-                                />
+                                <Input label="Title" value={content?.targetAudience?.title || ""} onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, title: e.target.value } })} />
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">Subtitle</label>
-                                    <textarea
-                                        rows={3}
-                                        value={content?.targetAudience?.subtitle || ""}
-                                        onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, subtitle: e.target.value } })}
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                    />
+                                    <textarea rows={3} value={content?.targetAudience?.subtitle || ""} onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, subtitle: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
                                 </div>
                             </div>
                         </Card>
-
                         <Card className="p-6">
                             <div className="flex items-center gap-2 mb-4 border-b pb-2">
                                 <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
                                 <h2 className="text-xl font-bold text-gray-800">Learning Outcomes Section</h2>
                             </div>
                             <div className="space-y-4">
-                                <Input
-                                    label="Title"
-                                    value={content?.learningOutcomes?.title || ""}
-                                    onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, title: e.target.value } })}
-                                />
+                                <Input label="Title" value={content?.learningOutcomes?.title || ""} onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, title: e.target.value } })} />
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">Subtitle</label>
+                                    <textarea rows={3} value={content?.learningOutcomes?.subtitle || ""} onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, subtitle: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
+                                </div>
+                            </div>
+                        </Card>
+                    </>
+                )}
+
+                {/* ═══ ABOUT PAGE ═══ */}
+                {selectedPage === "about_page" && (
+                    <>
+                        {renderPageHeaderEditor()}
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">What Is This Course?</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <Input label="Section Title" value={content?.aboutSection?.title || ""} onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, title: e.target.value } })} />
+                                {["description1", "description2", "description3"].map((field, i) => (
+                                    <div key={field} className="space-y-1">
+                                        <label className="text-sm font-medium text-gray-700">Description Paragraph {i + 1}</label>
+                                        <textarea rows={4} value={(content?.aboutSection as Record<string, string> | undefined)?.[field] || ""} onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, [field]: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">Why Section</h2>
+                            </div>
+                            <Input label="Why Section Title" value={content?.whySection?.title || ""} onChange={(e) => setContent({ ...content!, whySection: { ...content!.whySection, title: e.target.value } })} />
+                        </Card>
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">CTA Section</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">CTA Main Text</label>
+                                    <textarea rows={2} value={content?.ctaSection?.text || ""} onChange={(e) => setContent({ ...content!, ctaSection: { ...content!.ctaSection, text: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
+                                </div>
+                                <Input label="Button Text" value={content?.ctaSection?.buttonText || ""} onChange={(e) => setContent({ ...content!, ctaSection: { ...content!.ctaSection, buttonText: e.target.value } })} />
+                            </div>
+                        </Card>
+                    </>
+                )}
+
+                {/* ═══ CONTACT PAGE ═══ */}
+                {selectedPage === "contact_page" && (
+                    <>
+                        {renderPageHeaderEditor()}
+
+                        {/* Contact Info */}
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">যোগাযোগের তথ্য</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Email Address"
+                                        value={content?.contactInfo?.email || ""}
+                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, email: e.target.value } })}
+                                    />
+                                    <Input
+                                        label="Email Description"
+                                        value={content?.contactInfo?.emailDescription || ""}
+                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, emailDescription: e.target.value } })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Input
+                                        label="Phone Number"
+                                        value={content?.contactInfo?.phone || ""}
+                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, phone: e.target.value } })}
+                                    />
+                                    <Input
+                                        label="Phone Description (Available Hours)"
+                                        value={content?.contactInfo?.phoneDescription || ""}
+                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, phoneDescription: e.target.value } })}
+                                    />
+                                </div>
+                                <Input
+                                    label="Training Location Name"
+                                    value={content?.contactInfo?.locationName || ""}
+                                    onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, locationName: e.target.value } })}
+                                />
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Location Address</label>
                                     <textarea
-                                        rows={3}
-                                        value={content?.learningOutcomes?.subtitle || ""}
-                                        onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, subtitle: e.target.value } })}
+                                        rows={2}
+                                        value={content?.contactInfo?.locationAddress || ""}
+                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, locationAddress: e.target.value } })}
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
                                     />
                                 </div>
                             </div>
                         </Card>
-                    </>
-                ) : (
-                    <>
-                        {renderPageHeaderEditor()}
-                        
-                        {selectedPage === "about_page" && (
-                            <>
-                                <Card className="p-6">
-                                    <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                        <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                        <h2 className="text-xl font-bold text-gray-800">What Is This Course?</h2>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <Input
-                                            label="Section Title"
-                                            value={content?.aboutSection?.title || ""}
-                                            onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, title: e.target.value } })}
-                                        />
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-gray-700">Description Paragraph 1</label>
-                                            <textarea
-                                                rows={4}
-                                                value={content?.aboutSection?.description1 || ""}
-                                                onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, description1: e.target.value } })}
-                                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-gray-700">Description Paragraph 2</label>
-                                            <textarea
-                                                rows={4}
-                                                value={content?.aboutSection?.description2 || ""}
-                                                onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, description2: e.target.value } })}
-                                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-gray-700">Description Paragraph 3</label>
-                                            <textarea
-                                                rows={4}
-                                                value={content?.aboutSection?.description3 || ""}
-                                                onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, description3: e.target.value } })}
-                                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                            />
-                                        </div>
-                                    </div>
-                                </Card>
 
-                                <Card className="p-6">
-                                    <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                        <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                        <h2 className="text-xl font-bold text-gray-800">Why Section</h2>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <Input
-                                            label="Why Section Title"
-                                            value={content?.whySection?.title || ""}
-                                            onChange={(e) => setContent({ ...content!, whySection: { ...content!.whySection, title: e.target.value } })}
-                                        />
-                                    </div>
-                                </Card>
+                        {/* Social Header */}
+                        <Card className="p-6">
+                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
+                                <h2 className="text-xl font-bold text-gray-800">Social Presence Header</h2>
+                            </div>
+                            <div className="space-y-4">
+                                <Input label="Section Title" value={content?.socialHeader?.title || ""} onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, title: e.target.value } })} />
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">Section Subtitle</label>
+                                    <textarea rows={2} value={content?.socialHeader?.subtitle || ""} onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, subtitle: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
+                                </div>
+                            </div>
+                        </Card>
 
-                                <Card className="p-6">
-                                    <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                        <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                        <h2 className="text-xl font-bold text-gray-800">CTA Section</h2>
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div className="space-y-1">
-                                            <label className="text-sm font-medium text-gray-700">CTA Main Text</label>
-                                            <textarea
-                                                rows={2}
-                                                value={content?.ctaSection?.text || ""}
-                                                onChange={(e) => setContent({ ...content!, ctaSection: { ...content!.ctaSection, text: e.target.value } })}
-                                                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                            />
-                                        </div>
-                                        <Input
-                                            label="Button Text"
-                                            value={content?.ctaSection?.buttonText || ""}
-                                            onChange={(e) => setContent({ ...content!, ctaSection: { ...content!.ctaSection, buttonText: e.target.value } })}
-                                        />
-                                    </div>
-                                </Card>
-                            </>
-                        )}
-
-                        {selectedPage === "contact_page" && (
-                            <Card className="p-6">
+                        {/* Social Links Groups */}
+                        {(content?.socialGroups || []).map((group) => (
+                            <Card key={group.id} className="p-6">
                                 <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                    <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                    <h2 className="text-xl font-bold text-gray-800">Social Presence Header</h2>
+                                    <div className="w-2 h-6 bg-blue-500 rounded-full"></div>
+                                    <h2 className="text-lg font-bold text-gray-800">সোশ্যাল লিঙ্ক গ্রুপ</h2>
                                 </div>
                                 <div className="space-y-4">
                                     <Input
-                                        label="Social Section Title"
-                                        value={content?.socialHeader?.title || ""}
-                                        onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, title: e.target.value } })}
+                                        label="Group Title"
+                                        value={group.title}
+                                        onChange={(e) => updateGroupTitle(group.id, e.target.value)}
                                     />
-                                    <div className="space-y-1">
-                                        <label className="text-sm font-medium text-gray-700">Social Section Subtitle</label>
-                                        <textarea
-                                            rows={3}
-                                            value={content?.socialHeader?.subtitle || ""}
-                                            onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, subtitle: e.target.value } })}
-                                            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                        />
-                                    </div>
+                                    {group.links.map((link, linkIdx) => (
+                                        <div key={linkIdx} className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">
+                                                    {link.platform === "facebook" ? "📘" : link.platform === "youtube" ? "📺" : "🌐"}
+                                                </span>
+                                                <span className="text-sm font-bold text-gray-600 capitalize">{link.platform}</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <Input
+                                                    label="Link Label"
+                                                    value={link.label}
+                                                    onChange={(e) => updateSocialLink(group.id, linkIdx, "label", e.target.value)}
+                                                />
+                                                <Input
+                                                    label="Display Text"
+                                                    value={link.displayText}
+                                                    onChange={(e) => updateSocialLink(group.id, linkIdx, "displayText", e.target.value)}
+                                                />
+                                            </div>
+                                            <Input
+                                                label="URL"
+                                                value={link.url}
+                                                onChange={(e) => updateSocialLink(group.id, linkIdx, "url", e.target.value)}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                             </Card>
-                        )}
+                        ))}
                     </>
+                )}
+
+                {/* ═══ OTHER PAGES (Modules, Instructors, Success Stories, Blog) ═══ */}
+                {["modules_page", "instructors_page", "success_stories_page", "blog_page"].includes(selectedPage) && renderPageHeaderEditor()}
+
+                {/* ═══ SITE SETTINGS (Logo) ═══ */}
+                {selectedPage === "site_settings" && (
+                    <Card className="p-6">
+                        <div className="flex items-center gap-2 mb-4 border-b pb-2">
+                            <div className="w-2 h-6 bg-purple-500 rounded-full"></div>
+                            <h2 className="text-xl font-bold text-gray-800">সাইট লোগো</h2>
+                        </div>
+
+                        {/* Current Logo */}
+                        <div className="mb-6">
+                            <p className="text-sm font-medium text-gray-700 mb-3">বর্তমান লোগো</p>
+                            {content?.logoUrl ? (
+                                <div className="flex items-center gap-4">
+                                    <div className="relative w-32 h-16 bg-[#0D1B2A] rounded-xl flex items-center justify-center p-3">
+                                        <Image
+                                            src={content.logoUrl}
+                                            alt="Site Logo"
+                                            fill
+                                            className="object-contain p-2"
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-gray-600 mb-2">আপলোড করা ইমেজ লোগো সক্রিয়</p>
+                                        <button
+                                            onClick={handleRemoveLogo}
+                                            className="text-sm text-red-500 hover:underline"
+                                        >
+                                            লোগো রিমুভ করুন (ডিফল্ট SVG-তে ফিরে যাবে)
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-4">
+                                    <div className="w-32 h-16 bg-[#0D1B2A] rounded-xl flex items-center justify-center px-4">
+                                        <div className="text-white text-xs font-bold text-center">
+                                            <div className="text-lg mb-0.5">🎓</div>
+                                            <div>SALES<br />MARKETING</div>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-500">ডিফল্ট SVG লোগো ব্যবহৃত হচ্ছে</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Upload new logo */}
+                        <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">নতুন লোগো আপলোড করুন</p>
+                            <p className="text-xs text-gray-400 mb-3">JPG, PNG, WebP বা SVG — সর্বোচ্চ 2MB। প্রস্তাবিত: transparent background PNG।</p>
+                            <input
+                                ref={logoInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+                                onChange={handleLogoUpload}
+                                disabled={uploadingLogo}
+                                className="w-full px-4 py-2 border rounded-lg text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-50"
+                            />
+                            {uploadingLogo && (
+                                <div className="flex items-center gap-2 text-purple-600 mt-2">
+                                    <div className="w-4 h-4 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                    <span className="text-sm font-semibold">আপলোড হচ্ছে...</span>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
                 )}
             </div>
 
-            <div className="flex justify-end pt-8 pb-12 sticky bottom-0 bg-gradient-to-t from-[#fafaf9] via-[#fafaf9] to-transparent">
-                <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-12 py-4 bg-[#059669] hover:bg-[#047857] text-white rounded-xl shadow-[0_10px_30px_-10px_rgba(5,150,105,0.5)] transform transition-all active:scale-95 font-bold flex items-center gap-2"
-                >
-                    {saving ? (
-                        <>
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            Saving Changes...
-                        </>
-                    ) : (
-                        <>
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                            Save All Changes
-                        </>
-                    )}
-                </Button>
-            </div>
+            {/* Save Button — not shown for site_settings (auto-saves) */}
+            {selectedPage !== "site_settings" && (
+                <div className="flex justify-end pt-8 pb-12 sticky bottom-0 bg-gradient-to-t from-[#fafaf9] via-[#fafaf9] to-transparent">
+                    <Button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="px-12 py-4 bg-[#059669] hover:bg-[#047857] text-white rounded-xl shadow-[0_10px_30px_-10px_rgba(5,150,105,0.5)] transform transition-all active:scale-95 font-bold flex items-center gap-2"
+                    >
+                        {saving ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Saving Changes...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                                Save All Changes
+                            </>
+                        )}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

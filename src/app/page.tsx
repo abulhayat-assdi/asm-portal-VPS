@@ -3,6 +3,20 @@ import StudentVideoTestimonials from "@/components/ui/StudentVideoTestimonials";
 import TargetAudience from "@/components/ui/TargetAudience";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
+import { prisma } from "@/lib/db";
+
+async function getActiveHeroImages(): Promise<string[]> {
+    try {
+        const images = await prisma.heroImage.findMany({
+            where: { isActive: true },
+            orderBy: { order: "asc" },
+            select: { url: true },
+        });
+        return images.map((img: { url: string }) => img.url);
+    } catch {
+        return [];
+    }
+}
 
 // Static data for the page
 const navLinks = [
@@ -60,7 +74,9 @@ const footerLinkGroups = [
     },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+    const heroImages = await getActiveHeroImages();
+
     return (
         <>
             <Header
@@ -77,6 +93,7 @@ export default function HomePage() {
                 <HeroSection
                     primaryButtonHref="/about"
                     secondaryButtonHref="/modules"
+                    heroImages={heroImages}
                 />
 
                 <TargetAudience
