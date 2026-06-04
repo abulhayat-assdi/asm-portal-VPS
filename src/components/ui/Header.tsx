@@ -34,6 +34,34 @@ export default function Header({
     transparent = false,
 }: HeaderProps & { transparent?: boolean }) {
     const [isScrolled, setIsScrolled] = useState(false);
+    const [siteLogoUrl, setSiteLogoUrl] = useState<string | null>(null);
+    const [siteDisplayName, setSiteDisplayName] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetch("/api/site-settings")
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data) {
+                    setSiteLogoUrl(data.logoUrl || null);
+                    setSiteDisplayName(data.siteName || null);
+                }
+            })
+            .catch(() => {});
+
+        const handler = () => {
+            fetch("/api/site-settings")
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (data) {
+                        setSiteLogoUrl(data.logoUrl || null);
+                        setSiteDisplayName(data.siteName || null);
+                    }
+                })
+                .catch(() => {});
+        };
+        window.addEventListener("site-settings-changed", handler);
+        return () => window.removeEventListener("site-settings-changed", handler);
+    }, []);
 
     useEffect(() => {
         let ticking = false;
@@ -77,15 +105,15 @@ export default function Header({
                         className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                     >
                         <div className="bg-[#0D1B2A] rounded-xl p-1.5 flex lg:hidden">
-                            <BrandLogo size={28} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
+                            <BrandLogo size={28} primaryColor="#FFFFFF" arrowColor="#4CAF50" logoUrl={siteLogoUrl} />
                         </div>
                         <div className="bg-[#0D1B2A] rounded-xl p-1.5 hidden lg:block">
-                            <BrandLogo size={32} primaryColor="#FFFFFF" arrowColor="#4CAF50" />
+                            <BrandLogo size={32} primaryColor="#FFFFFF" arrowColor="#4CAF50" logoUrl={siteLogoUrl} />
                         </div>
                         <span className={cn(
                             "hidden md:block text-lg font-bold transition-colors text-[#1f2937]"
                         )}>
-                            {brandText}
+                            {siteDisplayName || brandText}
                         </span>
                     </Link>
 

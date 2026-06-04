@@ -103,61 +103,25 @@ export default function ManagePages() {
         }
     };
 
-    const saveSiteSettings = async (updated: PageContent) => {
-        await fetch("/api/admin/cms", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pageId: "site_settings", content: updated }),
-        });
-        // Notify Sidebar to re-fetch
-        window.dispatchEvent(new Event("site-settings-changed"));
-    };
+    const notifySidebar = () => window.dispatchEvent(new Event("site-settings-changed"));
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const ALLOWED = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]);
-        if (!ALLOWED.has(file.type)) {
-            setMessage({ type: "error", text: "শুধুমাত্র JPG, PNG, GIF, WebP বা SVG ফাইল আপলোড করা যাবে" });
-            if (logoInputRef.current) logoInputRef.current.value = "";
-            return;
-        }
-        if (file.size > 2 * 1024 * 1024) {
-            setMessage({ type: "error", text: "লোগো ফাইল সর্বোচ্চ 2MB হতে হবে" });
-            if (logoInputRef.current) logoInputRef.current.value = "";
-            return;
-        }
-
         setUploadingLogo(true);
         setMessage(null);
         try {
-            // Delete old logo file if it exists (resources/logo/ path)
-            const oldPath = content?.logoStoragePath || "";
-            if (oldPath && oldPath.startsWith("resources/logo/")) {
-                await fetch(`/api/storage/delete?path=${encodeURIComponent(oldPath)}`, {
-                    method: "DELETE",
-                }).catch(() => {});
-            }
-
-            // Upload new logo
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("category", "resource");
-            formData.append("path", "logo");
 
-            const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
+            const res = await fetch("/api/admin/logo", { method: "POST", body: formData });
             const data = await res.json();
 
-            if (res.ok && data.fileUrl) {
-                const updated: PageContent = {
-                    ...content,
-                    logoUrl: data.fileUrl,
-                    logoStoragePath: data.storagePath,
-                };
-                setContent(updated);
-                await saveSiteSettings(updated);
-                setMessage({ type: "success", text: "লোগো আপলোড ও সেভ সম্পন্ন! সাইডবারে এখনই দেখা যাবে।" });
+            if (res.ok && data.logoUrl) {
+                setContent(prev => ({ ...prev!, logoUrl: data.logoUrl, logoStoragePath: data.storagePath }));
+                notifySidebar();
+                setMessage({ type: "success", text: "লোগো আপলোড সম্পন্ন! সাইডবার ও পাবলিক সাইটে এখনই দেখা যাবে।" });
             } else {
                 setMessage({ type: "error", text: data.error || "আপলোড ব্যর্থ হয়েছে" });
             }
@@ -171,25 +135,32 @@ export default function ManagePages() {
 
     const handleRemoveLogo = async () => {
         if (!confirm("লোগো রিমুভ করলে ডিফল্ট SVG লোগো দেখাবে। নিশ্চিত?")) return;
-
-        // Delete file from disk
-        const oldPath = content?.logoStoragePath || "";
-        if (oldPath && oldPath.startsWith("resources/logo/")) {
-            await fetch(`/api/storage/delete?path=${encodeURIComponent(oldPath)}`, {
-                method: "DELETE",
-            }).catch(() => {});
+        try {
+            const res = await fetch("/api/admin/logo", { method: "DELETE" });
+            if (res.ok) {
+                setContent(prev => ({ ...prev!, logoUrl: "", logoStoragePath: "" }));
+                notifySidebar();
+                setMessage({ type: "success", text: "লোগো রিমুভ হয়েছে। ডিফল্ট SVG দেখাবে।" });
+            }
+        } catch {
+            setMessage({ type: "error", text: "রিমুভ ব্যর্থ হয়েছে" });
         }
-
-        const updated: PageContent = { ...content, logoUrl: "", logoStoragePath: "" };
-        setContent(updated);
-        await saveSiteSettings(updated);
-        setMessage({ type: "success", text: "লোগো রিমুভ করা হয়েছে। ডিফল্ট SVG লোগো দেখাবে।" });
     };
 
     const handleSaveSiteName = async () => {
-        const updated: PageContent = { ...content };
-        await saveSiteSettings(updated);
-        setMessage({ type: "success", text: "সাইটের নাম সেভ হয়েছে!" });
+        try {
+            const res = await fetch("/api/admin/cms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pageId: "site_settings", content }),
+            });
+            if (res.ok) {
+                notifySidebar();
+                setMessage({ type: "success", text: "সাইটের নাম সেভ হয়েছে!" });
+            }
+        } catch {
+            setMessage({ type: "error", text: "সেভ ব্যর্থ হয়েছে" });
+        }
     };
 
     const updateSocialLink = (groupId: string, linkIdx: number, field: keyof SocialLink, value: string) => {
@@ -536,9 +507,10 @@ export default function ManagePages() {
                                         {content?.logoUrl ? (
                                             // eslint-disable-next-line @next/next/no-img-element
                                             <img
-                                                src={content.logoUrl}
+                                                src={`${content.logoUrl}?t=${Date.now()}`}
                                                 alt="Site Logo"
                                                 style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                                                onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.3"; }}
                                             />
                                         ) : (
                                             <div className="text-white text-xs font-bold text-center">
