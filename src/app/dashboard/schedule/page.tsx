@@ -1,46 +1,121 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Card, { CardBody } from "@/components/ui/Card";
 import { formatDateShort } from "@/lib/utils";
 import { getClassesByTeacherId, requestClassCompletion, ClassSchedule, getAllClassesSchedules, syncBatchClassSchedules, markClassAsCompleted, getBatchClassCounts, getBatches, addBatch, toggleBatchStatus, deleteBatch, getCompletedClassesByBatch, BatchItem } from "@/services/scheduleService";
 import { useAuth } from "@/contexts/AuthContext";
-import { getClassRoutines, addClassRoutine, updateClassRoutine, deleteClassRoutine, ClassRoutine } from "@/services/routinesService";
 import Button from "@/components/ui/Button";
 import { useConfirm } from "@/contexts/ConfirmContext";
+import { getRoutinesByBatch, BatchRoutineEntry } from "@/services/routineManagerService";
+import { getRoutineConfig, RoutineConfig, CustomCategory, DEFAULT_CATEGORIES } from "@/services/routineConfigService";
+
+const ROUTINE_DAYS_ORDER = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const ROUTINE_BREAK_KEYWORDS = ["prayer", "break", "lunch", "jumu", "tiffin", "rest"];
+
+const parseRoutineTimeToMinutes = (timeStr: string): number => {
+    if (!timeStr) return 9999;
+    const cleaned = timeStr.trim().toUpperCase();
+    const isPM = cleaned.includes("PM");
+    const isAM = cleaned.includes("AM");
+    const digits = cleaned.replace(/[APM\s]/g, "").replace(".", ":");
+    const parts = digits.split(":");
+    let hours = parseInt(parts[0] || "0", 10);
+    const minutes = parseInt(parts[1] || "0", 10);
+    if (isPM && hours !== 12) hours += 12;
+    if (isAM && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+};
+
+const toRoutineOrdinal = (n: number): string => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+type RoutineColorTheme = { id: string; keywords: string[]; bg: string; border: string; text: string; dot: string; label: string; };
+
+const ROUTINE_COLOR_THEMES: RoutineColorTheme[] = [
+    { id: "sales",   keywords: ["sales", "mkt", "marketing", "lab"],    bg: "#EFF6FF", border: "#2563EB", text: "#1E40AF", dot: "#2563EB", label: "Sales & Mkt. / Lab" },
+    { id: "dawah",   keywords: ["dawah"],                                 bg: "#F0FDF4", border: "#16A34A", text: "#14532D", dot: "#16A34A", label: "Dawah Class" },
+    { id: "content", keywords: ["content"],                               bg: "#FFF0F3", border: "#EC4899", text: "#9D174D", dot: "#EC4899", label: "Content Mkt." },
+    { id: "office",  keywords: ["ms office", "office"],                  bg: "#FFFBEB", border: "#D97706", text: "#92400E", dot: "#D97706", label: "MS Office" },
+    { id: "study",   keywords: ["study practice", "study"],              bg: "#F5F3FF", border: "#7C3AED", text: "#4C1D95", dot: "#7C3AED", label: "Study Practice" },
+    { id: "english", keywords: ["english"],                               bg: "#F0F9FF", border: "#0284C7", text: "#075985", dot: "#0284C7", label: "English Class" },
+    { id: "landing", keywords: ["landing page", "landing"],              bg: "#ECFEFF", border: "#0891B2", text: "#164E63", dot: "#0891B2", label: "Landing Page" },
+    { id: "guest",   keywords: ["guest session", "guest", "expert"],     bg: "#EEF2FF", border: "#4338CA", text: "#312E81", dot: "#4338CA", label: "Guest Session" },
+    { id: "brand",   keywords: ["branding"],                              bg: "#FDF4FF", border: "#9333EA", text: "#581C87", dot: "#9333EA", label: "Branding" },
+    { id: "sports",  keywords: ["sports", "rec", "recreational"],        bg: "#FFF1F2", border: "#DC2626", text: "#991B1B", dot: "#DC2626", label: "Sports & Rec." },
+    { id: "field",   keywords: ["field practical", "field"],             bg: "#FFFBEB", border: "#F59E0B", text: "#78350F", dot: "#F59E0B", label: "Field Practical" },
+    { id: "quran",   keywords: ["quran", "qur"],                         bg: "#F0FDF4", border: "#10B981", text: "#064E3B", dot: "#10B981", label: "Quran Class" },
+];
+
+const isRoutineBreak = (subject: string): boolean =>
+    ROUTINE_BREAK_KEYWORDS.some(k => subject.toLowerCase().trim().includes(k));
+
+const getRoutineColorTheme = (subject: string): RoutineColorTheme | null => {
+    const s = subject.toLowerCase().trim();
+    for (const theme of ROUTINE_COLOR_THEMES) {
+        for (const kw of theme.keywords) {
+            if (s.includes(kw)) return theme;
+        }
+    }
+    return null;
+};
+
+const buildRoutineThemeFromCustom = (cat: CustomCategory): RoutineColorTheme => ({
+    id: cat.id, keywords: cat.keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean),
+    bg: cat.color + "18", border: cat.color, text: cat.color, dot: cat.color, label: cat.label,
+});
+
+const getRoutineColorThemeFromCustom = (subject: string, customs: CustomCategory[]): RoutineColorTheme | null => {
+    const s = subject.toLowerCase().trim();
+    for (const cat of customs) {
+        const kws = cat.keywords.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
+        for (const kw of kws) {
+            if (kw && s.includes(kw)) return buildRoutineThemeFromCustom(cat);
+        }
+    }
+    return null;
+};
+
+const normalizeRoutineDay = (day: string): string =>
+    ROUTINE_DAYS_ORDER.find(d => d.toLowerCase() === day?.toLowerCase().trim()) ?? day;
+
+type RoutineEntryWithMeta = BatchRoutineEntry & { classNum: string };
+
+const enrichRoutineEntries = (entries: BatchRoutineEntry[]): RoutineEntryWithMeta[] => {
+    const indexed = entries.map((e, i) => ({ e, i }));
+    const sorted = [...indexed].sort((a, b) => {
+        const dA = ROUTINE_DAYS_ORDER.indexOf(normalizeRoutineDay(a.e.dayOfWeek));
+        const dB = ROUTINE_DAYS_ORDER.indexOf(normalizeRoutineDay(b.e.dayOfWeek));
+        if (dA !== dB) return dA - dB;
+        return parseRoutineTimeToMinutes(a.e.startTime) - parseRoutineTimeToMinutes(b.e.startTime);
+    });
+    const counters: Record<string, number> = {};
+    const nums: string[] = new Array(entries.length).fill("");
+    sorted.forEach(({ e, i }) => {
+        if (isRoutineBreak(e.subject) || e.subject.includes("(")) return;
+        const key = e.subject.toLowerCase().trim();
+        counters[key] = (counters[key] || 0) + 1;
+        nums[i] = toRoutineOrdinal(counters[key]);
+    });
+    return entries.map((e, i) => ({ ...e, classNum: nums[i] }));
+};
 
 export default function SchedulePage() {
     const confirm = useConfirm();
     const [scheduleData, setScheduleData] = useState<ClassSchedule[]>([]);
-    const [routines, setRoutines] = useState<ClassRoutine[]>([]);
     // Batch Stats State
     const [batchStats, setBatchStats] = useState<Record<string, { subjectName: string; classCount: number }[]>>({});
     const [batchStatsLoading, setBatchStatsLoading] = useState(true);
 
     const [loading, setLoading] = useState(true);
-    const [routinesLoading, setRoutinesLoading] = useState(true);
     const [showAll, setShowAll] = useState(false);
     const [expandedPending, setExpandedPending] = useState<string | null>(null);
     const { userProfile, loading: authLoading } = useAuth();
     const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const [processingId, setProcessingId] = useState<string | null>(null);
-
-    // Add Routine Modal State
-    const [isRoutineModalOpen, setIsRoutineModalOpen] = useState(false);
-    const [newRoutineName, setNewRoutineName] = useState("");
-    const [newRoutineDate, setNewRoutineDate] = useState("");
-    const [newRoutineFile, setNewRoutineFile] = useState<File | null>(null);
-    const [isAddingRoutine, setIsAddingRoutine] = useState(false);
-    const [routineUploadProgress, setRoutineUploadProgress] = useState("");
-
-    // Edit Routine State
-    const [isEditRoutineModalOpen, setIsEditRoutineModalOpen] = useState(false);
-    const [editingRoutine, setEditingRoutine] = useState<ClassRoutine | null>(null);
-    const [editRoutineName, setEditRoutineName] = useState("");
-    const [editRoutineDate, setEditRoutineDate] = useState("");
-    const [editRoutineFile, setEditRoutineFile] = useState<File | null>(null);
-    const [isEditingRoutine, setIsEditingRoutine] = useState(false);
-    const [isDeletingRoutine, setIsDeletingRoutine] = useState<string | null>(null);
 
     // Add Schedule Modal State
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -65,6 +140,13 @@ export default function SchedulePage() {
 
     const [columns, setColumns] = useState(["date", "day", "batch", "subject", "time", "status", "teacherId", "teacherName", "extra1", "extra2"]);
     const [maxRows, setMaxRows] = useState(500);
+
+    // Class Routine Viewer State
+    const [selectedRoutineBatch, setSelectedRoutineBatch] = useState<string>("");
+    const [routineEntries, setRoutineEntries] = useState<RoutineEntryWithMeta[]>([]);
+    const [routineViewerConfig, setRoutineViewerConfig] = useState<RoutineConfig | null>(null);
+    const [routineEntriesLoading, setRoutineEntriesLoading] = useState(false);
+    const [availableRoutineBatches, setAvailableRoutineBatches] = useState<string[]>([]);
 
     // Store grid data in a ref — avoids triggering re-render on every cell edit
     const rowDataRef = useRef<Record<string, string>[]>([]);
@@ -189,17 +271,6 @@ export default function SchedulePage() {
         fetchScheduleData();
     }, [fetchScheduleData]);
 
-    // Fetch Class Routines (Firestore)
-    useEffect(() => {
-        const fetchRoutines = async () => {
-            setRoutinesLoading(true);
-            const data = await getClassRoutines();
-            setRoutines(data);
-            setRoutinesLoading(false);
-        };
-        fetchRoutines();
-    }, []);
-
     // Fetch Batch Stats dynamically from Firestore
     useEffect(() => {
         const fetchBatchStats = async () => {
@@ -215,6 +286,39 @@ export default function SchedulePage() {
         };
         fetchBatchStats();
     }, []);
+
+    // Fetch batch names: prefer active batches from Batch table, fallback to BatchRoutineEntry
+    useEffect(() => {
+        Promise.all([
+            getBatches().catch(() => [] as BatchItem[]),
+            fetch("/api/routine-manager", { cache: "no-store" }).then(r => r.ok ? r.json() : []).catch(() => [] as BatchRoutineEntry[]),
+        ]).then(([batches, entries]: [BatchItem[], BatchRoutineEntry[]]) => {
+            const activeBatchNames = batches.filter(b => b.status === "active").map(b => b.name).sort();
+            if (activeBatchNames.length > 0) {
+                setAvailableRoutineBatches(activeBatchNames);
+                setSelectedRoutineBatch(activeBatchNames[activeBatchNames.length - 1]);
+            } else {
+                // Fallback: batches that have routine entries
+                const fromEntries = [...new Set(entries.map((e: BatchRoutineEntry) => e.batch).filter(Boolean))].sort();
+                setAvailableRoutineBatches(fromEntries);
+                if (fromEntries.length > 0) setSelectedRoutineBatch(fromEntries[fromEntries.length - 1]);
+            }
+        }).catch(console.error);
+    }, []);
+
+    // Load routine entries when selected batch changes
+    useEffect(() => {
+        if (!selectedRoutineBatch) return;
+        setRoutineEntriesLoading(true);
+        Promise.all([
+            getRoutinesByBatch(selectedRoutineBatch),
+            getRoutineConfig(selectedRoutineBatch),
+        ]).then(([raw, cfg]) => {
+            setRoutineEntries(enrichRoutineEntries(raw));
+            setRoutineViewerConfig(cfg);
+        }).catch(console.error)
+        .finally(() => setRoutineEntriesLoading(false));
+    }, [selectedRoutineBatch]);
 
     // For admin: filter current week. For teacher: show last 7 days + all future schedules.
     const getTeacherDateBoundary = () => {
@@ -364,173 +468,6 @@ export default function SchedulePage() {
             alert("Failed to send request.");
         } finally {
             setProcessingId(null);
-        }
-    };
-
-    const handleAddRoutine = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newRoutineName.trim() || !newRoutineDate.trim() || !newRoutineFile) {
-            alert("Please fill all fields and select a file.");
-            return;
-        }
-        if (!userProfile?.uid) {
-            alert("No user ID found.");
-            return;
-        }
-
-        setIsAddingRoutine(true);
-        setRoutineUploadProgress("Uploading file...");
-        try {
-            // 1. Upload the file
-            const formData = new FormData();
-            formData.append("file", newRoutineFile);
-            formData.append("folder", "routines");
-
-            const uploadRes = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
-
-            if (!uploadRes.ok) {
-                throw new Error("File upload failed");
-            }
-
-            const { url } = await uploadRes.json();
-            
-            setRoutineUploadProgress("Saving routine data...");
-
-            // 2. Add routine to Firestore with the generated URL
-            await addClassRoutine({
-                title: newRoutineName,
-                date: newRoutineDate,
-                fileUrl: url,
-                uploadedByUid: userProfile.uid,
-                uploadedByName: userProfile.displayName || "Admin",
-            });
-
-            // Refresh routines
-            setRoutinesLoading(true);
-            const data = await getClassRoutines();
-            setRoutines(data);
-            setRoutinesLoading(false);
-
-            resetRoutineForm();
-        } catch (error) {
-            console.error("Error adding routine:", error);
-            alert("Failed to add routine. Please try again.");
-        } finally {
-            setIsAddingRoutine(false);
-            setRoutineUploadProgress("");
-        }
-    };
-
-    const resetRoutineForm = () => {
-        setIsRoutineModalOpen(false);
-        setNewRoutineName("");
-        setNewRoutineDate("");
-        setNewRoutineFile(null);
-    };
-
-    const openEditRoutineModal = (routine: ClassRoutine) => {
-        setEditingRoutine(routine);
-        setEditRoutineName(routine.title);
-        setEditRoutineDate(routine.date !== "N/A" ? routine.date : "");
-        setEditRoutineFile(null);
-        setIsEditRoutineModalOpen(true);
-    };
-
-    const resetEditRoutineForm = () => {
-        setIsEditRoutineModalOpen(false);
-        setEditingRoutine(null);
-        setEditRoutineName("");
-        setEditRoutineDate("");
-        setEditRoutineFile(null);
-    };
-
-    const handleUpdateRoutine = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!editingRoutine || !editRoutineName.trim() || !editRoutineDate.trim()) {
-            alert("Please fill required fields.");
-            return;
-        }
-
-        setIsEditingRoutine(true);
-        setRoutineUploadProgress("Updating routine...");
-        try {
-            let fileUrl = editingRoutine.fileUrl;
-
-            // If a new file is selected
-            if (editRoutineFile) {
-                setRoutineUploadProgress("Uploading new file...");
-                const formData = new FormData();
-                formData.append("file", editRoutineFile);
-                formData.append("folder", "routines");
-
-                const uploadRes = await fetch("/api/upload", {
-                    method: "POST",
-                    body: formData,
-                });
-
-                if (!uploadRes.ok) throw new Error("File upload failed");
-
-                const { url } = await uploadRes.json();
-                fileUrl = url;
-
-                // Delete old file
-                if (editingRoutine.fileUrl) {
-                    await fetch("/api/upload", {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ url: editingRoutine.fileUrl })
-                    });
-                }
-            }
-
-            setRoutineUploadProgress("Saving changes...");
-            await updateClassRoutine(editingRoutine.id, {
-                title: editRoutineName,
-                date: editRoutineDate,
-                fileUrl: fileUrl,
-            });
-
-            // Refresh routines
-            const data = await getClassRoutines();
-            setRoutines(data);
-            resetEditRoutineForm();
-        } catch (error) {
-            console.error("Error updating routine:", error);
-            alert("Failed to update routine. Please try again.");
-        } finally {
-            setIsEditingRoutine(false);
-            setRoutineUploadProgress("");
-        }
-    };
-
-    const handleDeleteRoutine = async (routine: ClassRoutine) => {
-        const ok = await confirm({ message: `Are you sure you want to delete "${routine.title}"?`, variant: "danger" });
-        if (!ok) return;
-
-        setIsDeletingRoutine(routine.id);
-        try {
-            // Delete file first
-            if (routine.fileUrl) {
-                await fetch("/api/upload", {
-                    method: "DELETE",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: routine.fileUrl })
-                });
-            }
-
-            // Delete from Firestore
-            await deleteClassRoutine(routine.id);
-
-            // Refresh routines
-            setRoutines(prev => prev.filter(r => r.id !== routine.id));
-        } catch (error) {
-            console.error("Error deleting routine:", error);
-            alert("Failed to delete routine.");
-        } finally {
-            setIsDeletingRoutine(null);
         }
     };
 
@@ -773,6 +710,55 @@ export default function SchedulePage() {
         }
     };
 
+    // Routine Viewer computed values
+    const routineHiddenByConfig = useMemo(
+        () => new Set(routineViewerConfig?.hiddenCategories ?? []),
+        [routineViewerConfig]
+    );
+    const routineActiveCategories = useMemo(
+        () => (routineViewerConfig?.customCategories?.length ? routineViewerConfig.customCategories : DEFAULT_CATEGORIES),
+        [routineViewerConfig]
+    );
+    const resolveRoutineTheme = useCallback(
+        (subject: string): RoutineColorTheme | null =>
+            getRoutineColorThemeFromCustom(subject, routineActiveCategories) ?? getRoutineColorTheme(subject),
+        [routineActiveCategories]
+    );
+    const visibleRoutineEntries = useMemo(() => {
+        if (routineHiddenByConfig.size === 0) return routineEntries;
+        return routineEntries.filter(e => {
+            if (isRoutineBreak(e.subject)) return true;
+            const theme = resolveRoutineTheme(e.subject);
+            return !theme || !routineHiddenByConfig.has(theme.id);
+        });
+    }, [routineEntries, routineHiddenByConfig, resolveRoutineTheme]);
+    const { uniqueRoutineTimeSlots, routineLookup } = useMemo(() => {
+        const slotSet = new Set<string>();
+        const map: Record<string, Record<string, RoutineEntryWithMeta>> = {};
+        visibleRoutineEntries.forEach(entry => {
+            if (!entry.startTime) return;
+            const key = `${entry.startTime}|||${entry.endTime ?? ""}`;
+            slotSet.add(key);
+            if (!map[key]) map[key] = {};
+            map[key][normalizeRoutineDay(entry.dayOfWeek)] = entry;
+        });
+        const sorted = Array.from(slotSet).sort((a, b) =>
+            parseRoutineTimeToMinutes(a.split("|||")[0]) - parseRoutineTimeToMinutes(b.split("|||")[0])
+        );
+        return { uniqueRoutineTimeSlots: sorted, routineLookup: map };
+    }, [visibleRoutineEntries]);
+    const routineLegendItems = useMemo(() => {
+        const seen: Record<string, { id: string; label: string; dot: string; count: number }> = {};
+        visibleRoutineEntries.forEach(e => {
+            if (isRoutineBreak(e.subject)) return;
+            const theme = resolveRoutineTheme(e.subject);
+            if (!theme) return;
+            if (!seen[theme.id]) seen[theme.id] = { id: theme.id, label: theme.label, dot: theme.dot, count: 0 };
+            seen[theme.id].count++;
+        });
+        return Object.values(seen);
+    }, [visibleRoutineEntries, resolveRoutineTheme]);
+
     const getStatusBadge = (schedule: ClassSchedule, index: number) => {
         if (schedule.status === "Today") {
             return (
@@ -906,7 +892,7 @@ export default function SchedulePage() {
 
                 <div className="flex flex-wrap items-center gap-3">
                     {isAdmin && (
-                        <button 
+                        <button
                             onClick={handleOpenBatchSelection}
                             className="px-4 py-2.5 bg-[#059669] text-white text-sm font-semibold rounded-lg hover:bg-[#10b981] transition-colors shadow-sm flex items-center gap-2"
                         >
@@ -914,18 +900,6 @@ export default function SchedulePage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
                             Manage Schedules (Grid)
-                        </button>
-                    )}
-                    {/* Admin-only: Add Routine */}
-                    {isAdmin && (
-                        <button 
-                            onClick={() => setIsRoutineModalOpen(true)}
-                            className="px-4 py-2.5 bg-white text-[#059669] border border-[#059669] text-sm font-semibold rounded-lg hover:bg-[#f0fdf4] transition-colors shadow-sm flex items-center gap-2"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                            Add Class Routine
                         </button>
                     )}
                 </div>
@@ -1055,94 +1029,166 @@ export default function SchedulePage() {
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-1 h-10 bg-[#059669] rounded-full"></div>
                     <div>
-                        <h2 className="text-3xl font-bold text-[#1f2937]">
-                            Class Routine
-                        </h2>
-                        <p className="text-[#6b7280] mt-1">
-                            View full class routine
-                        </p>
+                        <h2 className="text-3xl font-bold text-[#1f2937]">Class Routine</h2>
+                        <p className="text-[#6b7280] mt-1">View full class routine</p>
                     </div>
                 </div>
 
-                {/* Routine Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {routinesLoading ? (
-                        // Skeleton / Loading State
-                        [1, 2, 3].map((i) => (
-                            <Card key={i} className="animate-pulse">
-                                <CardBody className="p-6">
-                                    <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                                    <div className="h-10 bg-gray-200 rounded w-full"></div>
-                                </CardBody>
-                            </Card>
-                        ))
-                    ) : routines.length === 0 ? (
-                        <div className="col-span-full py-8 text-center text-[#6b7280] bg-white rounded-lg border border-gray-100 italic">
-                            No class routines uploaded yet.
+                {/* Batch Selector Tabs */}
+                {availableRoutineBatches.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-6">
+                        {availableRoutineBatches.map(batch => (
+                            <button
+                                key={batch}
+                                onClick={() => setSelectedRoutineBatch(batch)}
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                                    selectedRoutineBatch === batch
+                                        ? "bg-[#1e3a5f] text-white shadow-sm"
+                                        : "bg-white text-[#1e3a5f] border border-[#1e3a5f] hover:bg-[#f0f4ff]"
+                                }`}
+                            >
+                                {batch}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* Routine Display */}
+                {routineEntriesLoading ? (
+                    <div className="flex items-center justify-center py-16">
+                        <div className="text-center">
+                            <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#059669] mb-3"></div>
+                            <p className="text-gray-500 font-medium">Loading routine...</p>
                         </div>
-                    ) : (
-                        routines.map((routine) => (
-                            <Card key={routine.id} className="hover:shadow-lg transition-shadow border border-gray-100">
-                                <CardBody className="p-6">
-                                    {/* Title */}
-                                    <h3 className="text-lg font-bold text-[#1f2937] mb-6">
-                                        {routine.title}
-                                    </h3>
+                    </div>
+                ) : !selectedRoutineBatch ? (
+                    <div className="py-8 text-center text-[#6b7280] bg-white rounded-lg border border-gray-100 italic">
+                        No batch selected.
+                    </div>
+                ) : visibleRoutineEntries.length === 0 ? (
+                    <div className="py-8 text-center text-[#6b7280] bg-white rounded-lg border border-gray-100 italic">
+                        No class routines uploaded yet for {selectedRoutineBatch}.
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        {/* Title Header */}
+                        <div style={{ backgroundColor: "#0D1B4A", textAlign: "center", padding: "10px 24px" }}>
+                            <div style={{ color: "#FFFFFF", fontSize: "clamp(0.95rem, 1.4vw, 1.25rem)", fontWeight: 800, letterSpacing: "0.02em", lineHeight: 1.2 }}>
+                                {routineViewerConfig?.title || selectedRoutineBatch}
+                            </div>
+                            {routineViewerConfig?.subtitle && (
+                                <div style={{ color: "#93C5FD", fontSize: "0.75rem", fontWeight: 500, marginTop: 3 }}>
+                                    {routineViewerConfig.subtitle}
+                                </div>
+                            )}
+                        </div>
 
-                                    {/* Meta Information */}
-                                    <div className="space-y-3 mb-6">
-                                        <div className="flex items-center gap-2 text-sm text-[#6b7280]">
-                                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                            </svg>
-                                            <span className="truncate">Uploaded by: {routine.uploadedByName}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-[#6b7280]">
-                                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                                            </svg>
-                                            <span>Date: {routine.date !== "N/A" ? routine.date : formatDateShort(new Date(routine.createdAt).toISOString())}</span>
-                                        </div>
-                                    </div>
+                        {/* Routine Table */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse" style={{ minWidth: 900 }}>
+                                <colgroup>
+                                    <col style={{ width: 150 }} />
+                                    {ROUTINE_DAYS_ORDER.map(d => <col key={d} style={{ minWidth: 140 }} />)}
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        {["Time", ...ROUTINE_DAYS_ORDER].map(h => (
+                                            <th key={h} style={{ backgroundColor: "#1E3A8A", color: "#FFFFFF", border: "1px solid #2D4FA0", padding: "14px 12px", fontSize: 13, fontWeight: 700, textAlign: "center" }}>
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {uniqueRoutineTimeSlots.map(slot => {
+                                        const [startTime, endTime] = slot.split("|||");
+                                        const dayEntries = routineLookup[slot] ?? {};
+                                        const presentEntries = Object.values(dayEntries);
+                                        const uniqueSubjects = new Set(presentEntries.map(e => e.subject.toLowerCase().trim()));
+                                        const isSpanning = uniqueSubjects.size === 1 && presentEntries.length >= 4;
 
-                                    {/* View Button */}
-                                    <div className="flex flex-col gap-2">
-                                        <a
-                                            href={routine.fileUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block w-full"
-                                        >
-                                            <button className="w-full py-2.5 bg-[#059669] text-white font-semibold rounded-lg hover:bg-[#10b981] transition-colors shadow-sm">
-                                                View / Download
-                                            </button>
-                                        </a>
-                                        
-                                        {isAdmin && (
-                                            <div className="flex gap-2 w-full mt-1">
-                                                <button
-                                                    onClick={() => openEditRoutineModal(routine)}
-                                                    className="flex-1 py-1.5 bg-blue-50 text-blue-700 font-semibold rounded-lg hover:bg-blue-100 transition-colors text-sm border border-blue-200"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteRoutine(routine)}
-                                                    disabled={isDeletingRoutine === routine.id}
-                                                    className="flex-1 py-1.5 bg-red-50 text-red-700 font-semibold rounded-lg hover:bg-red-100 transition-colors text-sm border border-red-200 disabled:opacity-50"
-                                                >
-                                                    {isDeletingRoutine === routine.id ? "..." : "Delete"}
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        ))
-                    )}
-                </div>
+                                        const timeCell = (
+                                            <td key="time" style={{ border: "1px solid #E2E8F0", backgroundColor: "#F8FAFC", padding: "10px 12px", textAlign: "center", verticalAlign: "middle" }}>
+                                                <div style={{ fontSize: 12, fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap" }}>{startTime}</div>
+                                                {endTime && <>
+                                                    <div style={{ fontSize: 11, color: "#94A3B8", margin: "3px 0" }}>—</div>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: "#1E293B", whiteSpace: "nowrap" }}>{endTime}</div>
+                                                </>}
+                                            </td>
+                                        );
+
+                                        if (isSpanning) {
+                                            const entry = presentEntries[0];
+                                            return (
+                                                <tr key={slot}>
+                                                    {timeCell}
+                                                    <td colSpan={ROUTINE_DAYS_ORDER.length} style={{ border: "1px solid #E2E8F0", backgroundColor: "#F1F5F9", padding: "14px 20px", textAlign: "center", verticalAlign: "middle" }}>
+                                                        <span style={{ fontSize: 13, fontWeight: 600, color: "#475569", fontStyle: "italic" }}>{entry.subject}</span>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+
+                                        return (
+                                            <tr key={slot}>
+                                                {timeCell}
+                                                {ROUTINE_DAYS_ORDER.map(day => {
+                                                    const entry = dayEntries[day];
+                                                    if (!entry) {
+                                                        return (
+                                                            <td key={day} style={{ border: "1px solid #E2E8F0", backgroundColor: "#FAFAFA", textAlign: "center", color: "#CBD5E1", fontSize: 16, verticalAlign: "middle" }}>—</td>
+                                                        );
+                                                    }
+                                                    const theme = resolveRoutineTheme(entry.subject);
+                                                    if (isRoutineBreak(entry.subject)) {
+                                                        return (
+                                                            <td key={day} style={{ border: "1px solid #E2E8F0", backgroundColor: "#F1F5F9", padding: "12px 10px", textAlign: "center", verticalAlign: "middle" }}>
+                                                                <span style={{ fontSize: 12, color: "#64748B", fontStyle: "italic", fontWeight: 500 }}>{entry.subject}</span>
+                                                            </td>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <td key={day} style={{ border: "1px solid #E2E8F0", padding: 0, verticalAlign: "middle" }}>
+                                                            <div style={{ minHeight: 84, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "12px 10px", borderLeft: `4px solid ${theme?.border ?? "#CBD5E1"}`, backgroundColor: theme?.bg ?? "#FFFFFF", textAlign: "center" }}>
+                                                                <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", lineHeight: 1.4 }}>{entry.subject}</div>
+                                                                {entry.classNum && (
+                                                                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: theme?.text ?? "#64748B" }}>({entry.classNum} Class)</div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Legend */}
+                        {routineLegendItems.length > 0 && (
+                            <div style={{ padding: "20px 24px", borderTop: "1px solid #E5E7EB" }}>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px 24px", justifyContent: "center" }}>
+                                    {routineLegendItems.map(item => (
+                                        <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <div style={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: item.dot, flexShrink: 0 }} />
+                                            <span style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>{item.label}</span>
+                                            <span style={{ fontSize: 12, color: "#9CA3AF" }}>({item.count} {item.count === 1 ? "Session" : "Classes"})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Footer */}
+                        {routineViewerConfig?.footerText && (
+                            <div style={{ padding: "0 24px 24px", textAlign: "center" }}>
+                                <div style={{ height: 1, backgroundColor: "#E5E7EB", margin: "0 16px 16px" }} />
+                                <span style={{ fontSize: 13, color: "#6B7280", fontStyle: "italic", fontWeight: 500 }}>— {routineViewerConfig.footerText} —</span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Batch-wise Class Count Section */}
@@ -1341,164 +1387,6 @@ export default function SchedulePage() {
                             <span className="text-sm text-gray-500">{allSchedules.length} total schedule entries</span>
                             <Button variant="outline" onClick={() => setIsViewAllModalOpen(false)}>Close</Button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Add Routine Modal */}
-            {isRoutineModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={resetRoutineForm}>
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-gray-900">
-                                Add Class Routine
-                            </h3>
-                            <button
-                                onClick={resetRoutineForm}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleAddRoutine} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                <input
-                                    type="text"
-                                    value={newRoutineName}
-                                    onChange={(e) => setNewRoutineName(e.target.value)}
-                                    placeholder="e.g. Batch - 06 Routine"
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    value={newRoutineDate}
-                                    onChange={(e) => setNewRoutineDate(e.target.value)}
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Uploaded by</label>
-                                <input
-                                    type="text"
-                                    value={userProfile?.displayName || "Admin"}
-                                    disabled
-                                    className="w-full px-4 py-2 border border-gray-300 bg-gray-50 text-gray-500 rounded-lg cursor-not-allowed"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Default name of the logged-in admin</p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Routine File (PDF, Image, etc.)</label>
-                                <input
-                                    type="file"
-                                    onChange={(e) => setNewRoutineFile(e.target.files?.[0] || null)}
-                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-[#059669] hover:file:bg-green-100"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Max file size: 5MB. Supports PDF, Word & Images.</p>
-                            </div>
-
-                            <div className="pt-4 flex gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={resetRoutineForm}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={isAddingRoutine}
-                                    className="w-full bg-[#059669] hover:bg-[#047857] text-white"
-                                >
-                                    {isAddingRoutine ? (routineUploadProgress || "Processing...") : "Add Routine"}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Routine Modal */}
-            {isEditRoutineModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={resetEditRoutineForm}>
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-gray-900">
-                                Edit Class Routine
-                            </h3>
-                            <button
-                                onClick={resetEditRoutineForm}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleUpdateRoutine} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                <input
-                                    type="text"
-                                    value={editRoutineName}
-                                    onChange={(e) => setEditRoutineName(e.target.value)}
-                                    placeholder="e.g. Batch - 06 Routine"
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    value={editRoutineDate}
-                                    onChange={(e) => setEditRoutineDate(e.target.value)}
-                                    required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Update Routine File (Optional)</label>
-                                <input
-                                    type="file"
-                                    onChange={(e) => setEditRoutineFile(e.target.files?.[0] || null)}
-                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#059669] focus:border-[#059669] outline-none transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Leave empty to keep the existing file.</p>
-                            </div>
-
-                            <div className="pt-4 flex gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full"
-                                    onClick={resetEditRoutineForm}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={isEditingRoutine}
-                                    className="w-full bg-[#059669] hover:bg-[#047857] text-white"
-                                >
-                                    {isEditingRoutine ? (routineUploadProgress || "Processing...") : "Update Routine"}
-                                </Button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             )}

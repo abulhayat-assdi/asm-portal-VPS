@@ -235,16 +235,16 @@ export default function StudentRoutinePage() {
     // Inline styles to fully bypass the global h1/h2 gradient CSS
     const titleStyle: React.CSSProperties = {
         color: "#FFFFFF",
-        fontSize: "clamp(1.5rem, 2.5vw, 2.4rem)",
+        fontSize: "clamp(0.95rem, 1.4vw, 1.25rem)",
         fontWeight: 800,
         letterSpacing: "0.02em",
-        lineHeight: 1.25,
+        lineHeight: 1.2,
     };
     const subtitleStyle: React.CSSProperties = {
         color: "#93C5FD",
-        fontSize: "0.875rem",
+        fontSize: "0.75rem",
         fontWeight: 500,
-        marginTop: 8,
+        marginTop: 3,
     };
 
     return (
@@ -253,7 +253,7 @@ export default function StudentRoutinePage() {
                 <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
 
                     {/* Title Header — use div not h1 to avoid global gradient override */}
-                    <div style={{ backgroundColor: "#0D1B4A", textAlign: "center", padding: "32px 24px" }}>
+                    <div style={{ backgroundColor: "#0D1B4A", textAlign: "center", padding: "10px 24px" }}>
                         <div style={titleStyle}>{displayTitle}</div>
                         {config?.subtitle && <div style={subtitleStyle}>{config.subtitle}</div>}
                     </div>
@@ -344,9 +344,11 @@ export default function StudentRoutinePage() {
                                                             display: "flex",
                                                             flexDirection: "column",
                                                             justifyContent: "center",
-                                                            padding: "12px 16px",
+                                                            alignItems: "center",
+                                                            padding: "12px 10px",
                                                             borderLeft: `4px solid ${theme?.border ?? "#CBD5E1"}`,
                                                             backgroundColor: theme?.bg ?? "#FFFFFF",
+                                                            textAlign: "center",
                                                         }}>
                                                             <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", lineHeight: 1.4 }}>
                                                                 {entry.subject}

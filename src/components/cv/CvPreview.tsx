@@ -4,7 +4,7 @@ import React from "react";
 import type { CvFormData } from "@/lib/cv/schemas";
 import { SECTION_LABELS, type TemplateConfig } from "@/lib/cv/constants";
 
-export function CvPreview({ data, config }: { data: CvFormData; config: TemplateConfig }) {
+export function CvPreview({ data, config, fillHeight = false }: { data: CvFormData; config: TemplateConfig; fillHeight?: boolean }) {
     const sw = config.sidebarWidth || 38;
     const color = config.sidebarColor || "#1e3a5f";
     const initial = data.fullName?.charAt(0)?.toUpperCase() ?? "?";
@@ -118,8 +118,8 @@ export function CvPreview({ data, config }: { data: CvFormData; config: Template
     }
 
     return (
-        <div style={{ background: "#fff", overflow: "hidden", fontSize: "0.72rem", fontFamily: "sans-serif", height: "100%", minHeight: 400 }}>
-            <div style={{ display: "flex", flexDirection: "row", height: "100%", minHeight: 400 }}>
+        <div style={{ background: "#fff", overflow: "hidden", fontSize: "0.72rem", fontFamily: "sans-serif", height: fillHeight ? "100%" : "auto" }}>
+            <div style={{ display: "flex", flexDirection: "row", height: fillHeight ? "100%" : "auto", minHeight: 400 }}>
                 {/* Sidebar */}
                 <div style={{ flexShrink: 0, width: `${sw}%`, minWidth: `${sw}%`, backgroundColor: color, padding: "12px 10px", color: "#fff", display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
                     {config.showPhoto !== false && (

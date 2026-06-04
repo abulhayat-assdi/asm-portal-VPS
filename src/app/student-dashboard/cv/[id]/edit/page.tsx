@@ -865,7 +865,7 @@ export default function CvEditorPage() {
                         <h3 className="font-bold text-gray-600 text-xs uppercase tracking-widest mb-3">Live Preview (A4)</h3>
                         {/* A4 ratio: 210mm × 297mm = 1 : 1.4142 */}
                         <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden" style={{ aspectRatio: "210/297", overflowY: "auto" }}>
-                            <CvPreview data={watchedValues} config={config} />
+                            <CvPreview data={watchedValues} config={config} fillHeight />
                         </div>
                     </div>
                 </div>

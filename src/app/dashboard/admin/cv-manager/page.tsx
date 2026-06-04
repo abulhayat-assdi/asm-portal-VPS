@@ -572,7 +572,7 @@ export default function CvManagerPage() {
                             )}
                             {!previewLoading && previewData && previewConfig && (
                                 <div className="mx-auto rounded-xl border border-gray-200 shadow overflow-hidden" style={{ aspectRatio: "210/297", maxWidth: 560 }}>
-                                    <CvPreview data={previewData} config={previewConfig} />
+                                    <CvPreview data={previewData} config={previewConfig} fillHeight />
                                 </div>
                             )}
                         </div>
