@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Globe, User, Mail, Lock, Phone, CheckCircle } from "lucide-react";
-import { useAdminBasePath } from "../../layout";
+import { useAdminBasePath } from "../../hooks";
 
 export default function NewTenantPage() {
     const router = useRouter();

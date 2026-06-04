@@ -2,27 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAdminBasePath } from "./hooks";
 import { Building2, LayoutDashboard, LogOut, Plus } from "lucide-react";
 
-// When accessed via admin.tasm-skill.asf.bd the rewrite maps:
-//   /          → /saas-admin
-//   /tenants   → /saas-admin/tenants
-// So links must use the pre-rewrite paths (without /saas-admin prefix).
-// When accessed via tasm-skill.asf.bd/saas-admin, links need the full prefix.
 function isAdminSubdomain(): boolean {
     if (typeof window === "undefined") return false;
     const hostname = window.location.hostname;
     const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "tasm-skill.asf.bd";
-    // Production: admin.tasm-skill.asf.bd  |  Development: admin.localhost
     return hostname === `admin.${baseDomain}` || hostname === "admin.localhost";
-}
-
-export function useAdminBasePath() {
-    const [base, setBase] = useState("/saas-admin");
-    useEffect(() => {
-        setBase(isAdminSubdomain() ? "" : "/saas-admin");
-    }, []);
-    return base;
 }
 
 function useMainDomainUrl() {

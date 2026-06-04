@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ALL_FEATURES } from "@/lib/features";
-import { useAdminBasePath } from "../../layout";
+import { useAdminBasePath } from "../../hooks";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

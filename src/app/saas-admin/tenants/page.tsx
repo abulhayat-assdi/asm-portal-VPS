@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Building2 } from "lucide-react";
-import { useAdminBasePath } from "../layout";
+import { useAdminBasePath } from "../hooks";
 
 interface TenantWithStats {
     id: string;
