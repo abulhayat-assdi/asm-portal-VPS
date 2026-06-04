@@ -28,7 +28,6 @@ const PREVIEW_HEIGHT = 1123; // A4 at 96 dpi: 794 × (297/210)
 
 // Dense dummy data — fills a full A4 page like a real CV
 const DUMMY_DATA: CvFormData = {
-    templateId: "",
     title: "My CV",
     fullName: "Your Name",
     profilePhoto: "",
@@ -348,7 +347,7 @@ export default function NewCvPage() {
                                 photoShape: (tmpl.config.photoShape as "circle" | "square") ?? "circle",
                                 showPhoto: tmpl.config.showPhoto ?? true,
                             };
-                            const previewData: CvFormData = { ...DUMMY_DATA, templateId: tmpl.id };
+                            const previewData: CvFormData = { ...DUMMY_DATA };
 
                             return (
                                 <button
@@ -423,7 +422,7 @@ export default function NewCvPage() {
                 return (
                     <TemplateViewModal
                         tmpl={viewingTemplate}
-                        data={{ ...DUMMY_DATA, templateId: viewingTemplate.id }}
+                        data={{ ...DUMMY_DATA }}
                         config={vc}
                         onClose={() => setViewingTemplate(null)}
                     />
