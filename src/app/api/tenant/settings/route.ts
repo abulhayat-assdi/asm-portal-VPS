@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { getSessionUser, isSuperAdmin } from '@/lib/auth';
 import { getTenantBySlug, getTenantSlugFromHeaders, invalidateTenantCache } from '@/lib/tenant';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 const updateSchema = z.object({
     name: z.string().min(2).max(100).optional(),
@@ -55,9 +56,13 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
+    const { settings, ...rest } = parsed.data;
     const updated = await prisma.tenant.update({
         where: { id: tenant.id },
-        data: parsed.data,
+        data: {
+            ...rest,
+            ...(settings !== undefined && { settings: settings as unknown as Prisma.InputJsonValue }),
+        },
     });
 
     invalidateTenantCache(tenantSlug);
