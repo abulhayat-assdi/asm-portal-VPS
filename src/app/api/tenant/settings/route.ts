@@ -14,7 +14,7 @@ const updateSchema = z.object({
     favicon: z.string().optional(),
     primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
     accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-    settings: z.record(z.unknown()).optional(),
+    settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 /** GET /api/tenant/settings — get current tenant settings */
