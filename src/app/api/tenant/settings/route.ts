@@ -8,6 +8,19 @@ import { getTenantBySlug, getTenantSlugFromHeaders, invalidateTenantCache } from
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
+/** Slug থেকে tenant খোঁজে, না পেলে user-এর tenantId দিয়ে fallback করে। */
+async function resolveTenant(req: NextRequest, userTenantId?: string) {
+    const slug = getTenantSlugFromHeaders(req.headers);
+    if (slug) {
+        const bySlug = await getTenantBySlug(slug);
+        if (bySlug) return bySlug;
+    }
+    if (userTenantId) {
+        return prisma.tenant.findUnique({ where: { id: userTenantId } });
+    }
+    return null;
+}
+
 const updateSchema = z.object({
     name: z.string().min(2).max(100).optional(),
     tagline: z.string().max(200).optional(),
@@ -23,10 +36,7 @@ export async function GET(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const tenantSlug = getTenantSlugFromHeaders(req.headers);
-    if (!tenantSlug) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
-
-    const tenant = await getTenantBySlug(tenantSlug);
+    const tenant = await resolveTenant(req, user.tenantId);
     if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
     return NextResponse.json({ tenant });
@@ -39,10 +49,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: 'Forbidden — super admin only' }, { status: 403 });
     }
 
-    const tenantSlug = getTenantSlugFromHeaders(req.headers);
-    if (!tenantSlug) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
-
-    const tenant = await getTenantBySlug(tenantSlug);
+    const tenant = await resolveTenant(req, user.tenantId);
     if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
     // Make sure the user belongs to this tenant
@@ -65,7 +72,7 @@ export async function PATCH(req: NextRequest) {
         },
     });
 
-    invalidateTenantCache(tenantSlug);
+    invalidateTenantCache(tenant.slug);
 
     return NextResponse.json({ success: true, tenant: updated });
 }

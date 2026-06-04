@@ -3,6 +3,10 @@ import { getAllDefaultContent } from "@/lib/defaultCmsContent";
 
 type DefaultKey = keyof ReturnType<typeof getAllDefaultContent>;
 
+function mergeArray(dbArr: unknown, defArr: unknown): unknown[] {
+    return (Array.isArray(dbArr) && dbArr.length > 0) ? dbArr as unknown[] : ((defArr as unknown[]) || []);
+}
+
 // Server-side CMS helper — queries DB directly (no HTTP round-trip)
 export async function getCmsContent(pageId: string): Promise<Record<string, unknown>> {
     const defaults = getAllDefaultContent();
@@ -26,9 +30,10 @@ export async function getCmsContent(pageId: string): Promise<Record<string, unkn
             whySection: { ...((def.whySection as object) || {}), ...((data.whySection as object) || {}) },
             ctaSection: { ...((def.ctaSection as object) || {}), ...((data.ctaSection as object) || {}) },
             contactInfo: { ...((def.contactInfo as object) || {}), ...((data.contactInfo as object) || {}) },
-            socialGroups: (Array.isArray(data.socialGroups) && data.socialGroups.length > 0)
-                ? data.socialGroups
-                : (def.socialGroups || []),
+            socialGroups: mergeArray(data.socialGroups, def.socialGroups),
+            audienceCards: mergeArray(data.audienceCards, def.audienceCards),
+            courseHighlights: mergeArray(data.courseHighlights, def.courseHighlights),
+            whyCards: mergeArray(data.whyCards, def.whyCards),
         };
     } catch {
         return def;

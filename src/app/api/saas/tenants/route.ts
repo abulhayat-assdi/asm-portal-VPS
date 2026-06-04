@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getSessionUser, isSaasOwner } from '@/lib/auth';
 import { invalidateTenantCache } from '@/lib/tenant';
+import { registerSubdomainInCoolify } from '@/lib/coolify';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -101,6 +102,9 @@ export async function POST(req: NextRequest) {
 
         return { tenant, adminUser };
     });
+
+    // Coolify-তে subdomain রেজিস্টার করো (background — fail হলেও tenant তৈরি হয়)
+    registerSubdomainInCoolify(slug).catch(() => {});
 
     return NextResponse.json({
         success: true,

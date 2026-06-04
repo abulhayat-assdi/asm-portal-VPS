@@ -2,11 +2,16 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { getPublishedPostsServer as getPublishedPosts } from "@/lib/blog-server";
 import BlogList from "@/components/blog/BlogList";
+import { getCmsContent } from "@/lib/getCmsContent";
 
 export const dynamic = "force-static";
 
 export default async function BlogPage() {
-    const publishedPosts = await getPublishedPosts();
+    const [publishedPosts, cmsData] = await Promise.all([
+        getPublishedPosts(),
+        getCmsContent("blog_page"),
+    ]);
+    const pageHeader = (cmsData as Record<string, Record<string, string>>).header ?? {};
 
     const navLinks = [
         { label: "Home", href: "/" },
@@ -51,10 +56,10 @@ export default async function BlogPage() {
                 <section className="w-full bg-white pt-6 pb-8 md:pt-8 md:pb-10">
                     <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
                         <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#1f2937] mb-4">
-                            Blog
+                            {pageHeader.title || "Blog"}
                         </h1>
                         <p className="text-lg md:text-xl text-[#6b7280] max-w-3xl mx-auto">
-                            সেলস, মার্কেটিং, হিউম্যান সাইকোলজি এবং প্রফেশনাল গ্রোথ নিয়ে রিয়েল-লাইফ এক্সপেরিয়েন্স ও প্র্যাক্টিক্যাল লার্নিংয়ের এক সমৃদ্ধ সংগ্রহশালা।
+                            {pageHeader.subtitle || ""}
                         </p>
                     </div>
                 </section>

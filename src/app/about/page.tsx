@@ -3,8 +3,24 @@ import Footer from "@/components/ui/Footer";
 import AboutCourseSection from "@/components/ui/AboutCourseSection";
 import WhyThisCourseSection from "@/components/ui/WhyThisCourseSection";
 import AboutCTASection from "@/components/ui/AboutCTASection";
+import { getCmsContent } from "@/lib/getCmsContent";
 
-export default function AboutPage() {
+export default async function AboutPage() {
+    const cmsData = await getCmsContent("about_page");
+    type Rec = Record<string, unknown>;
+    const d = cmsData as Rec;
+
+    const header = (d.header as Rec) ?? {};
+    const aboutSection = (d.aboutSection as Rec) ?? {};
+    const whySection = (d.whySection as Rec) ?? {};
+    const ctaSection = (d.ctaSection as Rec) ?? {};
+    const courseHighlights = Array.isArray(d.courseHighlights)
+        ? d.courseHighlights as { id?: string; title: string; description: string }[]
+        : [];
+    const whyCards = Array.isArray(d.whyCards)
+        ? d.whyCards as { id?: string; title: string; description: string }[]
+        : [];
+
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about", isActive: true },
@@ -44,25 +60,33 @@ export default function AboutPage() {
             />
 
             <main className="min-h-screen bg-slate-50 flex flex-col">
-                {/* Clean Page Header */}
                 <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
-                        About The Course
+                        {(header.title as string) || "About The Course"}
                     </h1>
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-3xl mx-auto font-medium">
-                        বর্তমান মার্কেটপ্লেসে সত্যিকারের সাফল্য অর্জন করতে যে সলিড স্কিলগুলো প্রয়োজন, এই কোর্স আপনাকে সেটাই প্রোভাইড করবে। Built on pure ethics and 100% practical knowledge.
+                        {(header.subtitle as string) || ""}
                     </p>
                 </div>
 
-                {/* 1. What Is This Course? */}
                 <div className="flex-grow z-20 relative">
-                    <AboutCourseSection />
+                    <AboutCourseSection
+                        title={aboutSection.title as string | undefined}
+                        description1={aboutSection.description1 as string | undefined}
+                        description2={aboutSection.description2 as string | undefined}
+                        description3={aboutSection.description3 as string | undefined}
+                        courseHighlights={courseHighlights}
+                    />
 
-                    {/* 2. Why This Course Exists */}
-                    <WhyThisCourseSection />
+                    <WhyThisCourseSection
+                        title={whySection.title as string | undefined}
+                        whyCards={whyCards}
+                    />
 
-                    {/* 5. Call To Action */}
-                    <AboutCTASection />
+                    <AboutCTASection
+                        text={ctaSection.text as string | undefined}
+                        buttonText={ctaSection.buttonText as string | undefined}
+                    />
                 </div>
             </main>
 

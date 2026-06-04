@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getServerSessionUser, isAdmin as checkIsAdmin } from "@/lib/auth";
 
 import { getImageUrl } from "@/lib/getImageUrl";
+import { getCmsContent } from "@/lib/getCmsContent";
 
 interface Teacher {
     id: string;
@@ -62,7 +63,12 @@ async function getTeachers(): Promise<Teacher[]> {
 }
 
 export default async function InstructorsPage() {
-    const [instructors, isAdmin] = await Promise.all([getTeachers(), getAdminStatus()]);
+    const [instructors, isAdmin, cmsData] = await Promise.all([
+        getTeachers(),
+        getAdminStatus(),
+        getCmsContent("instructors_page"),
+    ]);
+    const pageHeader = (cmsData as Record<string, Record<string, string>>).header ?? {};
 
     const navLinks = [
         { label: "Home", href: "/" },
@@ -106,10 +112,10 @@ export default async function InstructorsPage() {
                 {/* Clean Page Header */}
                 <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center relative">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
-                        Meet Our Team
+                        {pageHeader.title || "Meet Our Team"}
                     </h1>
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
-                        Dedicated professionals committed to helping you grow with practical skills and ethical values.
+                        {pageHeader.subtitle || "Dedicated professionals committed to helping you grow with practical skills and ethical values."}
                     </p>
 
                     {isAdmin && (

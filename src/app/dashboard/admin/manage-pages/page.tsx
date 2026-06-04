@@ -6,6 +6,7 @@ import { getPageContent } from "@/services/cmsService";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
+import CardListEditor, { CardItem } from "./CardListEditor";
 
 const PAGES = [
     { id: "home_page", label: "Home Page" },
@@ -49,6 +50,9 @@ interface PageContent {
         locationAddress?: string;
     };
     socialGroups?: SocialGroup[];
+    audienceCards?: CardItem[];
+    whyCards?: CardItem[];
+    courseHighlights?: CardItem[];
     logoUrl?: string;
     logoStoragePath?: string;
     siteName?: string;
@@ -70,7 +74,7 @@ export default function ManagePages() {
             setContent(null);
             try {
                 const data = await getPageContent(selectedPage);
-                setContent(data);
+                setContent(data as PageContent);
             } catch (error) {
                 console.error("Failed to fetch page content:", error);
             } finally {
@@ -192,12 +196,16 @@ export default function ManagePages() {
         );
     }
 
+    const sectionHeader = (title: string, color = "#059669") => (
+        <div className="flex items-center gap-2 mb-4 border-b pb-2">
+            <div className="w-2 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: color }}></div>
+            <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+        </div>
+    );
+
     const renderPageHeaderEditor = () => (
         <Card className="p-6">
-            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                <h2 className="text-xl font-bold text-gray-800">Main Page Header</h2>
-            </div>
+            {sectionHeader("Main Page Header")}
             <div className="space-y-4">
                 <Input
                     label="Page Title"
@@ -257,11 +265,9 @@ export default function ManagePages() {
                 {/* ═══ HOME PAGE ═══ */}
                 {selectedPage === "home_page" && (
                     <>
+                        {/* Hero Section */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">Hero Section</h2>
-                            </div>
+                            {sectionHeader("Hero Section")}
                             <div className="space-y-4">
                                 <Input label="Heading" value={content?.hero?.heading || ""} onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, heading: e.target.value } })} />
                                 <Input label="Subheading" value={content?.hero?.subheading || ""} onChange={(e) => setContent({ ...content!, hero: { ...content!.hero, subheading: e.target.value } })} />
@@ -271,11 +277,10 @@ export default function ManagePages() {
                                 </div>
                             </div>
                         </Card>
+
+                        {/* Target Audience section title/subtitle */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">Target Audience Section</h2>
-                            </div>
+                            {sectionHeader("Target Audience — Section Header")}
                             <div className="space-y-4">
                                 <Input label="Title" value={content?.targetAudience?.title || ""} onChange={(e) => setContent({ ...content!, targetAudience: { ...content!.targetAudience, title: e.target.value } })} />
                                 <div className="space-y-1">
@@ -284,11 +289,21 @@ export default function ManagePages() {
                                 </div>
                             </div>
                         </Card>
+
+                        {/* Audience Cards CRUD */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">Learning Outcomes Section</h2>
-                            </div>
+                            {sectionHeader("Target Audience — Cards (Add / Edit / Delete)")}
+                            <p className="text-sm text-gray-500 mb-4">প্রতিটি কার্ডের আইকন, শিরোনাম ও বিবরণ পরিবর্তন করুন। কার্ড সরানো বা নতুন কার্ড যোগ করা যাবে।</p>
+                            <CardListEditor
+                                cards={content?.audienceCards || []}
+                                onChange={(cards) => setContent({ ...content!, audienceCards: cards })}
+                                showIconPicker={true}
+                            />
+                        </Card>
+
+                        {/* Learning Outcomes */}
+                        <Card className="p-6">
+                            {sectionHeader("Learning Outcomes Section")}
                             <div className="space-y-4">
                                 <Input label="Title" value={content?.learningOutcomes?.title || ""} onChange={(e) => setContent({ ...content!, learningOutcomes: { ...content!.learningOutcomes, title: e.target.value } })} />
                                 <div className="space-y-1">
@@ -303,15 +318,15 @@ export default function ManagePages() {
                 {/* ═══ ABOUT PAGE ═══ */}
                 {selectedPage === "about_page" && (
                     <>
+                        {/* Page Header */}
                         {renderPageHeaderEditor()}
+
+                        {/* What Is This Course — text blocks */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">What Is This Course?</h2>
-                            </div>
+                            {sectionHeader("What Is This Course? — Text")}
                             <div className="space-y-4">
                                 <Input label="Section Title" value={content?.aboutSection?.title || ""} onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, title: e.target.value } })} />
-                                {["description1", "description2", "description3"].map((field, i) => (
+                                {(["description1", "description2", "description3"] as const).map((field, i) => (
                                     <div key={field} className="space-y-1">
                                         <label className="text-sm font-medium text-gray-700">Description Paragraph {i + 1}</label>
                                         <textarea rows={4} value={(content?.aboutSection as Record<string, string> | undefined)?.[field] || ""} onChange={(e) => setContent({ ...content!, aboutSection: { ...content!.aboutSection, [field]: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
@@ -319,18 +334,38 @@ export default function ManagePages() {
                                 ))}
                             </div>
                         </Card>
+
+                        {/* Course Highlights CRUD */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">Why Section</h2>
-                            </div>
+                            {sectionHeader("What Is This Course? — Feature Cards (Add / Edit / Delete)")}
+                            <p className="text-sm text-gray-500 mb-4">ডান পাশে দেখানো ফিচার কার্ডগুলো পরিবর্তন করুন। আইকন স্বয়ংক্রিয়ভাবে অ্যাসাইন হয়।</p>
+                            <CardListEditor
+                                cards={content?.courseHighlights || []}
+                                onChange={(cards) => setContent({ ...content!, courseHighlights: cards })}
+                                showIconPicker={false}
+                            />
+                        </Card>
+
+                        {/* Why Section title */}
+                        <Card className="p-6">
+                            {sectionHeader("Why This Course Exists — Section Title")}
                             <Input label="Why Section Title" value={content?.whySection?.title || ""} onChange={(e) => setContent({ ...content!, whySection: { ...content!.whySection, title: e.target.value } })} />
                         </Card>
+
+                        {/* Why Cards CRUD */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">CTA Section</h2>
-                            </div>
+                            {sectionHeader("Why This Course Exists — Reason Cards (Add / Edit / Delete)")}
+                            <p className="text-sm text-gray-500 mb-4">প্রতিটি কারণ কার্ডের শিরোনাম ও বিবরণ পরিবর্তন করুন। আইকন স্বয়ংক্রিয়ভাবে অ্যাসাইন হয়।</p>
+                            <CardListEditor
+                                cards={content?.whyCards || []}
+                                onChange={(cards) => setContent({ ...content!, whyCards: cards })}
+                                showIconPicker={false}
+                            />
+                        </Card>
+
+                        {/* CTA Section */}
+                        <Card className="p-6">
+                            {sectionHeader("CTA Section")}
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">CTA Main Text</label>
@@ -349,58 +384,27 @@ export default function ManagePages() {
 
                         {/* Contact Info */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">যোগাযোগের তথ্য</h2>
-                            </div>
+                            {sectionHeader("যোগাযোগের তথ্য")}
                             <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Email Address"
-                                        value={content?.contactInfo?.email || ""}
-                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, email: e.target.value } })}
-                                    />
-                                    <Input
-                                        label="Email Description"
-                                        value={content?.contactInfo?.emailDescription || ""}
-                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, emailDescription: e.target.value } })}
-                                    />
+                                    <Input label="Email Address" value={content?.contactInfo?.email || ""} onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, email: e.target.value } })} />
+                                    <Input label="Email Description" value={content?.contactInfo?.emailDescription || ""} onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, emailDescription: e.target.value } })} />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Phone Number"
-                                        value={content?.contactInfo?.phone || ""}
-                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, phone: e.target.value } })}
-                                    />
-                                    <Input
-                                        label="Phone Description (Available Hours)"
-                                        value={content?.contactInfo?.phoneDescription || ""}
-                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, phoneDescription: e.target.value } })}
-                                    />
+                                    <Input label="Phone Number" value={content?.contactInfo?.phone || ""} onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, phone: e.target.value } })} />
+                                    <Input label="Phone Description (Available Hours)" value={content?.contactInfo?.phoneDescription || ""} onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, phoneDescription: e.target.value } })} />
                                 </div>
-                                <Input
-                                    label="Training Location Name"
-                                    value={content?.contactInfo?.locationName || ""}
-                                    onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, locationName: e.target.value } })}
-                                />
+                                <Input label="Training Location Name" value={content?.contactInfo?.locationName || ""} onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, locationName: e.target.value } })} />
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-gray-700">Location Address</label>
-                                    <textarea
-                                        rows={2}
-                                        value={content?.contactInfo?.locationAddress || ""}
-                                        onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, locationAddress: e.target.value } })}
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700"
-                                    />
+                                    <textarea rows={2} value={content?.contactInfo?.locationAddress || ""} onChange={(e) => setContent({ ...content!, contactInfo: { ...content!.contactInfo, locationAddress: e.target.value } })} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#059669] text-gray-700" />
                                 </div>
                             </div>
                         </Card>
 
                         {/* Social Header */}
                         <Card className="p-6">
-                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                <div className="w-2 h-6 bg-[#059669] rounded-full"></div>
-                                <h2 className="text-xl font-bold text-gray-800">Social Presence Header</h2>
-                            </div>
+                            {sectionHeader("Social Presence Header")}
                             <div className="space-y-4">
                                 <Input label="Section Title" value={content?.socialHeader?.title || ""} onChange={(e) => setContent({ ...content!, socialHeader: { ...content!.socialHeader, title: e.target.value } })} />
                                 <div className="space-y-1">
@@ -418,11 +422,7 @@ export default function ManagePages() {
                                     <h2 className="text-lg font-bold text-gray-800">সোশ্যাল লিঙ্ক গ্রুপ</h2>
                                 </div>
                                 <div className="space-y-4">
-                                    <Input
-                                        label="Group Title"
-                                        value={group.title}
-                                        onChange={(e) => updateGroupTitle(group.id, e.target.value)}
-                                    />
+                                    <Input label="Group Title" value={group.title} onChange={(e) => updateGroupTitle(group.id, e.target.value)} />
                                     {group.links.map((link, linkIdx) => (
                                         <div key={linkIdx} className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-3">
                                             <div className="flex items-center gap-2">
@@ -432,22 +432,10 @@ export default function ManagePages() {
                                                 <span className="text-sm font-bold text-gray-600 capitalize">{link.platform}</span>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                <Input
-                                                    label="Link Label"
-                                                    value={link.label}
-                                                    onChange={(e) => updateSocialLink(group.id, linkIdx, "label", e.target.value)}
-                                                />
-                                                <Input
-                                                    label="Display Text"
-                                                    value={link.displayText}
-                                                    onChange={(e) => updateSocialLink(group.id, linkIdx, "displayText", e.target.value)}
-                                                />
+                                                <Input label="Link Label" value={link.label} onChange={(e) => updateSocialLink(group.id, linkIdx, "label", e.target.value)} />
+                                                <Input label="Display Text" value={link.displayText} onChange={(e) => updateSocialLink(group.id, linkIdx, "displayText", e.target.value)} />
                                             </div>
-                                            <Input
-                                                label="URL"
-                                                value={link.url}
-                                                onChange={(e) => updateSocialLink(group.id, linkIdx, "url", e.target.value)}
-                                            />
+                                            <Input label="URL" value={link.url} onChange={(e) => updateSocialLink(group.id, linkIdx, "url", e.target.value)} />
                                         </div>
                                     ))}
                                 </div>
@@ -480,10 +468,7 @@ export default function ManagePages() {
                                         onChange={(e) => setContent({ ...content!, siteName: e.target.value })}
                                     />
                                 </div>
-                                <Button
-                                    onClick={handleSaveSiteName}
-                                    className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold mb-0.5"
-                                >
+                                <Button onClick={handleSaveSiteName} className="px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold mb-0.5">
                                     সেভ করুন
                                 </Button>
                             </div>
@@ -499,7 +484,6 @@ export default function ManagePages() {
                                 <h2 className="text-xl font-bold text-gray-800">সাইট লোগো</h2>
                             </div>
 
-                            {/* Current Logo Preview */}
                             <div className="mb-6">
                                 <p className="text-sm font-medium text-gray-700 mb-3">বর্তমান লোগো</p>
                                 <div className="flex items-center gap-5">
@@ -524,10 +508,7 @@ export default function ManagePages() {
                                             <>
                                                 <p className="text-sm font-semibold text-green-600 mb-1">✓ কাস্টম লোগো সক্রিয়</p>
                                                 <p className="text-xs text-gray-400 mb-3 break-all">{content.logoUrl}</p>
-                                                <button
-                                                    onClick={handleRemoveLogo}
-                                                    className="text-sm text-red-500 hover:text-red-700 hover:underline font-medium"
-                                                >
+                                                <button onClick={handleRemoveLogo} className="text-sm text-red-500 hover:text-red-700 hover:underline font-medium">
                                                     লোগো রিমুভ করুন (ডিফল্ট SVG-তে ফিরে যাবে)
                                                 </button>
                                             </>
@@ -538,7 +519,6 @@ export default function ManagePages() {
                                 </div>
                             </div>
 
-                            {/* Upload New Logo */}
                             <div className="border-t pt-5">
                                 <p className="text-sm font-semibold text-gray-700 mb-1">
                                     {content?.logoUrl ? "লোগো রিপ্লেস করুন" : "নতুন লোগো আপলোড করুন"}

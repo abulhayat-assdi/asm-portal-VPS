@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getSessionUser, isSaasOwner } from '@/lib/auth';
 import { invalidateTenantCache } from '@/lib/tenant';
+import { registerSubdomainInCoolify } from '@/lib/coolify';
 import { z } from 'zod';
 
 const updateSchema = z.object({
@@ -72,6 +73,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
 
     invalidateTenantCache(updated.slug);
+
+    // Slug পরিবর্তন হলে নতুন subdomain Coolify-তে register করো
+    if (parsed.data.slug && parsed.data.slug !== existing.slug) {
+        registerSubdomainInCoolify(updated.slug).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, tenant: updated });
 }

@@ -35,6 +35,9 @@ export const getPageContent = async (pageId: string): Promise<object> => {
         const data = await res.json();
         const d = def as any;
 
+        const mergeArr = (dbArr: unknown, defArr: unknown) =>
+            (Array.isArray(dbArr) && dbArr.length > 0) ? dbArr : (defArr || []);
+
         // Safe merge of sections — DB values override defaults
         return {
             ...d,
@@ -48,10 +51,10 @@ export const getPageContent = async (pageId: string): Promise<object> => {
             whySection: { ...(d.whySection || {}), ...(data.whySection || {}) },
             ctaSection: { ...(d.ctaSection || {}), ...(data.ctaSection || {}) },
             contactInfo: { ...(d.contactInfo || {}), ...(data.contactInfo || {}) },
-            // Arrays: if DB has data, use it; otherwise use defaults
-            socialGroups: (data.socialGroups && Array.isArray(data.socialGroups) && data.socialGroups.length > 0)
-                ? data.socialGroups
-                : (d.socialGroups || []),
+            socialGroups: mergeArr(data.socialGroups, d.socialGroups),
+            audienceCards: mergeArr(data.audienceCards, d.audienceCards),
+            courseHighlights: mergeArr(data.courseHighlights, d.courseHighlights),
+            whyCards: mergeArr(data.whyCards, d.whyCards),
         };
     } catch (error) {
         console.error(`Error fetching page content for ${pageId}:`, error);

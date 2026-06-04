@@ -9,45 +9,45 @@ import BrandLogo from "@/components/ui/BrandLogo";
 import { useSidebarNotifications } from "@/hooks/useSidebarNotifications";
 import { PermissionKey } from "@/lib/permissions";
 
-const teacherAdminNavItems: { href: string; label: string; icon: string; permission: PermissionKey | null }[] = [
+const teacherAdminNavItems: { href: string; label: string; icon: string; permission: PermissionKey | null; feature?: string }[] = [
     { href: "/dashboard",                                label: "Dashboard",          icon: "🏠", permission: null },
     { href: "/dashboard/teachers",                       label: "Teacher Directory",  icon: "👥", permission: "teachers" },
     { href: "/dashboard/schedule",                       label: "Class Schedule",     icon: "📅", permission: "schedule" },
     { href: "/dashboard/manage-routine",                 label: "Manage Routine",     icon: "📆", permission: "routine" },
     { href: "/dashboard/all-batch-info",                 label: "All Batch Info",     icon: "📊", permission: "batch_info" },
-    { href: "/dashboard/resources",                      label: "Resource Library",   icon: "🗂️", permission: "resources" },
-    { href: "/dashboard/course-modules",                 label: "Course Modules",     icon: "📚", permission: "course_modules" },
-    { href: "/dashboard/policies",                       label: "Policy & Minutes",   icon: "📋", permission: "policies" },
+    { href: "/dashboard/resources",                      label: "Resource Library",   icon: "🗂️", permission: "resources",        feature: "resources" },
+    { href: "/dashboard/course-modules",                 label: "Course Modules",     icon: "📚", permission: "course_modules",   feature: "course_modules" },
+    { href: "/dashboard/policies",                       label: "Policy & Minutes",   icon: "📋", permission: "policies",          feature: "policies" },
     { href: "/dashboard/feedback",                       label: "Feedback",           icon: "💬", permission: "feedback" },
-    { href: "/dashboard/tracker",                        label: "Daily Tracker",      icon: "📋", permission: "tracker" },
-    { href: "/dashboard/homework",                       label: "Homework",           icon: "📝", permission: "homework" },
-    { href: "/dashboard/leave-tracking",                 label: "Leave Tracking",     icon: "🌴", permission: "leave_tracking" },
+    { href: "/dashboard/tracker",                        label: "Daily Tracker",      icon: "📋", permission: "tracker",           feature: "daily_tracker" },
+    { href: "/dashboard/homework",                       label: "Homework",           icon: "📝", permission: "homework",          feature: "homework" },
+    { href: "/dashboard/leave-tracking",                 label: "Leave Tracking",     icon: "🌴", permission: "leave_tracking",    feature: "leave_tracking" },
     { href: "/dashboard/admin",                          label: "Admin Panel",        icon: "⚙️", permission: "admin_panel" },
-    { href: "/dashboard/admin/manage-homework",          label: "Manage Homework",    icon: "📁", permission: "admin_homework" },
-    { href: "/dashboard/admin/leave-management",         label: "Manage Leaves",      icon: "🌴", permission: "admin_leave" },
-    { href: "/dashboard/admin/manage-results",           label: "Manage Results",     icon: "📝", permission: "admin_results" },
+    { href: "/dashboard/admin/manage-homework",          label: "Manage Homework",    icon: "📁", permission: "admin_homework",    feature: "homework" },
+    { href: "/dashboard/admin/leave-management",         label: "Manage Leaves",      icon: "🌴", permission: "admin_leave",       feature: "leave_tracking" },
+    { href: "/dashboard/admin/manage-results",           label: "Manage Results",     icon: "📝", permission: "admin_results",     feature: "exam_results" },
     { href: "/dashboard/admin/student-updates",          label: "Student Updates",    icon: "🔔", permission: "admin_notices" },
     { href: "/dashboard/admin/contact-messages",         label: "Contact Messages",   icon: "📩", permission: "admin_contact" },
-    { href: "/dashboard/admin/resource-management",      label: "Admin: Resources",   icon: "🗂️", permission: "admin_resources" },
-    { href: "/dashboard/admin/blog",                     label: "Blog Management",    icon: "📝", permission: "admin_blog" },
-    { href: "/dashboard/admin/home-video-testimonials",  label: "Home Videos",        icon: "🎥", permission: "admin_testimonials" },
-    { href: "/dashboard/admin/success-stories",          label: "Success Stories",    icon: "🎬", permission: "admin_success" },
-    { href: "/dashboard/admin/course-modules",           label: "Course Modules Mgr", icon: "📚", permission: "admin_course_modules" },
+    { href: "/dashboard/admin/resource-management",      label: "Admin: Resources",   icon: "🗂️", permission: "admin_resources",   feature: "resources" },
+    { href: "/dashboard/admin/blog",                     label: "Blog Management",    icon: "📝", permission: "admin_blog",         feature: "blog" },
+    { href: "/dashboard/admin/home-video-testimonials",  label: "Home Videos",        icon: "🎥", permission: "admin_testimonials", feature: "video_testimonials" },
+    { href: "/dashboard/admin/success-stories",          label: "Success Stories",    icon: "🎬", permission: "admin_success",      feature: "success_stories" },
+    { href: "/dashboard/admin/course-modules",           label: "Course Modules Mgr", icon: "📚", permission: "admin_course_modules", feature: "course_modules" },
     { href: "/dashboard/admin/manage-pages",             label: "Manage Pages",       icon: "🌐", permission: "admin_cms" },
     { href: "/dashboard/admin/hero-images",              label: "Hero Images",        icon: "🖼️", permission: "admin_cms" },
     { href: "/dashboard/admin/access-management",        label: "Access Management",  icon: "🔑", permission: "access_management" },
-    { href: "/dashboard/admin/cv-manager",               label: "CV Manager",         icon: "📄", permission: "admin_panel" },
+    { href: "/dashboard/admin/cv-manager",               label: "CV Manager",         icon: "📄", permission: "admin_panel",        feature: "cv_builder" },
 ];
 
-const studentNavItems: { href: string; label: string; icon: string; permission: null }[] = [
+const studentNavItems: { href: string; label: string; icon: string; permission: null; feature?: string }[] = [
     { href: "/student-dashboard",                  label: "Dashboard",     icon: "🏠", permission: null },
     { href: "/student-dashboard/routine",          label: "Class Routine", icon: "🗓️", permission: null },
-    { href: "/student-dashboard/resource",         label: "Resource",      icon: "📚", permission: null },
-    { href: "/student-dashboard/course-outline",   label: "Course Outline",icon: "📋", permission: null },
-    { href: "/student-dashboard/homework",         label: "Homework",      icon: "📝", permission: null },
-    { href: "/student-dashboard/results",          label: "Results",       icon: "🎓", permission: null },
+    { href: "/student-dashboard/resource",         label: "Resource",      icon: "📚", permission: null, feature: "resources" },
+    { href: "/student-dashboard/course-outline",   label: "Course Outline",icon: "📋", permission: null, feature: "course_modules" },
+    { href: "/student-dashboard/homework",         label: "Homework",      icon: "📝", permission: null, feature: "homework" },
+    { href: "/student-dashboard/results",          label: "Results",       icon: "🎓", permission: null, feature: "exam_results" },
     { href: "/student-dashboard/profile",          label: "Profile",       icon: "👤", permission: null },
-    { href: "/student-dashboard/cv",               label: "My CV",         icon: "📄", permission: null },
+    { href: "/student-dashboard/cv",               label: "My CV",         icon: "📄", permission: null, feature: "cv_builder" },
 ];
 
 export default function Sidebar() {
@@ -57,11 +57,12 @@ export default function Sidebar() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [siteLogoUrl, setSiteLogoUrl] = useState<string | null>(null);
     const [siteName, setSiteName] = useState<string | null>(null);
+    const [features, setFeatures] = useState<Record<string, boolean>>({});
 
     // Notifications hook
     const { counts, markPageAsVisited } = useSidebarNotifications();
 
-    // Fetch site settings (logo + name)
+    // Fetch site settings (logo + name + features)
     const fetchSiteSettings = async () => {
         try {
             const res = await fetch("/api/site-settings");
@@ -69,6 +70,9 @@ export default function Sidebar() {
                 const data = await res.json();
                 setSiteLogoUrl(data.logoUrl || null);
                 setSiteName(data.siteName || null);
+                if (data.features && typeof data.features === "object") {
+                    setFeatures(data.features);
+                }
             }
         } catch {
             // silently fail — defaults will show
@@ -93,9 +97,13 @@ export default function Sidebar() {
     const isStudent = userProfile?.role === "student";
     const activeNavItems = isStudent ? studentNavItems : teacherAdminNavItems;
 
-    // Filter nav items using permission system
+    // Filter nav items by permission + feature flags
     const filteredNavItems = activeNavItems.filter(item => {
         if (loading) return true; // show all while loading
+        // Feature gate: feature explicitly disabled হলে hide করো
+        if (item.feature && Object.keys(features).length > 0) {
+            if (features[item.feature] === false) return false;
+        }
         if (isStudent) return true;
         if (!item.permission) return true; // dashboard — always visible
         return hasPermission(item.permission);

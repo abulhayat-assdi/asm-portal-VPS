@@ -1,0 +1,36 @@
+export interface FeatureDefinition {
+    key: string;
+    label: string;
+    description: string;
+}
+
+export const ALL_FEATURES: FeatureDefinition[] = [
+    { key: 'homework',          label: 'হোমওয়ার্ক',          description: 'হোমওয়ার্ক জমা ও ম্যানেজমেন্ট সিস্টেম' },
+    { key: 'resources',         label: 'Resource Library',    description: 'ফাইল শেয়ারিং ও রিসোর্স লাইব্রেরি' },
+    { key: 'course_modules',    label: 'Course Modules',      description: 'কোর্স মডিউল ম্যানেজমেন্ট' },
+    { key: 'exam_results',      label: 'পরীক্ষার ফলাফল',     description: 'পরীক্ষার ফলাফল এন্ট্রি ও দেখার সিস্টেম' },
+    { key: 'blog',              label: 'Blog',                description: 'ব্লগ পোস্ট ম্যানেজমেন্ট' },
+    { key: 'success_stories',   label: 'সাফল্যের গল্প',      description: 'Success stories section' },
+    { key: 'video_testimonials',label: 'ভিডিও Testimonial',   description: 'Home page ভিডিও testimonials' },
+    { key: 'cv_builder',        label: 'CV Builder',          description: 'ছাত্রদের CV তৈরির টুল' },
+    { key: 'daily_tracker',     label: 'Daily Tracker',       description: 'Daily attendance/progress tracker' },
+    { key: 'policies',          label: 'Policy & Minutes',    description: 'Policy documents ও meeting minutes' },
+    { key: 'leave_tracking',    label: 'Leave Tracking',      description: 'শিক্ষকের ছুটি ম্যানেজমেন্ট' },
+    { key: 'chat',              label: 'Chat System',         description: 'ছাত্র-admin chat সিস্টেম' },
+];
+
+export type FeatureKey = string;
+
+/** Tenant settings JSON থেকে features বের করে। Default: সব feature চালু। */
+export function getTenantFeatures(settings: unknown): Record<string, boolean> {
+    const featuresRaw = (settings as { features?: Record<string, boolean> } | null)?.features ?? {};
+    const result: Record<string, boolean> = {};
+    for (const f of ALL_FEATURES) {
+        result[f.key] = featuresRaw[f.key] !== false; // undefined বা true → চালু
+    }
+    return result;
+}
+
+export function isFeatureEnabled(settings: unknown, featureKey: string): boolean {
+    return getTenantFeatures(settings)[featureKey] ?? true;
+}

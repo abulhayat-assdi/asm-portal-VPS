@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Building2, Users, GraduationCap, Plus } from "lucide-react";
-import { useAdminBasePath } from "./layout";
+import { Plus, Search, Building2 } from "lucide-react";
+import { useAdminBasePath } from "../layout";
 
 interface TenantWithStats {
     id: string;
@@ -17,10 +17,20 @@ interface TenantWithStats {
     stats: { students: number; teachers: number; users: number };
 }
 
-export default function SaasAdminDashboard() {
+const statusColor: Record<string, string> = {
+    ACTIVE: "bg-green-100 text-green-700",
+    SUSPENDED: "bg-red-100 text-red-700",
+    TRIAL: "bg-yellow-100 text-yellow-700",
+    DELETED: "bg-gray-100 text-gray-500",
+};
+
+export default function TenantsListPage() {
     const [tenants, setTenants] = useState<TenantWithStats[]>([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
     const base = useAdminBasePath();
+
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "tasm-skill.asf.bd";
 
     useEffect(() => {
         fetch("/api/saas/tenants")
@@ -29,25 +39,18 @@ export default function SaasAdminDashboard() {
             .catch(() => setLoading(false));
     }, []);
 
-    const totalStudents = tenants.reduce((s, t) => s + t.stats.students, 0);
-    const totalTeachers = tenants.reduce((s, t) => s + t.stats.teachers, 0);
-    const activeTenants = tenants.filter((t) => t.status === "ACTIVE" || t.status === "TRIAL").length;
-
-    const statusColor: Record<string, string> = {
-        ACTIVE: "bg-green-100 text-green-700",
-        SUSPENDED: "bg-red-100 text-red-700",
-        TRIAL: "bg-yellow-100 text-yellow-700",
-        DELETED: "bg-gray-100 text-gray-500",
-    };
-
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "tasm-skill.asf.bd";
+    const filtered = tenants.filter((t) =>
+        t.name.toLowerCase().includes(search.toLowerCase()) ||
+        t.slug.toLowerCase().includes(search.toLowerCase()) ||
+        t.ownerEmail.toLowerCase().includes(search.toLowerCase())
+    );
 
     return (
         <div className="p-6 max-w-6xl mx-auto">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">SaaS Admin Dashboard</h1>
-                    <p className="text-slate-500 text-sm mt-1">সব tenant পরিচালনা করুন</p>
+                    <h1 className="text-2xl font-bold text-slate-800">সব Tenant</h1>
+                    <p className="text-slate-500 text-sm mt-1">মোট {tenants.length} টি পোর্টাল</p>
                 </div>
                 <Link href={`${base}/tenants/new`}
                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
@@ -56,49 +59,26 @@ export default function SaasAdminDashboard() {
                 </Link>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg"><Building2 className="w-5 h-5 text-blue-600" /></div>
-                        <div>
-                            <p className="text-sm text-slate-500">মোট Tenant</p>
-                            <p className="text-2xl font-bold text-slate-800">{tenants.length}</p>
-                        </div>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2">{activeTenants} active</p>
-                </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-green-100 p-2 rounded-lg"><GraduationCap className="w-5 h-5 text-green-600" /></div>
-                        <div>
-                            <p className="text-sm text-slate-500">মোট ছাত্র</p>
-                            <p className="text-2xl font-bold text-slate-800">{totalStudents}</p>
-                        </div>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2">সব tenant মিলিয়ে</p>
-                </div>
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-purple-100 p-2 rounded-lg"><Users className="w-5 h-5 text-purple-600" /></div>
-                        <div>
-                            <p className="text-sm text-slate-500">মোট শিক্ষক</p>
-                            <p className="text-2xl font-bold text-slate-800">{totalTeachers}</p>
-                        </div>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-2">সব tenant মিলিয়ে</p>
-                </div>
+            {/* Search */}
+            <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                    type="text"
+                    placeholder="নাম, subdomain বা email দিয়ে খুঁজুন..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
             </div>
 
-            {/* Tenants Table */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-4 border-b border-slate-100">
-                    <h2 className="font-semibold text-slate-700">সব Tenant</h2>
-                </div>
                 {loading ? (
                     <div className="p-8 text-center text-slate-400">লোড হচ্ছে...</div>
-                ) : tenants.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400">কোনো tenant নেই</div>
+                ) : filtered.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <Building2 className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                        <p className="text-slate-400">{search ? "কোনো ফলাফল নেই" : "এখনো কোনো tenant নেই"}</p>
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -110,18 +90,25 @@ export default function SaasAdminDashboard() {
                                     <th className="px-4 py-3 text-left">Plan</th>
                                     <th className="px-4 py-3 text-center">ছাত্র</th>
                                     <th className="px-4 py-3 text-center">শিক্ষক</th>
-                                    <th className="px-4 py-3 text-left">Action</th>
+                                    <th className="px-4 py-3 text-left"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {tenants.map((t) => (
+                                {filtered.map((t) => (
                                     <tr key={t.id} className="hover:bg-slate-50">
                                         <td className="px-4 py-3">
-                                            <div className="font-medium text-slate-800">{t.name}</div>
-                                            <div className="text-xs text-slate-400">{t.ownerEmail}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-lg shrink-0"
+                                                    style={{ backgroundColor: t.primaryColor }} />
+                                                <div>
+                                                    <div className="font-medium text-slate-800">{t.name}</div>
+                                                    <div className="text-xs text-slate-400">{t.ownerEmail}</div>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td className="px-4 py-3">
-                                            <a href={`https://${t.slug}.${baseDomain}`} target="_blank" rel="noopener noreferrer"
+                                            <a href={`https://${t.slug}.${baseDomain}`} target="_blank"
+                                                rel="noopener noreferrer"
                                                 className="text-blue-600 hover:underline text-xs font-mono">
                                                 {t.slug}.{baseDomain}
                                             </a>
@@ -136,7 +123,7 @@ export default function SaasAdminDashboard() {
                                         <td className="px-4 py-3 text-center text-slate-700">{t.stats.teachers}</td>
                                         <td className="px-4 py-3">
                                             <Link href={`${base}/tenants/${t.id}`}
-                                                className="text-blue-600 hover:underline text-xs font-medium">
+                                                className="text-blue-600 hover:underline text-xs font-medium whitespace-nowrap">
                                                 পরিচালনা →
                                             </Link>
                                         </td>

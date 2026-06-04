@@ -2,6 +2,7 @@ import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getCmsContent } from "@/lib/getCmsContent";
 
 // Fallback hardcoded modules used only when DB has no data yet
 const FALLBACK_MODULES = [
@@ -36,7 +37,11 @@ async function getCoreModules() {
 }
 
 export default async function ModulesPage() {
-    const coreModules = await getCoreModules();
+    const [coreModules, cmsData] = await Promise.all([
+        getCoreModules(),
+        getCmsContent("modules_page"),
+    ]);
+    const pageHeader = (cmsData as Record<string, Record<string, string>>).header ?? {};
 
     const navLinks = [
         { label: "Home", href: "/" },
@@ -80,10 +85,10 @@ export default async function ModulesPage() {
                 {/* Clean Page Header */}
                 <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
-                        Our Core Modules
+                        {pageHeader.title || "Our Core Modules"}
                     </h1>
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
-                        A comprehensive journey designed to build your skills from the ground up, combining theory with real-world practice.
+                        {pageHeader.subtitle || "A comprehensive journey designed to build your skills from the ground up, combining theory with real-world practice."}
                     </p>
                 </div>
 

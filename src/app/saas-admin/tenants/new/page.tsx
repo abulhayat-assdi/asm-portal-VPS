@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Globe, User, Mail, Lock, Phone, CheckCircle } from "lucide-react";
+import { useAdminBasePath } from "../../layout";
 
 export default function NewTenantPage() {
     const router = useRouter();
+    const base = useAdminBasePath();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState<{ url: string; name: string } | null>(null);
@@ -64,7 +66,7 @@ export default function NewTenantPage() {
                         পোর্টাল খুলুন →
                     </a>
                     <br />
-                    <button onClick={() => router.push("/saas-admin")}
+                    <button onClick={() => router.push(`${base}/`)}
                         className="text-slate-500 hover:underline text-sm mt-2">
                         Dashboard-এ ফিরুন
                     </button>

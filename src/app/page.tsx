@@ -4,6 +4,7 @@ import TargetAudience from "@/components/ui/TargetAudience";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { prisma } from "@/lib/db";
+import { getCmsContent } from "@/lib/getCmsContent";
 
 async function getActiveHeroImages(): Promise<string[]> {
     try {
@@ -18,7 +19,6 @@ async function getActiveHeroImages(): Promise<string[]> {
     }
 }
 
-// Static data for the page
 const navLinks = [
     { label: "Home", href: "/", isActive: true },
     { label: "About", href: "/about" },
@@ -27,31 +27,6 @@ const navLinks = [
     { label: "Success Stories", href: "/success-stories" },
     { label: "Contact & Q&A", href: "/contact" },
     { label: "Blog", href: "/blog" },
-];
-
-
-
-const audiences = [
-    {
-        iconKey: "students",
-        title: "Students",
-        description: "যারা শুধু পুঁথিগত বিদ্যায় আটকে না থেকে রিয়েল-ওয়ার্ল্ডের জন্য রেডি হতে চায়। কথা বলার জড়তা কাটিয়ে Practical Skills ও সেলফ-কনফিডেন্স দিয়ে ক্যারিয়ারের একটি স্ট্রং ফাউন্ডেশন গড়তে চায়।",
-    },
-    {
-        iconKey: "jobSeekers",
-        title: "Job Seekers",
-        description: "যারা কনফিডেন্ট কমিউনিকেশন এবং High-Demanding Skills দিয়ে জব ইন্টারভিউতে নিজেকে বেস্ট প্রমাণ করতে চায়। আজকের এই কম্পিটিটিভ মার্কেটে একটি সম্মানজনক ক্যারিয়ার কনফার্ম করতে চায়।",
-    },
-    {
-        iconKey: "entrepreneurs",
-        title: "Entrepreneurs",
-        description: "যারা প্র্যাকটিক্যাল অফলাইন এবং অনলাইন সেলস স্ট্র্যাটেজি মাস্টার করে নিজেদের বিজনেস Scale Up করতে চায়। আর কাস্টমারদের সাথে লং-টার্ম ট্রাস্ট এবং স্ট্রং রিলেশনশিপ বিল্ড করতে চায়।",
-    },
-    {
-        iconKey: "ethicalLearners",
-        title: "Ethical Learners",
-        description: "যারা সেলসকে 'আমানাহ' (Trust) হিসেবে নিতে চায়। কোনো ফেক প্রমিস, ম্যানিপুলেশন বা হারাম শর্টকাটের ফাঁদে না পড়ে, 100% সততা ও সম্মানের সাথে হালাল ইনকাম জেনারেট করতে চায়।",
-    },
 ];
 
 const footerLinkGroups = [
@@ -75,7 +50,16 @@ const footerLinkGroups = [
 ];
 
 export default async function HomePage() {
-    const heroImages = await getActiveHeroImages();
+    const [heroImages, cmsData] = await Promise.all([
+        getActiveHeroImages(),
+        getCmsContent("home_page"),
+    ]);
+
+    type Rec = Record<string, unknown>;
+    const d = cmsData as Rec;
+    const hero = (d.hero as Rec) ?? {};
+    const targetAudience = (d.targetAudience as Rec) ?? {};
+    const audienceCards = Array.isArray(d.audienceCards) ? d.audienceCards as { id?: string; iconKey?: string; title: string; description: string }[] : [];
 
     return (
         <>
@@ -91,15 +75,19 @@ export default async function HomePage() {
             />
             <main className="min-h-screen bg-slate-50">
                 <HeroSection
+                    heading={hero.heading as string | undefined}
+                    subheading={hero.subheading as string | undefined}
+                    primaryButtonText={hero.primaryButtonText as string | undefined}
+                    secondaryButtonText={hero.secondaryButtonText as string | undefined}
                     primaryButtonHref="/about"
                     secondaryButtonHref="/modules"
                     heroImages={heroImages}
                 />
 
                 <TargetAudience
-                    title="Who This Course Is For"
-                    subtitle="ক্যারিয়ার বা বিজনেসে যারা নিজেকে একজন Confident এবং Ethical Professional হিসেবে এস্টাবলিশ করতে চায় এবং 100% হালাল ইনকামের পথ নিশ্চিত করতে চায়।"
-                    audiences={audiences}
+                    title={(targetAudience.title as string) || "Who This Course Is For"}
+                    subtitle={(targetAudience.subtitle as string) || ""}
+                    audiences={audienceCards}
                 />
 
                 <StudentVideoTestimonials />

@@ -1,8 +1,11 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import SuccessStoriesContent from "@/components/ui/SuccessStoriesContent";
+import { getCmsContent } from "@/lib/getCmsContent";
 
 export default async function PublicSuccessStoriesPage() {
+    const cmsData = await getCmsContent("success_stories_page");
+    const pageHeader = (cmsData as Record<string, Record<string, string>>).header ?? {};
     const navLinks = [
         { label: "Home", href: "/" },
         { label: "About", href: "/about" },
@@ -41,10 +44,10 @@ export default async function PublicSuccessStoriesPage() {
                 {/* Clean Page Header */}
                 <div className="pt-8 md:pt-10 pb-6 w-full max-w-7xl mx-auto px-6 lg:px-8 text-center">
                     <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-[#111827] mb-3 tracking-tight">
-                        Our Success Stories
+                        {pageHeader.title || "Our Success Stories"}
                     </h1>
                     <p className="text-lg md:text-xl text-[#4b5563] leading-relaxed max-w-2xl mx-auto font-medium">
-                        Watch real stories from our students — how they transformed their careers through the Art of Sales & Marketing program.
+                        {pageHeader.subtitle || "Watch real stories from our students — how they transformed their careers through the Art of Sales & Marketing program."}
                     </p>
                 </div>
 
