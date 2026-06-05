@@ -38,8 +38,9 @@ const DEFAULT_TENANT_SLUG = 'tasm-skill';
 const ADMIN_SUBDOMAIN = 'admin';
 
 function extractSubdomain(host: string): string | null {
-    const hostname = host.split(':')[0];
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd';
+    // Strip port if present (e.g. "admin.tasm-skill.asf.bd:443" → "admin.tasm-skill.asf.bd")
+    const hostname = host.split(':')[0].toLowerCase();
+    const baseDomain = (process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd').toLowerCase();
 
     // Production: admin.tasm-skill.asf.bd
     const suffix = '.' + baseDomain;
@@ -56,8 +57,8 @@ function extractSubdomain(host: string): string | null {
 }
 
 function extractTenantSlug(host: string): string {
-    const hostname = host.split(':')[0];
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd';
+    const hostname = host.split(':')[0].toLowerCase();
+    const baseDomain = (process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd').toLowerCase();
 
     if (hostname === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
         return DEFAULT_TENANT_SLUG;
@@ -81,7 +82,8 @@ function extractTenantSlug(host: string): string {
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const host = request.headers.get('host') || '';
+    // X-Forwarded-Host takes priority — Traefik/Coolify passes the real public hostname here
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || '';
     const subdomain = extractSubdomain(host);
 
     // ══════════════════════════════════════════════════════════════════════════
