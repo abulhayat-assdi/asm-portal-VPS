@@ -18,16 +18,22 @@ const geistMono = Geist_Mono({
 
 const SITE_URL = "https://tasm-skill.asf.bd";
 const SITE_NAME = "TASM Skill";
-const SITE_TITLE = "TASM Skill | Sales & Marketing Training Bangladesh";
+const SITE_TITLE = "Sales & Marketing";
 const SITE_DESCRIPTION =
     "আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউটে Sales & Marketing, Digital Marketing, Career Planning সহ ৯টি প্রফেশনাল মডিউল শিখুন। বাংলাদেশের সেরা ব্যবহারিক ট্রেনিং প্রোগ্রাম।";
 
 export async function generateMetadata(): Promise<Metadata> {
-    let logoUrl: string | undefined;
+    let faviconUrl: string | undefined;
     try {
         const cmsRecord = await prisma.cmsContent.findUnique({ where: { key: "site_settings" } });
         const cms = cmsRecord?.value as Record<string, unknown> | null;
-        logoUrl = cms?.logoUrl as string | undefined;
+        const logoUrl = cms?.logoUrl as string | undefined;
+        // Convert /api/file?path=uploads/... → /uploads/... (static public path, no auth needed)
+        if (logoUrl?.startsWith("/api/file?path=")) {
+            faviconUrl = "/" + logoUrl.replace("/api/file?path=", "");
+        } else if (logoUrl) {
+            faviconUrl = logoUrl;
+        }
     } catch {
         // use default icon
     }
@@ -85,8 +91,8 @@ export async function generateMetadata(): Promise<Metadata> {
                 "max-snippet": -1,
             },
         },
-        icons: logoUrl
-            ? { icon: logoUrl, apple: logoUrl }
+        icons: faviconUrl
+            ? { icon: faviconUrl, apple: faviconUrl }
             : { icon: "/favicon.ico" },
     };
 }
