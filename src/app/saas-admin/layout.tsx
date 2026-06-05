@@ -5,49 +5,23 @@ import Link from "next/link";
 import { useAdminBasePath } from "./hooks";
 import { Building2, LayoutDashboard, LogOut, Plus } from "lucide-react";
 
-function isAdminSubdomain(): boolean {
-    if (typeof window === "undefined") return false;
-    const hostname = window.location.hostname;
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "tasm-skill.asf.bd";
-    return hostname === `admin.${baseDomain}` || hostname === "admin.localhost";
-}
-
-function useMainDomainUrl() {
-    const [url, setUrl] = useState("/dashboard");
-    useEffect(() => {
-        if (isAdminSubdomain()) {
-            const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "tasm-skill.asf.bd";
-            const isLocal = window.location.hostname === "admin.localhost";
-            setUrl(isLocal ? "http://localhost:3000/dashboard" : `https://${baseDomain}/dashboard`);
-        }
-    }, []);
-    return url;
-}
-
-function getLoginUrl(): string {
-    if (typeof window === "undefined") return "/login";
-    const isLocal = window.location.hostname.includes("localhost");
-    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || "tasm-skill.asf.bd";
-    return isLocal ? "http://localhost:3000/login" : `https://${baseDomain}/login`;
-}
 
 export default function SaasAdminLayout({ children }: { children: React.ReactNode }) {
     const [checking, setChecking] = useState(true);
     const base = useAdminBasePath();
-    const mainPortalUrl = useMainDomainUrl();
 
     useEffect(() => {
         fetch("/api/saas/auth/verify")
             .then((r) => r.json())
             .then((data) => {
                 if (!data.isSaasOwner) {
-                    // Hard redirect to main-domain login (avoid rewrite loop)
-                    window.location.href = getLoginUrl();
+                    // Not the owner — redirect to the dedicated admin login page
+                    window.location.replace("/login");
                 } else {
                     setChecking(false);
                 }
             })
-            .catch(() => { window.location.href = getLoginUrl(); });
+            .catch(() => { window.location.replace("/login"); });
     }, []);
 
     if (checking) {
@@ -89,11 +63,16 @@ export default function SaasAdminLayout({ children }: { children: React.ReactNod
                     </Link>
                 </nav>
                 <div className="p-4 border-t border-slate-700">
-                    <a href={mainPortalUrl}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors text-slate-400">
+                    <button
+                        onClick={async () => {
+                            await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+                            window.location.replace("/login");
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 text-sm transition-colors text-slate-400 w-full text-left"
+                    >
                         <LogOut className="w-4 h-4" />
-                        মূল Portal-এ যান
-                    </a>
+                        Logout
+                    </button>
                 </div>
             </aside>
 

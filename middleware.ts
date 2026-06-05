@@ -84,40 +84,46 @@ export async function middleware(request: NextRequest) {
     const host = request.headers.get('host') || '';
     const subdomain = extractSubdomain(host);
 
-    // ── admin subdomain → rewrite to /saas-admin/* ──────────────────────────
+    // ══════════════════════════════════════════════════════════════════════════
+    // ADMIN SUBDOMAIN: admin.tasm-skill.asf.bd
+    // Completely separate from main portal. Has own login page.
+    // ══════════════════════════════════════════════════════════════════════════
     if (subdomain === ADMIN_SUBDOMAIN) {
-        // Assets, API calls, and auth paths pass through without rewrite
-        if (
-            isPublicAssetPath(pathname) ||
-            pathname.startsWith('/api/') ||
-            pathname === '/login' ||
-            pathname === '/student-login'
-        ) {
+        // Static assets & API calls pass through without path rewriting
+        if (isPublicAssetPath(pathname) || pathname.startsWith('/api/')) {
             return NextResponse.next();
         }
 
-        // Build the correct login URL (localhost vs production)
-        const isLocalhost = host.includes('localhost');
-        const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd';
-        const loginUrl = isLocalhost
-            ? `http://localhost:3000/login`
-            : `https://${baseDomain}/login`;
-
-        // Auth check: must have a valid session
         const session = request.cookies.get(COOKIES.SESSION)?.value;
         const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 50;
-        if (!hasSession) {
-            return NextResponse.redirect(loginUrl);
-        }
 
-        // Rewrite page paths to /saas-admin/*
-        // Avoid double-prefix if path already starts with /saas-admin
-        const rewritePath = pathname.startsWith('/saas-admin')
+        // Map browser path → internal /saas-admin/* path
+        // /login  →  /saas-admin/login  (dedicated admin login page)
+        // /       →  /saas-admin        (dashboard)
+        // /tenants → /saas-admin/tenants
+        const internalPath = pathname.startsWith('/saas-admin')
             ? pathname
             : `/saas-admin${pathname === '/' ? '' : pathname}`;
 
+        const adminLoginInternal = '/saas-admin/login';
+
+        // No session → show dedicated admin login page (rewrite, NOT redirect)
+        if (!hasSession) {
+            const loginUrl = request.nextUrl.clone();
+            loginUrl.pathname = adminLoginInternal;
+            return NextResponse.rewrite(loginUrl);
+        }
+
+        // Has session but trying to access login page → redirect to dashboard
+        if (internalPath === adminLoginInternal) {
+            const dashUrl = request.nextUrl.clone();
+            dashUrl.pathname = '/saas-admin';
+            return NextResponse.rewrite(dashUrl);
+        }
+
+        // Authenticated → rewrite to the correct saas-admin page
         const rewriteUrl = request.nextUrl.clone();
-        rewriteUrl.pathname = rewritePath || '/saas-admin';
+        rewriteUrl.pathname = internalPath || '/saas-admin';
         const res = NextResponse.rewrite(rewriteUrl);
         res.headers.set('x-admin-domain', '1');
         res.headers.set('x-tenant-slug', DEFAULT_TENANT_SLUG);
@@ -129,14 +135,9 @@ export async function middleware(request: NextRequest) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-tenant-slug', tenantSlug);
 
-    // ── /saas-admin path on main domain ──────────────────────────────────────
+    // ── Block /saas-admin on main domain (admin-only subdomain now) ───────────
     if (pathname.startsWith('/saas-admin')) {
-        const session = request.cookies.get(COOKIES.SESSION)?.value;
-        const hasSession = typeof session === 'string' && session.split('.').length === 3 && session.length > 50;
-        if (!hasSession) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
-        return NextResponse.next({ request: { headers: requestHeaders } });
+        return NextResponse.json({ error: 'Not Found' }, { status: 404 });
     }
 
     if (isPublicAssetPath(pathname) || PUBLIC_API_ROUTES.some(route => pathname.startsWith(route))) {

@@ -124,12 +124,20 @@ export async function POST(req: NextRequest) {
             },
         });
 
+        // In production set cookie on parent domain (.tasm-skill.asf.bd) so all
+        // subdomains (admin.*, xyz.*) share the same session without re-login.
+        const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
+        const cookieDomain = process.env.NODE_ENV === 'production' && baseDomain
+            ? '.' + baseDomain
+            : undefined;
+
         response.cookies.set(COOKIES.SESSION, token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60 * 24 * 30, // 30 days — persistent across browser closes
+            maxAge: 60 * 60 * 24 * 30,
+            ...(cookieDomain ? { domain: cookieDomain } : {}),
         });
 
         return response;

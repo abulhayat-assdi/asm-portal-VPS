@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import BrandLogo from "@/components/ui/BrandLogo";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function LoginPage() {
-    const router = useRouter();
+function LoginForm() {
     const { loginWithEmail, sendPasswordReset } = useAuth();
+    const searchParams = useSearchParams();
+    const nextUrl = searchParams.get("next");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -48,9 +50,13 @@ export default function LoginPage() {
         try {
             await loginWithEmail(email, password);
             
-            // 3. Force a hard redirect to bypass Next.js client-side router cache
-            // This ensures server components render with the fresh session cookie on first login
-            window.location.href = "/dashboard";
+            // Redirect to ?next= param (e.g. admin subdomain) or default dashboard
+            const safeDomains = [
+                process.env.NEXT_PUBLIC_BASE_DOMAIN || 'tasm-skill.asf.bd',
+                'localhost',
+            ];
+            const isAllowed = nextUrl && safeDomains.some(d => nextUrl.includes(d));
+            window.location.href = isAllowed ? nextUrl! : "/dashboard";
             return;
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "Failed to login. Please try again.";
@@ -93,6 +99,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+
             {/* Login Card */}
             <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
                 {/* Icon */}
@@ -241,5 +248,13 @@ export default function LoginPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+            <LoginForm />
+        </Suspense>
     );
 }
