@@ -39,9 +39,11 @@ export async function DELETE(request: NextRequest) {
         isAuthorized = true;
     }
     // Students can only delete files in their own homework folder
-    else if (sessionUser.role === AUTH_ROLES.STUDENT && filePath.startsWith("homework/")) {
+    else if (sessionUser.role === AUTH_ROLES.STUDENT && (filePath.startsWith("uploads/homework/") || filePath.startsWith("homework/"))) {
+        // uploads/homework/{userId}/... or legacy homework/{userId}/...
+        const homeworkIdx = filePath.split("/").indexOf("homework");
         const pathSegments = filePath.split("/");
-        const pathUid = pathSegments[1]; // homework/{userId}/...
+        const pathUid = pathSegments[homeworkIdx + 1];
         if (sessionUser.id === pathUid) {
             isAuthorized = true;
         }

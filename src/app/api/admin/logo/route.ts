@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         if (existingRecord) {
             const existingValue = existingRecord.value as Record<string, unknown>;
             const oldStoragePath = existingValue.logoStoragePath as string;
-            if (oldStoragePath && oldStoragePath.startsWith("images/logo/")) {
+            if (oldStoragePath && (oldStoragePath.startsWith("uploads/images/logo/") || oldStoragePath.startsWith("images/logo/"))) {
                 const oldAbsPath = path.resolve(process.cwd(), "public", oldStoragePath);
                 if (fs.existsSync(oldAbsPath)) {
                     fs.unlinkSync(oldAbsPath);
@@ -43,12 +43,12 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Save new logo to public/images/logo/
+        // Save new logo to public/uploads/images/logo/
         const ext = path.extname(file.name).toLowerCase();
         const timestamp = Date.now();
         const safeExt = ext || ".png";
         const fileName = `logo_${timestamp}${safeExt}`;
-        const storagePath = `images/logo/${fileName}`;
+        const storagePath = `uploads/images/logo/${fileName}`;
         const absolutePath = path.resolve(process.cwd(), "public", storagePath);
         const dir = path.dirname(absolutePath);
 
@@ -97,7 +97,7 @@ export async function DELETE(req: NextRequest) {
         if (existingRecord) {
             const existingValue = existingRecord.value as Record<string, unknown>;
             const oldStoragePath = existingValue.logoStoragePath as string;
-            if (oldStoragePath && oldStoragePath.startsWith("images/logo/")) {
+            if (oldStoragePath && (oldStoragePath.startsWith("uploads/images/logo/") || oldStoragePath.startsWith("images/logo/"))) {
                 const oldAbsPath = path.resolve(process.cwd(), "public", oldStoragePath);
                 if (fs.existsSync(oldAbsPath)) {
                     fs.unlinkSync(oldAbsPath);

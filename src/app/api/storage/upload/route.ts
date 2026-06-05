@@ -64,14 +64,14 @@ export async function POST(request: NextRequest) {
         const timestamp = Date.now();
         const sanitizedFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
-        // 📁 Determine Folder Structure
+        // 📁 Determine Folder Structure (all uploads go under public/uploads/ for persistent volume)
         if (category === "homework") {
-            storagePath = `homework/${sessionUser.id}/${sanitizedFileName}`;
+            storagePath = `uploads/homework/${sessionUser.id}/${sanitizedFileName}`;
         } else {
             const folder = subPath ? subPath.replace(/[^a-zA-Z0-9_]/g, "_") : "";
             storagePath = folder
-                ? `resources/${folder}/${sanitizedFileName}`
-                : `resources/${sanitizedFileName}`;
+                ? `uploads/resources/${folder}/${sanitizedFileName}`
+                : `uploads/resources/${sanitizedFileName}`;
         }
 
         const absolutePath = path.resolve(process.cwd(), localStoragePath, storagePath);

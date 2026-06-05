@@ -59,8 +59,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         // Delete the DB record first
         await prisma.heroImage.delete({ where: { id } });
 
-        // Delete file from disk (only if it's in images/hero/ — don't delete seeded originals in images/home/)
-        if (imageToDelete.storagePath.startsWith("images/hero/")) {
+        // Delete file from disk (only if it's an uploaded hero — don't delete seeded originals in images/home/)
+        if (imageToDelete.storagePath.startsWith("uploads/images/hero/") || imageToDelete.storagePath.startsWith("images/hero/")) {
             const absolutePath = path.resolve(process.cwd(), "public", imageToDelete.storagePath);
             if (fs.existsSync(absolutePath)) {
                 fs.unlinkSync(absolutePath);

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         const timestamp = Date.now();
         const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
         const fileName = `${timestamp}_${sanitizedName}`;
-        const storagePath = `images/hero/${fileName}`;
+        const storagePath = `uploads/images/hero/${fileName}`;
         const absolutePath = path.resolve(process.cwd(), "public", storagePath);
         const dir = path.dirname(absolutePath);
 
