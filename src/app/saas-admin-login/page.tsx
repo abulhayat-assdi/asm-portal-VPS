@@ -33,12 +33,13 @@ export default function AdminLoginPage() {
 
         if (!verifyData.isSaasOwner) {
             await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
-            setError("Access denied. This panel is for platform administrators only.");
+            setError("Access denied. This account is not authorized for platform administration.");
             setLoading(false);
             return;
         }
 
-        window.location.href = "/";
+        // Go directly to saas-admin dashboard
+        window.location.href = "/saas-admin";
     };
 
     return (
