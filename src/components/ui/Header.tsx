@@ -168,6 +168,33 @@ export default function Header({
                         </Link>
                     </div>
 
+                    {/* Mobile CTA Buttons - visible in header bar on mobile */}
+                    <div className="flex lg:hidden items-center gap-1 sm:gap-1.5">
+                        <Link
+                            href={studentLoginHref}
+                            prefetch={true}
+                            className="px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-md bg-white text-[#059669] border border-[#059669] hover:bg-[#f0fdf4] transition-all duration-200 whitespace-nowrap"
+                        >
+                            Login as Student
+                        </Link>
+                        {secondaryCtaText && (
+                            <Link
+                                href={secondaryCtaHref}
+                                prefetch={true}
+                                className="px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-md bg-white text-[#059669] border border-[#059669] hover:bg-[#f0fdf4] transition-all duration-200 whitespace-nowrap"
+                            >
+                                {secondaryCtaText}
+                            </Link>
+                        )}
+                        <Link
+                            href={ctaHref}
+                            prefetch={true}
+                            className="hidden sm:inline-flex px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold rounded-md bg-[#059669] text-white hover:bg-[#047857] transition-all duration-200 whitespace-nowrap"
+                        >
+                            {ctaText}
+                        </Link>
+                    </div>
+
                     {/* Mobile Menu Button */}
                     <button
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
