@@ -107,14 +107,24 @@ export async function middleware(request: NextRequest) {
         const ADMIN_LOGIN_PAGE = '/saas-admin-login';
         const ADMIN_DASHBOARD  = '/saas-admin';
 
-        // No session → show dedicated admin login page (no auth-checking layout)
+        // No session → hard redirect to login page (rewrite was not working in production)
         if (!hasSession) {
-            const loginUrl = request.nextUrl.clone();
-            loginUrl.pathname = ADMIN_LOGIN_PAGE;
-            return NextResponse.rewrite(loginUrl);
+            // Skip redirect if already on login page to avoid loop
+            if (pathname === '/saas-admin-login') {
+                return NextResponse.next();
+            }
+            const origin = request.nextUrl.origin;
+            return NextResponse.redirect(new URL('/saas-admin-login', origin));
         }
 
-        // Authenticated: map browser path → internal /saas-admin/* path
+        const origin = request.nextUrl.origin;
+
+        // Already on login page but has session → go to dashboard
+        if (pathname === '/saas-admin-login') {
+            return NextResponse.redirect(new URL('/saas-admin', origin));
+        }
+
+        // Authenticated: redirect browser to /saas-admin/* paths
         const internalPath = pathname.startsWith('/saas-admin')
             ? pathname
             : `${ADMIN_DASHBOARD}${pathname === '/' ? '' : pathname}`;
