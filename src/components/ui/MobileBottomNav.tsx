@@ -57,7 +57,7 @@ const navItems = [
     },
 ];
 
-const HIDDEN_PATHS = ["/dashboard", "/student-dashboard", "/login", "/student-login", "/reset-password", "/saas-admin"];
+const HIDDEN_PATHS = ["/dashboard", "/student-dashboard", "/login", "/student-login", "/reset-password"];
 
 export default function MobileBottomNav() {
     const pathname = usePathname();

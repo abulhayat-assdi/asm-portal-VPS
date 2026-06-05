@@ -5,7 +5,6 @@ import { prisma } from '@/lib/db';
 import { signJWT } from '@/lib/auth';
 import { COOKIES } from '@/lib/constants';
 import { PORTAL_OWNER_EMAIL } from '@/lib/permissions';
-import { getTenantBySlug, getTenantSlugFromHeaders } from '@/lib/tenant';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
@@ -15,7 +14,6 @@ const loginSchema = z.object({
 });
 
 // Simple in-memory rate limiter (per IP, resets on server restart)
-// For production, use Redis or a DB-backed approach
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -26,26 +24,20 @@ function checkRateLimit(ip: string): boolean {
 
     if (!entry || entry.resetAt < now) {
         loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-        return true; // allowed
+        return true;
     }
 
     if (entry.count >= MAX_ATTEMPTS) {
-        return false; // blocked
+        return false;
     }
 
     entry.count++;
-    return true; // allowed
+    return true;
 }
 
-/**
- * POST /api/auth/login
- * Body: { email, password }
- * Sets an HttpOnly session cookie with our JWT.
- */
 export async function POST(req: NextRequest) {
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
 
-    // Rate limiting
     if (!checkRateLimit(ip)) {
         return NextResponse.json(
             { error: 'Too many failed login attempts. Please wait 15 minutes and try again.' },
@@ -66,27 +58,19 @@ export async function POST(req: NextRequest) {
 
         const { email, password } = parsed.data;
 
-        // Resolve tenant from subdomain
-        const tenantSlug = getTenantSlugFromHeaders(req.headers) || 'tasm-skill';
-        const tenant = await getTenantBySlug(tenantSlug);
-
-        // 1. Find user in DB (scoped to tenant if tenantId is known)
-        const userQuery = tenant
-            ? { email: email.toLowerCase().trim(), tenantId: tenant.id, deletedAt: null }
-            : { email: email.toLowerCase().trim(), deletedAt: null };
-        const user = await prisma.user.findFirst({ where: userQuery });
+        const user = await prisma.user.findFirst({
+            where: { email: email.toLowerCase().trim(), deletedAt: null },
+        });
 
         if (!user) {
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
         }
 
-        // 2. Verify password
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
         }
 
-        // 3. Update last login — also enforce portal owner is always super_admin
         const enforceRole = user.email === PORTAL_OWNER_EMAIL && user.role !== 'super_admin'
             ? { role: 'super_admin' as const }
             : {};
@@ -96,20 +80,16 @@ export async function POST(req: NextRequest) {
         });
         if (enforceRole.role) user.role = enforceRole.role;
 
-        // 4. Sign JWT (include tenantId for multi-tenant scoping)
         const token = await signJWT({
             id: user.id,
             email: user.email,
             displayName: user.displayName,
             role: user.role,
-            tenantId: user.tenantId ?? undefined,
-            tenantSlug: tenant?.slug ?? undefined,
             teacherId: user.teacherId ?? undefined,
             studentBatchName: user.studentBatchName ?? undefined,
             studentRoll: user.studentRoll ?? undefined,
         });
 
-        // 5. Set HttpOnly cookie
         const response = NextResponse.json({
             success: true,
             user: {
@@ -124,20 +104,12 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        // In production set cookie on parent domain (.tasm-skill.asf.bd) so all
-        // subdomains (admin.*, xyz.*) share the same session without re-login.
-        const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN;
-        const cookieDomain = process.env.NODE_ENV === 'production' && baseDomain
-            ? '.' + baseDomain
-            : undefined;
-
         response.cookies.set(COOKIES.SESSION, token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
             maxAge: 60 * 60 * 24 * 30,
-            ...(cookieDomain ? { domain: cookieDomain } : {}),
         });
 
         return response;
