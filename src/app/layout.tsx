@@ -5,6 +5,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ConfirmProvider } from "@/contexts/ConfirmContext";
 import { headers } from "next/headers";
 import { getTenantBySlug } from "@/lib/tenant";
+import MobileBottomNav from "@/components/ui/MobileBottomNav";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default async function RootLayout({
                 <AuthProvider>
                     <ConfirmProvider>
                         {children}
+                        <MobileBottomNav />
                     </ConfirmProvider>
                 </AuthProvider>
             </body>
