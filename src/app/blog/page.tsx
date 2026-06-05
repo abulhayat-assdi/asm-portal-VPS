@@ -3,8 +3,28 @@ import Footer from "@/components/ui/Footer";
 import { getPublishedPostsServer as getPublishedPosts } from "@/lib/blog-server";
 import BlogList from "@/components/blog/BlogList";
 import { getCmsContent } from "@/lib/getCmsContent";
+import type { Metadata } from "next";
 
 export const dynamic = "force-static";
+
+export const metadata: Metadata = {
+    title: "Blog",
+    description:
+        "Sales, Marketing, Career Development এবং Ethical Business নিয়ে বাংলায় প্রফেশনাল আর্টিকেল পড়ুন। TASM Skill Blog — আপনার দক্ষতা বাড়ানোর জন্য।",
+    keywords: [
+        "sales marketing blog Bangladesh",
+        "digital marketing tips",
+        "career development articles",
+        "business ethics blog",
+        "মার্কেটিং ব্লগ বাংলাদেশ",
+    ],
+    alternates: { canonical: "/blog" },
+    openGraph: {
+        title: "Blog | TASM Skill",
+        description: "Sales, Marketing, Career এবং Ethical Business নিয়ে বাংলায় প্রফেশনাল আর্টিকেল পড়ুন।",
+        url: "/blog",
+    },
+};
 
 export default async function BlogPage() {
     const [publishedPosts, cmsData] = await Promise.all([

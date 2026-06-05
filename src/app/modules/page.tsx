@@ -3,6 +3,27 @@ import Footer from "@/components/ui/Footer";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getCmsContent } from "@/lib/getCmsContent";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Course Modules",
+    description:
+        "TASM Skill-এর ৯টি প্রফেশনাল মডিউল — Sales Mastery, Digital Marketing, Career Planning & Branding, AI for Marketers, Business English এবং আরও অনেক কিছু। বাংলাদেশে সেরা Sales & Marketing ট্রেনিং।",
+    keywords: [
+        "sales course modules",
+        "digital marketing modules Bangladesh",
+        "career planning course",
+        "AI for marketers",
+        "business English course",
+        "সেলস কোর্স মডিউল",
+    ],
+    alternates: { canonical: "/modules" },
+    openGraph: {
+        title: "Course Modules | TASM Skill",
+        description: "TASM Skill-এর ৯টি প্রফেশনাল মডিউল — Sales, Digital Marketing, Career Planning এবং আরও অনেক কিছু।",
+        url: "/modules",
+    },
+};
 
 // Fallback hardcoded modules used only when DB has no data yet
 const FALLBACK_MODULES = [

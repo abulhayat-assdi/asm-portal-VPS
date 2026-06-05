@@ -61,8 +61,47 @@ export default async function HomePage() {
     const targetAudience = (d.targetAudience as Rec) ?? {};
     const audienceCards = Array.isArray(d.audienceCards) ? d.audienceCards as { id?: string; iconKey?: string; title: string; description: string }[] : [];
 
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "EducationalOrganization",
+        name: "TASM Skill — As-Sunnah Skill Development Institute",
+        alternateName: "TASM Skill",
+        url: "https://tasm-skill.asf.bd",
+        description:
+            "আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউটে Sales & Marketing, Digital Marketing, Career Planning সহ ৯টি প্রফেশনাল মডিউল শিখুন।",
+        address: {
+            "@type": "PostalAddress",
+            streetAddress: "আলি নগর গেটের বিপরীত পাশের বিল্ডিং, সাতারকুল রোড, উত্তর বাড্ডা",
+            addressLocality: "Dhaka",
+            addressRegion: "Dhaka",
+            addressCountry: "BD",
+        },
+        contactPoint: {
+            "@type": "ContactPoint",
+            telephone: "+8801862534626",
+            contactType: "customer service",
+            availableLanguage: ["Bengali", "English"],
+        },
+        hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "Sales & Marketing Professional Training",
+            itemListElement: [
+                { "@type": "Course", name: "Sales Mastery", url: "https://tasm-skill.asf.bd/modules/sales-mastery" },
+                { "@type": "Course", name: "Digital Marketing", url: "https://tasm-skill.asf.bd/modules/digital-marketing" },
+                { "@type": "Course", name: "Career Planning & Branding", url: "https://tasm-skill.asf.bd/modules/career-planning-branding" },
+                { "@type": "Course", name: "AI for Digital Marketers", url: "https://tasm-skill.asf.bd/modules/ai-for-digital-marketers" },
+                { "@type": "Course", name: "Business English", url: "https://tasm-skill.asf.bd/modules/business-english" },
+            ],
+        },
+        sameAs: [],
+    };
+
     return (
         <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <Header
                 brandText="Sales & Marketing"
                 navLinks={navLinks}

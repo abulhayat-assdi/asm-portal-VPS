@@ -1,6 +1,25 @@
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { getCmsContent } from "@/lib/getCmsContent";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "Contact & Q&A",
+    description:
+        "TASM Skill-এ যোগাযোগ করুন। আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউট, উত্তর বাড্ডা, ঢাকা। কোর্স সম্পর্কে যেকোনো প্রশ্নের জন্য আমাদের সাথে যোগাযোগ করুন।",
+    keywords: [
+        "contact TASM Skill",
+        "sales marketing course Dhaka",
+        "As-Sunnah Skill Development contact",
+        "উত্তর বাড্ডা ঢাকা ট্রেনিং",
+    ],
+    alternates: { canonical: "/contact" },
+    openGraph: {
+        title: "Contact & Q&A | TASM Skill",
+        description: "TASM Skill-এ যোগাযোগ করুন। উত্তর বাড্ডা, ঢাকায় আমাদের ট্রেনিং সেন্টার।",
+        url: "/contact",
+    },
+};
 
 const navLinks = [
     { label: "Home", href: "/" },

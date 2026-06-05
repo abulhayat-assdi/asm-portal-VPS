@@ -4,6 +4,25 @@ import AboutCourseSection from "@/components/ui/AboutCourseSection";
 import WhyThisCourseSection from "@/components/ui/WhyThisCourseSection";
 import AboutCTASection from "@/components/ui/AboutCTASection";
 import { getCmsContent } from "@/lib/getCmsContent";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: "About The Course",
+    description:
+        "TASM Skill সম্পর্কে জানুন — আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউটের Sales & Marketing প্রফেশনাল ট্রেনিং প্রোগ্রাম কীভাবে আপনার ক্যারিয়ার পরিবর্তন করতে পারে।",
+    keywords: [
+        "about TASM Skill",
+        "As-Sunnah Skill Development Institute",
+        "sales marketing training Bangladesh",
+        "professional training program",
+    ],
+    alternates: { canonical: "/about" },
+    openGraph: {
+        title: "About The Course | TASM Skill",
+        description: "আস-সুন্নাহ স্কিল ডেভেলপমেন্ট ইনস্টিটিউটের Sales & Marketing প্রফেশনাল ট্রেনিং প্রোগ্রাম সম্পর্কে জানুন।",
+        url: "/about",
+    },
+};
 
 export default async function AboutPage() {
     const cmsData = await getCmsContent("about_page");
