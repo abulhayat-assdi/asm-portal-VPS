@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 
 interface BrandLogoProps {
     size?: number;
@@ -18,18 +17,13 @@ export default function BrandLogo({
 }: BrandLogoProps) {
     if (logoUrl) {
         return (
-            <div
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+                src={logoUrl}
+                alt="Brand Logo"
                 className={className}
-                style={{ width: size, height: size, position: "relative", flexShrink: 0 }}
-            >
-                <Image
-                    src={logoUrl}
-                    alt="Brand Logo"
-                    fill
-                    className="object-contain"
-                    sizes={`${size}px`}
-                />
-            </div>
+                style={{ width: size, height: size, objectFit: "contain", flexShrink: 0 }}
+            />
         );
     }
 

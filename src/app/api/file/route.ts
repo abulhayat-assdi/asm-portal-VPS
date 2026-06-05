@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 🔒 Authorization: homework files require authentication
-    if (filePath.startsWith("homework/")) {
+    const isHomework = filePath.startsWith("homework/") || filePath.startsWith("uploads/homework/");
+    if (isHomework) {
         const token = request.cookies.get(COOKIES.SESSION)?.value;
         if (!token) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -45,9 +46,9 @@ export async function GET(request: NextRequest) {
             if (userRole === "admin" || userRole === "teacher") {
                 // Full access
             } else if (userRole === "student") {
-                // homework/{userId}/filename — student can only access their own
-                const pathSegments = filePath.split("/");
-                const pathUid = pathSegments[1];
+                // uploads/homework/{userId}/filename — student can only access their own
+                const homeworkIdx = filePath.split("/").indexOf("homework");
+                const pathUid = filePath.split("/")[homeworkIdx + 1];
                 if (session.id !== pathUid) {
                     return NextResponse.json({ error: "Forbidden: Access denied" }, { status: 403 });
                 }
@@ -85,6 +86,7 @@ export async function GET(request: NextRequest) {
 function getContentType(fileName: string): string {
     const ext = path.extname(fileName).toLowerCase();
     const mimeMap: Record<string, string> = {
+        ".svg": "image/svg+xml",
         ".pdf": "application/pdf",
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",

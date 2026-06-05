@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         fs.writeFileSync(absolutePath, buffer);
 
-        const logoUrl = `/${storagePath}`;
+        const logoUrl = `/api/file?path=${storagePath}`;
 
         // Update site_settings in DB
         const currentValue = existingRecord

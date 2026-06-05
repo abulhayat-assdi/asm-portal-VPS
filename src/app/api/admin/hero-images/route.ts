@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 
         const heroImage = await prisma.heroImage.create({
             data: {
-                url: `/${storagePath}`,
+                url: `/api/file?path=${storagePath}`,
                 storagePath,
                 label: label || null,
                 order: nextOrder,
