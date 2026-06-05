@@ -103,29 +103,24 @@ export async function middleware(request: NextRequest) {
         // /login  →  /saas-admin/login  (dedicated admin login page)
         // /       →  /saas-admin        (dashboard)
         // /tenants → /saas-admin/tenants
-        const internalPath = pathname.startsWith('/saas-admin')
-            ? pathname
-            : `/saas-admin${pathname === '/' ? '' : pathname}`;
+        // Admin login page lives OUTSIDE saas-admin/ folder to avoid layout auth loop
+        const ADMIN_LOGIN_PAGE = '/saas-admin-login';
+        const ADMIN_DASHBOARD  = '/saas-admin';
 
-        const adminLoginInternal = '/saas-admin/login';
-
-        // No session → show dedicated admin login page (rewrite, NOT redirect)
+        // No session → show dedicated admin login page (no auth-checking layout)
         if (!hasSession) {
             const loginUrl = request.nextUrl.clone();
-            loginUrl.pathname = adminLoginInternal;
+            loginUrl.pathname = ADMIN_LOGIN_PAGE;
             return NextResponse.rewrite(loginUrl);
         }
 
-        // Has session but trying to access login page → redirect to dashboard
-        if (internalPath === adminLoginInternal) {
-            const dashUrl = request.nextUrl.clone();
-            dashUrl.pathname = '/saas-admin';
-            return NextResponse.rewrite(dashUrl);
-        }
+        // Authenticated: map browser path → internal /saas-admin/* path
+        const internalPath = pathname.startsWith('/saas-admin')
+            ? pathname
+            : `${ADMIN_DASHBOARD}${pathname === '/' ? '' : pathname}`;
 
-        // Authenticated → rewrite to the correct saas-admin page
         const rewriteUrl = request.nextUrl.clone();
-        rewriteUrl.pathname = internalPath || '/saas-admin';
+        rewriteUrl.pathname = internalPath || ADMIN_DASHBOARD;
         const res = NextResponse.rewrite(rewriteUrl);
         res.headers.set('x-admin-domain', '1');
         res.headers.set('x-tenant-slug', DEFAULT_TENANT_SLUG);
