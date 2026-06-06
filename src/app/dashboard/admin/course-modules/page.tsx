@@ -168,8 +168,15 @@ export default function CourseModulesAdminPage() {
         }
         setSaving(true);
         try {
+            const cleanSlug = autoSlug(form.slug);
+            if (!cleanSlug) {
+                warning("Invalid Slug", "Slug-এ অন্তত একটি অক্ষর বা সংখ্যা থাকতে হবে।");
+                setSaving(false);
+                return;
+            }
             const payload = {
                 ...form,
+                slug: cleanSlug,
                 bullets: form.bullets.filter(b => b.trim()),
                 curriculum: form.curriculum.map((sm, idx) => ({
                     ...sm,
@@ -260,7 +267,10 @@ export default function CourseModulesAdminPage() {
 
     const autoSlug = (title: string) =>
         title.toLowerCase().trim()
-            .replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-+|-+$/g, "");
 
     // ─── Render ───────────────────────────────────────────────
 
@@ -352,7 +362,7 @@ export default function CourseModulesAdminPage() {
                                     <input
                                         type="text"
                                         value={form.slug}
-                                        onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+                                        onChange={e => setForm(f => ({ ...f, slug: autoSlug(e.target.value) }))}
                                         placeholder="sales-mastery"
                                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#059669]/30 focus:border-[#059669] font-mono"
                                     />

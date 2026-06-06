@@ -12,12 +12,22 @@ type Props = {
   params: Promise<{ slug: string }>;
 };
 
+function normalizeSlug(raw: string): string {
+    return raw.toLowerCase().trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
 async function getModuleFromDB(slug: string): Promise<CourseData | null> {
     try {
+        const normalized = normalizeSlug(slug);
         const rows = await prisma.$queryRaw<{ title: string; description: string; curriculum: unknown }[]>`
             SELECT title, description, curriculum
             FROM course_modules
-            WHERE slug = ${slug} AND is_published = true
+            WHERE (slug = ${slug} OR slug = ${normalized} OR LOWER(slug) = LOWER(${slug}))
+              AND is_published = true
             LIMIT 1
         `;
         if (!rows.length) return null;
