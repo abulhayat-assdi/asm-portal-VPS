@@ -123,7 +123,7 @@ export default async function ModulesPage() {
                                     <div
                                         key={module.id}
                                         className={`
-                                            group relative bg-white rounded-2xl overflow-hidden border
+                                            group relative bg-white rounded-2xl overflow-hidden border flex flex-col
                                             transition-all duration-300 ease-out
                                             hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] shadow-sm
                                             ${index === 0
@@ -141,7 +141,7 @@ export default async function ModulesPage() {
                                         `} />
 
                                         {/* Card body */}
-                                        <div className="p-8">
+                                        <div className="p-8 flex flex-col flex-1">
                                             {/* Header row */}
                                             <div className="flex items-start justify-between mb-4 gap-2">
                                                 {/* Module number and title */}
@@ -189,7 +189,7 @@ export default async function ModulesPage() {
                                             </ul>
 
                                             {/* See Full Module Button */}
-                                            <div className="mt-8 pt-6 border-t border-gray-100">
+                                            <div className="mt-auto pt-6 border-t border-gray-100">
                                                 <Link
                                                     href={`/modules/${module.slug}`}
                                                     className="inline-flex items-center justify-center w-full px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-300 border group/btn relative overflow-hidden text-white bg-[#1e293b] hover:bg-[#0f172a] border-transparent shadow-md hover:shadow-lg"

@@ -200,7 +200,6 @@ export default function CourseModulesAdminPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error ?? "Save failed");
             await load();
-            setMode("list");
             success("Saved!", editingId ? "Module সফলভাবে আপডেট হয়েছে।" : "নতুন module তৈরি হয়েছে।");
         } catch (err: unknown) {
             toastError("Save Failed", err instanceof Error ? err.message : "Unknown error");
