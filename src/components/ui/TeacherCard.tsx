@@ -13,6 +13,7 @@ interface TeacherCardProps {
 
 export default function TeacherCard({ teacher, onEdit, onDelete }: TeacherCardProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -60,13 +61,15 @@ export default function TeacherCard({ teacher, onEdit, onDelete }: TeacherCardPr
             <CardBody className="flex flex-col items-center text-center p-6">
                 {/* Profile Image - Simple Circle with Border */}
                 <div className="relative w-24 h-24 rounded-full overflow-hidden shadow-sm mb-4 border-4 border-white ring-1 ring-gray-100">
-                    {teacher.profileImageUrl ? (
+                    {teacher.profileImageUrl && !imgError ? (
                         <Image
                             src={getImageUrl(teacher.profileImageUrl)}
                             alt={teacher.name}
                             fill
                             className="object-cover"
                             sizes="96px"
+                            unoptimized={!teacher.profileImageUrl.startsWith("http")}
+                            onError={() => setImgError(true)}
                         />
                     ) : (
                         <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">

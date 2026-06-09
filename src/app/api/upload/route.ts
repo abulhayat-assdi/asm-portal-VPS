@@ -46,8 +46,11 @@ export async function POST(req: NextRequest) {
         // Determine the upload directory
         const uploadSubDir = folder === "routines" ? "documents/routines" : folder;
 
-        // Prevent path traversal — resolve and verify it stays within public/
-        const publicDir = path.join(process.cwd(), "public");
+        // Resolve public dir: prefer UPLOAD_DIR env var (for VPS/standalone deployments),
+        // otherwise fall back to process.cwd()/public
+        const publicDir = process.env.UPLOAD_DIR
+            ? path.resolve(process.env.UPLOAD_DIR)
+            : path.join(process.cwd(), "public");
         const uploadDir = path.resolve(publicDir, uploadSubDir);
         if (!uploadDir.startsWith(publicDir + path.sep) && uploadDir !== publicDir) {
             return NextResponse.json({ error: "Forbidden: Invalid upload path" }, { status: 403 });

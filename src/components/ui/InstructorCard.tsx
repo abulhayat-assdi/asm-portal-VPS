@@ -14,6 +14,7 @@ interface InstructorCardProps {
 export default function InstructorCard({ name, role, description, email, image }: InstructorCardProps) {
     const [expanded, setExpanded] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [imgError, setImgError] = useState(false);
 
     const isBioShort = description === "Bio will be updated soon.";
     const cleanRole = role
@@ -46,13 +47,15 @@ export default function InstructorCard({ name, role, description, email, image }
                 {/* Avatar */}
                 <div className="mb-5">
                     <div className="relative w-24 h-24 rounded-full border-4 border-white shadow-lg ring-2 ring-emerald-100 group-hover:ring-emerald-200 transition-all duration-300 overflow-hidden flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100">
-                        {image ? (
+                        {image && !imgError ? (
                             <Image
                                 src={getThumbnailUrl(image)}
                                 alt={name}
                                 fill
                                 className="object-cover object-top"
                                 sizes="96px"
+                                unoptimized={!image.startsWith("http")}
+                                onError={() => setImgError(true)}
                             />
                         ) : (
                             <svg className="w-12 h-12 text-[#059669]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
