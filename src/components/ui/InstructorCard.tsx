@@ -29,11 +29,16 @@ export default function InstructorCard({ name, role, description, email, image }
         setTimeout(() => setCopied(false), 1500);
     };
 
-    // Helper to get direct image URL from Google Drive link
     const getThumbnailUrl = (url: string) => {
-        if (url && url.includes("drive.google.com") && url.includes("/d/")) {
+        if (!url) return url;
+        if (url.includes("drive.google.com") && url.includes("/d/")) {
             const id = url.split("/d/")[1].split("/")[0];
             return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+        }
+        // Local upload: serve via API route (same process.cwd() as upload API)
+        if (!url.startsWith("http") && !url.startsWith("data:")) {
+            const p = url.startsWith("/") ? url.slice(1) : url;
+            return `/api/serve-image?p=${encodeURIComponent(p)}`;
         }
         return url;
     };
