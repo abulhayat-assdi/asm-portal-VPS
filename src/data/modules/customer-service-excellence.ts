@@ -1,18 +1,20 @@
 import { CourseData } from './sales-mastery';
 
 export const customerServiceData: CourseData = {
-  title: "Customer Service Excellence",
-  description: "A comprehensive program that transforms you from the ground up — building an entrepreneurial mindset, mastering customer psychology, and delivering world-class service across every channel.",
+  title: "Zero To Market Hero & Service is the Game Changer",
+  description: "দুটি শক্তিশালী মডিউলে ব্যবসার শূন্য থেকে শুরু করার মানসিকতা, মার্কেটিং, কাস্টমার অ্যাকুইজিশন এবং world-class customer service mastery — একসাথে একটি সম্পূর্ণ program।",
   modules: [
     {
       moduleNumber: 1,
-      moduleTitle: "Zero to Entrepreneur",
+      moduleTitle: "From Zero to Hero",
       classes: [
         {
           className: "Success Mindset",
           discussionArea: [
             "Entrepreneur mindset",
             "Growth thinking",
+            "Belief system fundamentals",
+            "Limiting vs empowering beliefs",
             "Storytelling",
             "Practical examples",
             "Q&A"
@@ -21,73 +23,96 @@ export const customerServiceData: CourseData = {
           days: "4"
         },
         {
-          className: "Belief System",
+          className: "Goal Setting & Execution",
           discussionArea: [
-            "Belief system fundamentals",
-            "Limiting vs empowering beliefs",
-            "Business impact"
+            "Smart goal setting",
+            "Action planning",
+            "Time management",
+            "Accountability system",
+            "Execution framework"
           ],
           learningObjective: "",
-          days: "2"
+          days: "3"
         },
         {
-          className: "Introduction to Business",
+          className: "Business Fundamentals",
           discussionArea: [
             "Business basics",
             "Types of business models",
             "Value creation",
-            "Profit vs purpose"
-          ],
-          learningObjective: "",
-          days: "6"
-        },
-        {
-          className: "Online Business vs Offline Business",
-          discussionArea: [
-            "Comparison",
+            "Profit vs purpose",
+            "Online vs offline business",
             "Pros & cons",
-            "Case studies",
             "Hybrid models"
           ],
           learningObjective: "",
           days: "6"
         },
         {
-          className: "Customer Acquisition Strategy",
+          className: "Market Intelligence",
           discussionArea: [
-            "Target customers",
-            "Lead generation",
-            "Funnels",
-            "Acquisition channels"
+            "Market research basics",
+            "Competitor analysis",
+            "Customer profiling",
+            "Industry trends",
+            "Case studies"
           ],
           learningObjective: "",
           days: "6"
         },
         {
-          className: "Introduction to Marketing",
+          className: "Costing & Profit Planning",
           discussionArea: [
-            "Marketing basics",
-            "Branding & positioning"
+            "Cost vs value pricing",
+            "Profit margin calculation",
+            "Break-even analysis",
+            "Pricing psychology",
+            "Financial planning basics"
           ],
           learningObjective: "",
           days: "3"
         },
         {
-          className: "Product Packaging",
+          className: "Marketing Fundamentals",
+          discussionArea: [
+            "Marketing basics",
+            "Branding & positioning",
+            "Marketing channels overview",
+            "Brand identity"
+          ],
+          learningObjective: "",
+          days: "3"
+        },
+        {
+          className: "Customer Acquisition System",
+          discussionArea: [
+            "Target customer identification",
+            "Acquisition channels",
+            "Sales funnels",
+            "Customer journey mapping"
+          ],
+          learningObjective: "",
+          days: "6"
+        },
+        {
+          className: "Lead Generation & Conversion",
+          discussionArea: [
+            "Lead generation strategies",
+            "Lead qualification",
+            "Conversion techniques",
+            "Follow-up systems"
+          ],
+          learningObjective: "",
+          days: "3"
+        },
+        {
+          className: "Pricing, Packaging & Positioning",
           discussionArea: [
             "Product design",
             "Packaging psychology",
-            "Branding elements"
-          ],
-          learningObjective: "",
-          days: "3"
-        },
-        {
-          className: "Product Pricing",
-          discussionArea: [
+            "Branding elements",
             "Pricing strategies",
-            "Cost vs value pricing",
-            "Pricing psychology"
+            "Brand positioning"
           ],
           learningObjective: "",
           days: "3"
@@ -96,21 +121,25 @@ export const customerServiceData: CourseData = {
     },
     {
       moduleNumber: 2,
-      moduleTitle: "Customer Mastery & Service Excellence",
+      moduleTitle: "Service is the Game Changer",
       classes: [
         {
-          className: "Introduction to Customer Service",
+          className: "Customer Psychology",
           discussionArea: [
-            "Who is customer",
-            "Importance of service",
-            "Service channels"
+            "Buying behavior",
+            "Emotional triggers",
+            "Customer expectations",
+            "Decision-making process"
           ],
           learningObjective: "",
-          days: "2"
+          days: "3"
         },
         {
           className: "Service Mindset",
           discussionArea: [
+            "Who is customer",
+            "Importance of service",
+            "Service channels",
             "Service attitude",
             "Ownership mindset",
             "Relationship building"
@@ -119,42 +148,27 @@ export const customerServiceData: CourseData = {
           days: "4"
         },
         {
-          className: "Customer Psychology",
-          discussionArea: [
-            "Buying behavior",
-            "Emotional triggers",
-            "Customer expectations"
-          ],
-          learningObjective: "",
-          days: "3"
-        },
-        {
-          className: "Face the Customer – Physical",
+          className: "Professional Customer Handling",
           discussionArea: [
             "Body language",
             "Communication",
             "In-person handling",
+            "Chat & social media handling",
+            "Online etiquette",
+            "Response frameworks",
             "Role play"
           ],
           learningObjective: "",
           days: "6"
         },
         {
-          className: "Face the Customer – Online",
-          discussionArea: [
-            "Chat & social media handling",
-            "Online etiquette",
-            "Response frameworks"
-          ],
-          learningObjective: "",
-          days: "3"
-        },
-        {
-          className: "Face the Customer – Telesales",
+          className: "Sales Hacks & Closing Techniques",
           discussionArea: [
             "Call structure",
             "Objection handling",
-            "Sales psychology"
+            "Sales psychology",
+            "Closing techniques",
+            "Deal closing hacks"
           ],
           learningObjective: "",
           days: "6"
@@ -163,20 +177,35 @@ export const customerServiceData: CourseData = {
           className: "Complaint Management",
           discussionArea: [
             "Complaint types",
-            "Resolution frameworks"
+            "Resolution frameworks",
+            "De-escalation techniques",
+            "Customer recovery process"
           ],
           learningObjective: "",
           days: "3"
         },
         {
-          className: "Set KPI & SQI",
+          className: "KPI & Performance Tracking",
           discussionArea: [
             "KPI vs SQI",
             "Performance measurement",
-            "Service quality tracking"
+            "Service quality tracking",
+            "Setting benchmarks"
           ],
           learningObjective: "",
           days: "6"
+        },
+        {
+          className: "Workplace Excellence",
+          discussionArea: [
+            "Professional workplace behavior",
+            "Office etiquette",
+            "Team collaboration",
+            "Work ethics & discipline",
+            "Personal brand in workplace"
+          ],
+          learningObjective: "",
+          days: "3"
         }
       ]
     }

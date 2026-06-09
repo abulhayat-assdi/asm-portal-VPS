@@ -15,6 +15,8 @@ type RawModule = {
     curriculum: unknown;
     is_published: boolean;
     order: number;
+    teacher_name: string;
+    teacher_email: string;
     created_at: Date;
     updated_at: Date;
 };
@@ -30,6 +32,8 @@ function toClient(r: RawModule) {
         curriculum: r.curriculum,
         isPublished: r.is_published,
         order: r.order,
+        teacherName: r.teacher_name ?? "",
+        teacherEmail: r.teacher_email ?? "",
         createdAt: r.created_at,
         updatedAt: r.updated_at,
     };
@@ -42,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         const { id } = await params;
         const rows = await prisma.$queryRaw<RawModule[]>`
             SELECT id, slug, title, description, pdf_link, bullets, curriculum,
-                   is_published, "order", created_at, updated_at
+                   is_published, "order", teacher_name, teacher_email, created_at, updated_at
             FROM course_modules WHERE id = ${id} LIMIT 1
         `;
         if (!rows.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -67,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         if (!existing.length) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
         const body = await req.json();
-        const { slug, title, description, pdfLink, bullets, curriculum, isPublished, order } = body;
+        const { slug, title, description, pdfLink, bullets, curriculum, isPublished, order, teacherName, teacherEmail } = body;
         const oldSlug = existing[0].slug;
         const now = new Date().toISOString();
 
@@ -82,21 +86,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
         await prisma.$executeRaw`
             UPDATE course_modules SET
-                slug        = COALESCE(${slug ?? null}, slug),
-                title       = COALESCE(${title ?? null}, title),
-                description = COALESCE(${description ?? null}, description),
-                pdf_link    = COALESCE(${pdfLink ?? null}, pdf_link),
-                bullets     = COALESCE(${bullets != null ? JSON.stringify(bullets) : null}::jsonb, bullets),
-                curriculum  = COALESCE(${curriculum != null ? JSON.stringify(curriculum) : null}::jsonb, curriculum),
-                is_published = COALESCE(${isPublished ?? null}, is_published),
-                "order"     = COALESCE(${order ?? null}, "order"),
-                updated_at  = ${now}::timestamptz
+                slug          = COALESCE(${slug ?? null}, slug),
+                title         = COALESCE(${title ?? null}, title),
+                description   = COALESCE(${description ?? null}, description),
+                pdf_link      = COALESCE(${pdfLink ?? null}, pdf_link),
+                bullets       = COALESCE(${bullets != null ? JSON.stringify(bullets) : null}::jsonb, bullets),
+                curriculum    = COALESCE(${curriculum != null ? JSON.stringify(curriculum) : null}::jsonb, curriculum),
+                is_published  = COALESCE(${isPublished ?? null}, is_published),
+                "order"       = COALESCE(${order ?? null}, "order"),
+                teacher_name  = COALESCE(${teacherName ?? null}, teacher_name),
+                teacher_email = COALESCE(${teacherEmail ?? null}, teacher_email),
+                updated_at    = ${now}::timestamptz
             WHERE id = ${id}
         `;
 
         const [updated] = await prisma.$queryRaw<RawModule[]>`
             SELECT id, slug, title, description, pdf_link, bullets, curriculum,
-                   is_published, "order", created_at, updated_at
+                   is_published, "order", teacher_name, teacher_email, created_at, updated_at
             FROM course_modules WHERE id = ${id}
         `;
 

@@ -267,6 +267,22 @@ model BatchStudent {
   createdAt          DateTime        @default(now()) @map("created_at")
   completedAt        DateTime?       @map("completed_at")
 
+  // Extended profile fields (filled via student form)
+  email              String?
+  nidBirthNo         String?         @map("nid_birth_no")
+  fatherName         String?         @map("father_name")
+  motherName         String?         @map("mother_name")
+  permanentAddress   String?         @map("permanent_address")
+  guardianName       String?         @map("guardian_name")
+  guardianPhone      String?         @map("guardian_phone")
+  lastInstitute      String?         @map("last_institute")
+  latestDegree       String?         @map("latest_degree")
+  gpaResult          String?         @map("gpa_result")
+  currentDistrict    String?         @map("current_district")
+  homeDistrict       String?         @map("home_district")
+  tShirtSize         String?         @map("t_shirt_size")
+  courseGoal         String?         @map("course_goal")
+
   batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@unique([batchName, roll])
@@ -953,6 +969,63 @@ model HeroImage {
   @@index([order])
   @@index([isActive])
   @@map("hero_images")
+}
+
+// ============================================================
+// BATCH FORMS (Student data collection forms)
+// ============================================================
+
+model BatchForm {
+  id        String   @id @default(uuid())
+  batchName String   @unique @map("batch_name")
+  formSlug  String   @unique @map("form_slug")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  submissions StudentFormSubmission[]
+
+  @@index([formSlug])
+  @@map("batch_forms")
+}
+
+model StudentFormSubmission {
+  id               String    @id @default(uuid())
+  batchFormId      String    @map("batch_form_id")
+  batchName        String    @map("batch_name")
+  roll             String
+  name             String
+  phone            String    @default("")
+  nidBirthNo       String    @default("") @map("nid_birth_no")
+  dob              String    @default("")
+  email            String    @default("")
+  bloodGroup       String    @default("") @map("blood_group")
+  fatherName       String    @default("") @map("father_name")
+  motherName       String    @default("") @map("mother_name")
+  presentAddress   String    @default("") @map("present_address")
+  permanentAddress String    @default("") @map("permanent_address")
+  guardianName     String    @default("") @map("guardian_name")
+  guardianPhone    String    @default("") @map("guardian_phone")
+  lastInstitute    String    @default("") @map("last_institute")
+  latestDegree     String    @default("") @map("latest_degree")
+  gpaResult        String    @default("") @map("gpa_result")
+  currentDistrict  String    @default("") @map("current_district")
+  homeDistrict     String    @default("") @map("home_district")
+  category         String    @default("")
+  tShirtSize       String    @default("") @map("t_shirt_size")
+  courseGoal       String    @default("") @map("course_goal")
+  status           String    @default("pending")
+  adminNote        String?   @map("admin_note")
+  reviewedAt       DateTime? @map("reviewed_at")
+  submittedAt      DateTime  @default(now()) @map("submitted_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  batchForm BatchForm @relation(fields: [batchFormId], references: [id], onDelete: Cascade)
+
+  @@unique([batchName, roll])
+  @@index([batchName])
+  @@index([status])
+  @@map("student_form_submissions")
 }
 
 // ============================================================

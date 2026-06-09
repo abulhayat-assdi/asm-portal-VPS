@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/contexts/ConfirmContext";
-import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo, updateStudentPhoto } from "@/services/batchInfoService";
+import { StudentBatchInfo, saveBatchInfo, getAllBatchInfo, updateStudentPhoto, deleteBatch } from "@/services/batchInfoService";
 import Button from "@/components/ui/Button";
 import * as XLSX from "xlsx";
 
@@ -110,7 +110,13 @@ interface OverviewStat {
     textColorB?: string;
 }
 
-const COLUMNS = ["roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTk", "address", "courseStatus", "currentlyDoing", "companyName", "businessName", "salary"] as const;
+const COLUMNS = [
+    "roll", "name", "phone", "dob", "educationalDegree", "category", "bloodGroup", "totalPaidTk", "address",
+    "email", "nidBirthNo", "fatherName", "motherName", "permanentAddress",
+    "guardianName", "guardianPhone", "lastInstitute", "latestDegree", "gpaResult",
+    "currentDistrict", "homeDistrict", "tShirtSize", "courseGoal",
+    "courseStatus", "currentlyDoing", "companyName", "businessName", "salary",
+] as const;
 
 export default function AllBatchInfoPage() {
     const confirm = useConfirm();
@@ -138,6 +144,9 @@ export default function AllBatchInfoPage() {
     const [photoEditStudent, setPhotoEditStudent] = useState<StudentBatchInfo | null>(null);
     const [photoInputUrl, setPhotoInputUrl] = useState("");
     const [savingPhoto, setSavingPhoto] = useState(false);
+
+    // Student Detail Modal State
+    const [detailStudent, setDetailStudent] = useState<StudentBatchInfo | null>(null);
 
     // Export Modal State
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -282,6 +291,20 @@ export default function AllBatchInfoPage() {
                     bloodGroup: student.bloodGroup || "",
                     totalPaidTk: student.totalPaidTk ? student.totalPaidTk.toString() : "",
                     address: student.address || "",
+                    email: student.email || "",
+                    nidBirthNo: student.nidBirthNo || "",
+                    fatherName: student.fatherName || "",
+                    motherName: student.motherName || "",
+                    permanentAddress: student.permanentAddress || "",
+                    guardianName: student.guardianName || "",
+                    guardianPhone: student.guardianPhone || "",
+                    lastInstitute: student.lastInstitute || "",
+                    latestDegree: student.latestDegree || "",
+                    gpaResult: student.gpaResult || "",
+                    currentDistrict: student.currentDistrict || "",
+                    homeDistrict: student.homeDistrict || "",
+                    tShirtSize: student.tShirtSize || "",
+                    courseGoal: student.courseGoal || "",
                     courseStatus: student.courseStatus || "",
                     currentlyDoing: student.currentlyDoing || "",
                     companyName: student.companyName || "",
@@ -380,6 +403,20 @@ export default function AllBatchInfoPage() {
                 bloodGroup: row.bloodGroup || "",
                 totalPaidTk: row.totalPaidTk || "",
                 address: row.address || "",
+                email: row.email || "",
+                nidBirthNo: row.nidBirthNo || "",
+                fatherName: row.fatherName || "",
+                motherName: row.motherName || "",
+                permanentAddress: row.permanentAddress || "",
+                guardianName: row.guardianName || "",
+                guardianPhone: row.guardianPhone || "",
+                lastInstitute: row.lastInstitute || "",
+                latestDegree: row.latestDegree || "",
+                gpaResult: row.gpaResult || "",
+                currentDistrict: row.currentDistrict || "",
+                homeDistrict: row.homeDistrict || "",
+                tShirtSize: row.tShirtSize || "",
+                courseGoal: row.courseGoal || "",
                 courseStatus: (row.courseStatus || "") as StudentBatchInfo['courseStatus'],
                 currentlyDoing: (row.currentlyDoing || "") as StudentBatchInfo['currentlyDoing'],
                 companyName: row.companyName || "",
@@ -457,6 +494,20 @@ export default function AllBatchInfoPage() {
                         bloodGroup: row.bloodGroup || "",
                         totalPaidTk: row.totalPaidTk || "",
                         address: row.address || "",
+                        email: row.email || "",
+                        nidBirthNo: row.nidBirthNo || "",
+                        fatherName: row.fatherName || "",
+                        motherName: row.motherName || "",
+                        permanentAddress: row.permanentAddress || "",
+                        guardianName: row.guardianName || "",
+                        guardianPhone: row.guardianPhone || "",
+                        lastInstitute: row.lastInstitute || "",
+                        latestDegree: row.latestDegree || "",
+                        gpaResult: row.gpaResult || "",
+                        currentDistrict: row.currentDistrict || "",
+                        homeDistrict: row.homeDistrict || "",
+                        tShirtSize: row.tShirtSize || "",
+                        courseGoal: row.courseGoal || "",
                         courseStatus: (updatedStatus || "") as StudentBatchInfo['courseStatus'],
                         currentlyDoing: (row.currentlyDoing || "") as StudentBatchInfo['currentlyDoing'],
                         companyName: row.companyName || "",
@@ -633,6 +684,62 @@ export default function AllBatchInfoPage() {
             </div>
 
 
+
+            {/* Student Detail Modal */}
+            {detailStudent && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto" onClick={() => setDetailStudent(null)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8" onClick={e => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">{detailStudent.name}</h3>
+                                <p className="text-sm text-gray-500">Roll: {detailStudent.roll} &bull; {detailStudent.batchName}</p>
+                            </div>
+                            <button onClick={() => setDetailStudent(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+                        </div>
+                        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                            {([
+                                ["ফোন", detailStudent.phone],
+                                ["সর্বমোট পেমেন্ট", detailStudent.totalPaidTk ? `৳ ${detailStudent.totalPaidTk}` : undefined],
+                                ["ই-মেইল", detailStudent.email],
+                                ["NID / জন্ম নং", detailStudent.nidBirthNo],
+                                ["জন্ম তারিখ", detailStudent.dob],
+                                ["ব্লাড গ্রুপ", detailStudent.bloodGroup],
+                                ["ক্যাটাগরি", detailStudent.category],
+                                ["টি-শার্ট সাইজ", detailStudent.tShirtSize],
+                                ["পিতার নাম", detailStudent.fatherName],
+                                ["মাতার নাম", detailStudent.motherName],
+                                ["অভিভাবক", detailStudent.guardianName],
+                                ["অভিভাবকের ফোন", detailStudent.guardianPhone],
+                                ["বর্তমান ঠিকানা", detailStudent.address],
+                                ["স্থায়ী ঠিকানা", detailStudent.permanentAddress],
+                                ["বর্তমান জেলা", detailStudent.currentDistrict],
+                                ["স্থায়ী জেলা", detailStudent.homeDistrict],
+                                ["শিক্ষা প্রতিষ্ঠান", detailStudent.lastInstitute],
+                                ["সর্বোচ্চ ডিগ্রি", detailStudent.latestDegree || detailStudent.educationalDegree],
+                                ["GPA / ফলাফল", detailStudent.gpaResult],
+                                ["Course Status", detailStudent.courseStatus],
+                                ["Currently Doing", detailStudent.currentlyDoing],
+                                ["Company", detailStudent.companyName],
+                                ["Business", detailStudent.businessName],
+                                ["Salary", detailStudent.salary ? `৳ ${detailStudent.salary.toLocaleString()}` : undefined],
+                            ] as [string, string | number | undefined][]).map(([label, val]) =>
+                                val ? (
+                                    <div key={label} className="flex gap-2 py-1.5 border-b border-gray-50">
+                                        <span className="text-xs text-gray-400 w-32 shrink-0">{label}</span>
+                                        <span className="text-sm text-gray-800 break-words flex-1">{String(val)}</span>
+                                    </div>
+                                ) : null
+                            )}
+                            {detailStudent.courseGoal && (
+                                <div className="col-span-2 flex gap-2 py-1.5 border-b border-gray-50">
+                                    <span className="text-xs text-gray-400 w-32 shrink-0">কোর্সের লক্ষ্য</span>
+                                    <span className="text-sm text-gray-800 flex-1">{detailStudent.courseGoal}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Address Preview Modal */}
             {viewingAddress && (
@@ -926,17 +1033,24 @@ export default function AllBatchInfoPage() {
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[100px]">Blood Group</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[100px]">Total Paid TK</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[200px]">Address</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[160px]">Email</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[140px]">NID / Birth No</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[140px]">Father Name</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[140px]">Mother Name</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[120px]">T-Shirt Size</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[120px]">Current District</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Status</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Currently</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[120px]">Company</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278] min-w-[120px]">Business</th>
                                     <th className="px-4 py-3 font-medium border border-[#2d5278]">Salary</th>
+                                    <th className="px-4 py-3 font-medium border border-[#2d5278] w-20">Details</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {searchResults.length === 0 ? (
                                     <tr>
-                                        <td colSpan={14} className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan={24} className="px-6 py-12 text-center text-gray-500">
                                             <NoSymbolIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                                             <p>No students found.</p>
                                         </td>
@@ -1002,6 +1116,14 @@ export default function AllBatchInfoPage() {
                                                     )}
                                                 </div>
                                             </td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.email || "-"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.nidBirthNo || "-"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.fatherName || "-"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.motherName || "-"}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200 text-center">
+                                                {student.tShirtSize ? <span className="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs font-semibold">{student.tShirtSize}</span> : "-"}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.currentDistrict || "-"}</td>
                                             <td className="px-4 py-3 text-sm border-b border-gray-200">
                                                 <span className={`px-2 py-1 rounded text-xs font-semibold ${student.courseStatus === 'Completed' ? 'bg-emerald-100/50 text-emerald-700' :
                                                     student.courseStatus === 'Incomplete' ? 'bg-orange-100/50 text-orange-700' :
@@ -1018,6 +1140,15 @@ export default function AllBatchInfoPage() {
                                             <td className="px-4 py-3 text-sm text-gray-600 border-b border-gray-200">{student.businessName || "-"}</td>
                                             <td className="px-4 py-3 text-sm text-emerald-700 font-medium border-b border-gray-200">
                                                 {student.salary ? `৳ ${student.salary.toLocaleString()}` : "-"}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm border-b border-gray-200 text-center">
+                                                <button
+                                                    onClick={() => setDetailStudent(student)}
+                                                    className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors font-medium"
+                                                    title="View full profile"
+                                                >
+                                                    👁 View
+                                                </button>
                                             </td>
                                         </tr>
                                     ))
@@ -1116,21 +1247,44 @@ export default function AllBatchInfoPage() {
                                     </button>
 
                                     {Array.from(new Set(completedStudentsList.map(s => s.batchName))).map((bName) => (
-                                        <button
-                                            key={bName}
-                                            onClick={() => handleSelectExistingBatch(bName)}
-                                            className="h-28 border border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-[#059669] hover:shadow-md transition-all group bg-white"
-                                        >
-                                            <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg group-hover:bg-emerald-100 transition-colors">
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        <div key={bName} className="relative group">
+                                            <button
+                                                onClick={() => handleSelectExistingBatch(bName)}
+                                                className="w-full h-28 border border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-[#059669] hover:shadow-md transition-all group bg-white"
+                                            >
+                                                <div className="bg-emerald-50 text-emerald-600 p-2 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </div>
+                                                <div className="text-center px-2">
+                                                    <span className="font-semibold text-gray-800 text-sm block truncate w-full" title={bName}>{bName}</span>
+                                                    <span className="text-xs text-gray-500 mt-0.5">{completedStudentsList.filter(s => s.batchName === bName).length} Students</span>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    const ok = await confirm({
+                                                        message: `"${bName}" ব্যাচ এবং এর সকল ${completedStudentsList.filter(s => s.batchName === bName).length} জন স্টুডেন্টের ডেটা স্থায়ীভাবে মুছে যাবে। নিশ্চিত?`,
+                                                        variant: "danger"
+                                                    });
+                                                    if (!ok) return;
+                                                    try {
+                                                        await deleteBatch(bName);
+                                                        await fetchData();
+                                                    } catch (err) {
+                                                        alert("Delete failed: " + (err instanceof Error ? err.message : "Unknown error"));
+                                                    }
+                                                }}
+                                                title="Delete this batch"
+                                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 z-10"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
-                                            </div>
-                                            <div className="text-center px-2">
-                                                <span className="font-semibold text-gray-800 text-sm block truncate w-full" title={bName}>{bName}</span>
-                                                <span className="text-xs text-gray-500 mt-0.5">{completedStudentsList.filter(s => s.batchName === bName).length} Students</span>
-                                            </div>
-                                        </button>
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -1150,22 +1304,45 @@ export default function AllBatchInfoPage() {
                                     </button>
 
                                     {Array.from(new Set(runningStudentsList.map(s => s.batchName))).map((bName) => (
-                                        <button
-                                            key={bName}
-                                            onClick={() => handleSelectExistingBatch(bName)}
-                                            className="h-28 border border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-500 hover:shadow-md transition-all group bg-white"
-                                        >
-                                            <div className="bg-blue-50 text-blue-600 p-2 rounded-lg group-hover:bg-blue-100 transition-colors">
-                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                                        <div key={bName} className="relative group">
+                                            <button
+                                                onClick={() => handleSelectExistingBatch(bName)}
+                                                className="w-full h-28 border border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-blue-500 hover:shadow-md transition-all group bg-white"
+                                            >
+                                                <div className="bg-blue-50 text-blue-600 p-2 rounded-lg group-hover:bg-blue-100 transition-colors">
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                                                    </svg>
+                                                </div>
+                                                <div className="text-center px-2">
+                                                    <span className="font-semibold text-gray-800 text-sm block truncate w-full" title={bName}>{bName}</span>
+                                                    <span className="text-xs text-gray-500 mt-0.5">{runningStudentsList.filter(s => s.batchName === bName).length} Students</span>
+                                                </div>
+                                            </button>
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    const ok = await confirm({
+                                                        message: `"${bName}" ব্যাচ এবং এর সকল ${runningStudentsList.filter(s => s.batchName === bName).length} জন স্টুডেন্টের ডেটা স্থায়ীভাবে মুছে যাবে। নিশ্চিত?`,
+                                                        variant: "danger"
+                                                    });
+                                                    if (!ok) return;
+                                                    try {
+                                                        await deleteBatch(bName);
+                                                        await fetchData();
+                                                    } catch (err) {
+                                                        alert("Delete failed: " + (err instanceof Error ? err.message : "Unknown error"));
+                                                    }
+                                                }}
+                                                title="Delete this batch"
+                                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 z-10"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
-                                            </div>
-                                            <div className="text-center px-2">
-                                                <span className="font-semibold text-gray-800 text-sm block truncate w-full" title={bName}>{bName}</span>
-                                                <span className="text-xs text-gray-500 mt-0.5">{runningStudentsList.filter(s => s.batchName === bName).length} Students</span>
-                                            </div>
-                                        </button>
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -1236,6 +1413,20 @@ export default function AllBatchInfoPage() {
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Blood Group</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[100px]">Total Paid TK</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[150px]">Address</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[160px]">Email</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[140px]">NID / Birth No</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[140px]">Father Name</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[140px]">Mother Name</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[180px]">Permanent Address</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[140px]">Guardian Name</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[130px]">Guardian Phone</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[180px]">Last Institute</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[140px]">Latest Degree</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[110px]">GPA / Result</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[130px]">Current District</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[120px]">Home District</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[110px]">T-Shirt Size</th>
+                                        <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[200px]">Course Goal</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[120px]">Course Status</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[120px]">Currently Doing</th>
                                         <th className="px-3 py-2 text-left text-xs font-semibold text-white border border-[#2d5278] min-w-[130px]">Company Name</th>
@@ -1287,22 +1478,14 @@ export default function AllBatchInfoPage() {
                                                                 <option value="General">General</option>
                                                             </select>
                                                         ) : col === "bloodGroup" ? (
-                                                            <select
+                                                            <input
+                                                                type="text"
                                                                 value={rowData[col] ?? ""}
                                                                 onChange={e => handleCellChange(absoluteIdx, col, e.target.value)}
                                                                 onPaste={e => handlePaste(e, absoluteIdx, col)}
                                                                 className="w-full p-2 bg-transparent text-sm focus:bg-blue-50 focus:ring-1 focus:ring-blue-400 outline-none text-[#1f2937]"
-                                                            >
-                                                                <option value=""></option>
-                                                                <option value="A+">A+</option>
-                                                                <option value="A-">A-</option>
-                                                                <option value="B+">B+</option>
-                                                                <option value="B-">B-</option>
-                                                                <option value="AB+">AB+</option>
-                                                                <option value="AB-">AB-</option>
-                                                                <option value="O+">O+</option>
-                                                                <option value="O-">O-</option>
-                                                            </select>
+                                                                placeholder="e.g. A+"
+                                                            />
                                                         ) : col === "currentlyDoing" ? (
                                                             <select
                                                                 value={rowData[col] ?? ""}

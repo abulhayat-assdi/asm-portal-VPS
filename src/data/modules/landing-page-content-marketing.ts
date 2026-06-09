@@ -1,314 +1,220 @@
 import { CourseData } from './sales-mastery';
 
 export const landingPageContentData: CourseData = {
-  title: "Landing Page & Content Marketing",
-  description: "A complete masterclass on building high-converting landing pages and executing powerful content marketing strategies to drive sales and client acquisition.",
+  title: "Content, Video & Sales System",
+  description: "A complete system to build your content machine, master video selling, and convert viewers into buyers — from Avatar to Scaling.",
   modules: [
     {
       moduleNumber: 1,
-      moduleTitle: "Landing Page Development",
+      moduleTitle: "Strategy & Foundation",
       classes: [
         {
-          className: "Introduction to Landing Page",
+          className: "Customer Avatar Mastery",
           discussionArea: [
-            "Course Introduction",
-            "Objective of a Landing Page",
-            "Landing Page vs Website",
-            "Practical Examples & Q&A"
+            "Customer Avatar Creation",
+            "Pain Point Identification",
+            "Desire & Motivation Analysis",
+            "Buying Behavior Understanding",
+            "Dream Customer Profile"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 1 Complete Customer Avatar",
+          days: "1"
         },
         {
-          className: "Domain, Hosting & WordPress Basics",
+          className: "Sales Funnel Foundation",
           discussionArea: [
-            "What is Domain & Hosting",
-            "How to Choose Good Hosting",
-            "Purchase & Integration",
-            "Practical Examples & Q&A"
+            "Funnel Basics",
+            "Awareness → Consideration → Conversion",
+            "TOFU, MOFU, BOFU",
+            "Content Funnel Mapping",
+            "Customer Journey"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: Create Your Business Funnel",
+          days: "1"
         },
         {
-          className: "Important Plugins & Theme Setup",
+          className: "Script Writing Mastery",
           discussionArea: [
-            "WordPress Installation",
-            "Elementor Setup",
-            "WooCommerce Setup",
-            "CartFlows Overview",
-            "Practical Instruction & Q&A"
+            "Hook → Problem → Solution → CTA",
+            "PAS Formula",
+            "AIDA Formula",
+            "Story Framework",
+            "Problem-Solution Method",
+            "Testimonial Script",
+            "Educational Script",
+            "Authority Script",
+            "Sales Script",
+            "Live Selling Script"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 10 Scripts",
+          days: "1"
         },
         {
-          className: "Design Landing Page with No-Code Tools",
+          className: "Hook Mastery",
           discussionArea: [
-            "Content Preparation with AI",
-            "Elementor Global Settings",
-            "Landing Page Design",
-            "Practical Examples & Q&A"
+            "Curiosity Hook",
+            "Shock Hook",
+            "Story Hook",
+            "Question Hook",
+            "Mistake Hook",
+            "Contrarian Hook",
+            "Fear of Missing Out Hook",
+            "Authority Hook"
           ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Review & Practical Sessions",
-          discussionArea: [
-            "Review Class",
-            "Practical Design",
-            "Practical sessions",
-            "Practical Portfolio 1 & 2",
-            "Ready Self-Landing Page"
-          ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 30 Hooks",
+          days: "1"
         }
       ]
     },
     {
       moduleNumber: 2,
-      moduleTitle: "Video Content Creation",
+      moduleTitle: "Video & Content Creation",
       classes: [
         {
-          className: "Video Editing Tools & Post-Production",
+          className: "Camera Fear Kill",
           discussionArea: [
-            "CapCut Basics",
-            "Typography, Halal Music, Transitions"
+            "Camera Anxiety Removal",
+            "Confidence Framework",
+            "Natural Speaking Method",
+            "Practice System",
+            "Energy Control"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 10 Awkward Videos",
+          days: "1"
         },
         {
-          className: "Short Video Practice",
+          className: "Content Idea Engine",
           discussionArea: [
-            "Practice 01: Short Video (15–20 seconds)"
+            "10 Content Pillars",
+            "Competitor Breakdown",
+            "Research Method",
+            "Trend Analysis",
+            "Content Mining System",
+            "AI-Assisted Ideation"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 100 Content Ideas",
+          days: "1"
         },
         {
-          className: "Target Audience / Avatar",
+          className: "Short Form Content Strategy",
           discussionArea: [
-            "Importance of Audience Targeting",
-            "Creation Steps & Avatar Template",
-            "Practical Q&A"
+            "Viral Content Structure",
+            "Retention System",
+            "Watch Time Optimization",
+            "CTA Placement",
+            "Reels Framework"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 10 Reels Scripts",
+          days: "1"
+        },
+        {
+          className: "Story Selling",
+          discussionArea: [
+            "Founder Story",
+            "Customer Story",
+            "Transformation Story",
+            "Problem Journey",
+            "Before-After Framework"
+          ],
+          learningObjective: "Assignment: 5 Story Videos",
+          days: "1"
         }
       ]
     },
     {
       moduleNumber: 3,
-      moduleTitle: "Funnel-Based Content Marketing (TOFU – MOFU – BOFU)",
+      moduleTitle: "Sales System",
       classes: [
         {
-          className: "Funnel Overview + TOFU",
+          className: "Offer Engineering",
           discussionArea: [
-            "Funnel Strategy",
-            "TOFU Objective: Awareness",
-            "Content & Ad Types"
+            "Value Stacking",
+            "Bonus Creation",
+            "Scarcity",
+            "Urgency",
+            "Risk Reversal",
+            "Irresistible Offer Design"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 5 Offers",
+          days: "1"
         },
         {
-          className: "MOFU – Consideration",
+          className: "Personal Branding & Trust System",
           discussionArea: [
-            "Trust Building",
-            "Objective: Engagement",
-            "Content & Ad Types"
+            "Authority Positioning",
+            "Personal Brand Framework",
+            "Expert Content System",
+            "Trust Building Process",
+            "Visibility Strategy"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: Personal Brand Video",
+          days: "1"
         },
         {
-          className: "BOFU – Conversion + Funnel Summary",
+          className: "Body Language & Voice Control",
           discussionArea: [
-            "Conversion Stage",
-            "Retargeting & Budget Allocation",
-            "Practical Q&A"
+            "Voice Tone Control",
+            "Facial Expression",
+            "Camera Presence",
+            "Energy Management",
+            "Public Speaking Basics"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 1 Professional Video",
+          days: "1"
+        },
+        {
+          className: "Editing for Sales\n(CapCut Level)",
+          discussionArea: [
+            "Hook Cuts",
+            "Retention Editing",
+            "Subtitle Strategy",
+            "B-Roll Usage",
+            "CTA Editing"
+          ],
+          learningObjective: "Assignment: 1 Edited Sales Video",
+          days: "1"
         }
       ]
     },
     {
       moduleNumber: 4,
-      moduleTitle: "Script Writing Methods",
+      moduleTitle: "Closing & Scaling",
       classes: [
         {
-          className: "Hook Types of Method",
+          className: "Live Selling System",
           discussionArea: [
-            "Hook – Interest – CTA",
-            "Example Scripts, Q&A & Homework"
+            "Live Structure",
+            "Engagement Triggers",
+            "Objection Handling",
+            "Closing Techniques",
+            "Live Offer Presentation"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: 15-Minute Live Session",
+          days: "1"
         },
         {
-          className: "PAS Method",
+          className: "DM Closing & Sales Psychology",
           discussionArea: [
-            "Problem – Agitate – Solution",
-            "Example Scripts, Q&A & Homework"
+            "Lead Qualification",
+            "DM Sales Framework",
+            "Objection Handling",
+            "Follow-Up Strategy",
+            "Closing Scripts"
           ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: Close 5 Leads via DM",
+          days: "1"
         },
         {
-          className: "AIDA Method (Most Important)",
+          className: "Conversion & Scaling System",
           discussionArea: [
-            "Attention – Interest – Desire – Action",
-            "Example Scripts, Q&A & Homework"
+            "Content-to-Sales System",
+            "Funnel Optimization",
+            "Basic Paid Boost Strategy",
+            "Scaling Framework",
+            "KPI Tracking"
           ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Storytelling Method (E–C–T)",
-          discussionArea: [
-            "Emotion – Conflict – Transformation",
-            "Example Scripts, Q&A & Homework"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Micro Script Method (Reels/TikTok)",
-          discussionArea: [
-            "15–30 sec script & Short-form Tips",
-            "Practice, Q&A & Homework"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Educational 3-Step Method",
-          discussionArea: [
-            "Teaching Script to Educate & Engage Fast",
-            "Example Scripts, Q&A & Homework"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Testimonial & 30-Second Ad Script",
-          discussionArea: [
-            "Testimonial Writing & 30-sec Ad Structure",
-            "Practice, Q&A & Homework"
-          ],
-          learningObjective: "",
-          days: ""
-        }
-      ]
-    },
-    {
-      moduleNumber: 5,
-      moduleTitle: "Offering",
-      classes: [
-        {
-          className: "Core Offer & Bonuses",
-          discussionArea: [
-            "Importance of Core Offer & Making it",
-            "Adding Value with Types of Bonuses"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Urgency, Guarantees & Risk Reversal",
-          discussionArea: [
-            "Limited Time for Conversion Boosts",
-            "Reducing Customer Risk & Types of Guarantees"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Value, Messaging & Thumbnails",
-          discussionArea: [
-            "Value Equation & Strong Messaging",
-            "High-converting Thumbnail Basics"
-          ],
-          learningObjective: "",
-          days: ""
-        }
-      ]
-    },
-    {
-      moduleNumber: 6,
-      moduleTitle: "Content Marketing",
-      classes: [
-        {
-          className: "Introduction & Content Types",
-          discussionArea: [
-            "Definition, Objectives, and Importance",
-            "Text, Audio, Video, Image Content Types"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Audience & Market Research",
-          discussionArea: [
-            "STP (Segmentation, Targeting, Positioning)",
-            "Pain Points, Interests, & Competitor Analysis"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Starting Point & Building Blocks",
-          discussionArea: [
-            "Facebook Algorithm & Online Business Roadmap",
-            "Content Ideas & Planning Masterclass"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Launchpad & Acceleration",
-          discussionArea: [
-            "Facebook Recommendation Algorithm, Lead Gen",
-            "Sales Drop Fix & Best Time to Post"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Expansion & Strategy Growth",
-          discussionArea: [
-            "Sell Increasing Tips, Personal Branding",
-            "Why People Buy, Killer Content, Product Photography"
-          ],
-          learningObjective: "",
-          days: ""
-        }
-      ]
-    },
-    {
-      moduleNumber: 7,
-      moduleTitle: "Client Hunting",
-      classes: [
-        {
-          className: "Go-to-Market Strategy & Portfolio Development",
-          discussionArea: [
-            "GTM Strategy",
-            "Portfolio Building"
-          ],
-          learningObjective: "",
-          days: ""
-        },
-        {
-          className: "Client Acquisition Strategy",
-          discussionArea: [
-            "Client Acquisition Plan"
-          ],
-          learningObjective: "",
-          days: ""
+          learningObjective: "Assignment: Complete Sales Campaign",
+          days: "1"
         }
       ]
     }

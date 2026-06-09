@@ -28,17 +28,19 @@ export async function POST(req: NextRequest) {
         // Create the table
         await prisma.$executeRaw`
             CREATE TABLE IF NOT EXISTS "course_modules" (
-                "id"           TEXT NOT NULL,
-                "slug"         TEXT NOT NULL,
-                "title"        TEXT NOT NULL,
-                "description"  TEXT NOT NULL DEFAULT '',
-                "pdf_link"     TEXT NOT NULL DEFAULT '',
-                "bullets"      JSONB NOT NULL DEFAULT '[]',
-                "curriculum"   JSONB NOT NULL DEFAULT '[]',
-                "is_published" BOOLEAN NOT NULL DEFAULT true,
-                "order"        INTEGER NOT NULL DEFAULT 0,
-                "created_at"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                "updated_at"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                "id"            TEXT NOT NULL,
+                "slug"          TEXT NOT NULL,
+                "title"         TEXT NOT NULL,
+                "description"   TEXT NOT NULL DEFAULT '',
+                "pdf_link"      TEXT NOT NULL DEFAULT '',
+                "bullets"       JSONB NOT NULL DEFAULT '[]',
+                "curriculum"    JSONB NOT NULL DEFAULT '[]',
+                "is_published"  BOOLEAN NOT NULL DEFAULT true,
+                "order"         INTEGER NOT NULL DEFAULT 0,
+                "teacher_name"  TEXT NOT NULL DEFAULT '',
+                "teacher_email" TEXT NOT NULL DEFAULT '',
+                "created_at"    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                "updated_at"    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                 CONSTRAINT "course_modules_pkey" PRIMARY KEY ("id")
             )
         `;

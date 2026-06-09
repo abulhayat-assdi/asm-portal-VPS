@@ -1,6 +1,7 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getModuleData } from "@/data/modules";
 import Header from "@/components/ui/Header";
 import Footer from "@/components/ui/Footer";
 import { Metadata } from 'next';
@@ -43,10 +44,7 @@ async function getModuleFromDB(slug: string): Promise<CourseData | null> {
 }
 
 async function resolveModule(slug: string): Promise<CourseData | null> {
-    const fromDB = await getModuleFromDB(slug);
-    if (fromDB) return fromDB;
-    // Fallback to hardcoded TS files if DB not yet migrated or module missing
-    return getModuleData(slug);
+    return getModuleFromDB(slug);
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

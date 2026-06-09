@@ -24,6 +24,21 @@ export interface BatchStudent {
     isPublic?: boolean;
     completedAt?: string;
     createdAt?: string | Date;
+    // Extended profile fields (from student form)
+    email?: string;
+    nidBirthNo?: string;
+    fatherName?: string;
+    motherName?: string;
+    permanentAddress?: string;
+    guardianName?: string;
+    guardianPhone?: string;
+    lastInstitute?: string;
+    latestDegree?: string;
+    gpaResult?: string;
+    currentDistrict?: string;
+    homeDistrict?: string;
+    tShirtSize?: string;
+    courseGoal?: string;
 }
 
 // ─── Backward-compat aliases ─────────────────────────────────
@@ -134,6 +149,18 @@ export const updateStudentPhoto = async (batchName: string, roll: string, photo:
     if (!res.ok) {
         const result = await res.json();
         throw new Error(result.error || "Failed to update photo.");
+    }
+};
+
+/** Delete an entire batch and all its students (admin only) */
+export const deleteBatch = async (batchName: string): Promise<void> => {
+    const res = await fetch(
+        `/api/batch-info/delete-batch?batchName=${encodeURIComponent(batchName)}`,
+        { method: "DELETE" }
+    );
+    if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete batch.");
     }
 };
 

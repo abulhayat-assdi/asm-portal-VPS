@@ -115,6 +115,21 @@ export async function POST(req: NextRequest) {
                     batchType: batchType === "Completed" ? BatchType.Completed : BatchType.Running,
                     isPublic: (s.isPublic as boolean) ?? true,
                     completedAt: completedAtDate,
+                    // Form-collected fields
+                    email: s.email ? String(s.email) : null,
+                    nidBirthNo: s.nidBirthNo ? String(s.nidBirthNo) : null,
+                    fatherName: s.fatherName ? String(s.fatherName) : null,
+                    motherName: s.motherName ? String(s.motherName) : null,
+                    permanentAddress: s.permanentAddress ? String(s.permanentAddress) : null,
+                    guardianName: s.guardianName ? String(s.guardianName) : null,
+                    guardianPhone: s.guardianPhone ? String(s.guardianPhone) : null,
+                    lastInstitute: s.lastInstitute ? String(s.lastInstitute) : null,
+                    latestDegree: s.latestDegree ? String(s.latestDegree) : null,
+                    gpaResult: s.gpaResult ? String(s.gpaResult) : null,
+                    currentDistrict: s.currentDistrict ? String(s.currentDistrict) : null,
+                    homeDistrict: s.homeDistrict ? String(s.homeDistrict) : null,
+                    tShirtSize: s.tShirtSize ? String(s.tShirtSize) : null,
+                    courseGoal: s.courseGoal ? String(s.courseGoal) : null,
                 };
 
                 await prisma.batchStudent.upsert({

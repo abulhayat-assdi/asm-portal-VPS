@@ -6,6 +6,11 @@ import { getSessionUser, isAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { modulesData } from "@/data/modules";
 
+const TEACHER_INFO: Record<string, { name: string; email: string }> = {
+    "art-of-sales-marketing": { name: "Md Sakhawat Hossain", email: "" },
+    "business-management-tools": { name: "Abul Hayat", email: "abul.hayat@skill.assunnahfoundation.org" },
+};
+
 const CARD_BULLETS: Record<string, string[]> = {
     "sales-mastery": [
         "Face-to-Face এবং অনলাইনে কনফিডেন্টলি প্রোডাক্ট সেল করার সাইকোলজি আয়ত্ত করা।",
@@ -20,10 +25,10 @@ const CARD_BULLETS: Record<string, string[]> = {
         "নিজের ক্যারিয়ার বা অন্ট্রাপ্রেনিউরিয়াল জার্নির পুরো কন্ট্রোল নিজের হাতে নেওয়া।",
     ],
     "customer-service-excellence": [
-        "রাগান্বিত কাস্টমারকেও আপনার ব্র্যান্ডের লয়্যাল ফ্যানে পরিণত করার সাইকোলজিক্যাল টেকনিক।",
-        "Empathy এবং সবরের সাথে যেকোনো ডিফিকাল্ট সিচুয়েশন হ্যান্ডেল করা।",
-        "প্রো-অ্যাকটিভ সাপোর্ট দিয়ে Client-এর সাথে স্ট্রং রিলেশনশিপ বিল্ড করা।",
-        "কাস্টমার সার্ভিসের ক্ষেত্রে ইহসান (Excellence) এবং আদল (Fairness) নিশ্চিত করা।",
+        "শূন্য থেকে শুরু করে একজন সফল উদ্যোক্তার মানসিকতা, goal setting এবং execution framework আয়ত্ত করা।",
+        "Market intelligence ও costing দিয়ে সঠিক pricing, packaging এবং positioning নির্ধারণ করা।",
+        "Customer acquisition system ও lead generation দিয়ে ব্যবসায় নতুন কাস্টমার আনার সিস্টেম তৈরি করা।",
+        "রাগান্বিত কাস্টমারকেও loyal ফ্যানে পরিণত করার psychology, complaint management ও closing techniques আয়ত্ত করা।",
     ],
     "ai-for-digital-marketers": [
         "লেটেস্ট AI Tools ব্যবহার করে কাজের স্পিড এবং প্রোডাক্টিভিটি 10x বাড়িয়ে ফেলা।",
@@ -61,6 +66,24 @@ const CARD_BULLETS: Record<string, string[]> = {
         "কর্পোরেট দুনিয়ার ফেক শর্টকাট এবং হারাম প্র্যাকটিসগুলো থেকে 100% দূরে থাকা।",
         "প্রফেশনাল সাকসেস এবং ইসলামিক ক্যারেক্টারের মধ্যে একটি পারফেক্ট ব্যালেন্স তৈরি করা।",
     ],
+    "art-of-sales-marketing": [
+        "রিয়েল কনভার্সেশনের মাধ্যমে সেলস করার আর্ট আয়ত্ত করা — প্রোডাক্ট পিচ ছাড়াই কাস্টমারকে জয় করা।",
+        "অ্যাক্টিভ লিসেনিং এবং সঠিক প্রশ্নের মাধ্যমে কাস্টমারের গভীর প্রয়োজন চিহ্নিত করা।",
+        "রাপোর্ট বিল্ডিং, অবজেকশন হ্যান্ডলিং এবং স্মার্টলি ডিল ক্লোজ করার প্রফেশনাল টেকনিক।",
+        "Key Account Management ও বডি ল্যাঙ্গুয়েজ মাস্টার করে B2B রিলেশনশিপ লং-টার্ম রাখা।",
+    ],
+    "code-free-commerce": [
+        "কোনো কোডিং জ্ঞান ছাড়াই AI দিয়ে প্রফেশনাল E-Commerce ওয়েবসাইট তৈরি এবং পাবলিশ করা।",
+        "Lovable ও Google AI Studio ব্যবহার করে কার্ট, চেকআউট ও ইনভেন্টরিসহ পূর্ণাঙ্গ অনলাইন শপ বিল্ড করা।",
+        "Canva AI দিয়ে ব্র্যান্ড ভিজ্যুয়াল তৈরি এবং UI পলিশ করে ক্লায়েন্ট-রেডি ওয়েবসাইট ডেলিভার করা।",
+        "Fiverr ও Upwork-এ Freelancing শুরু করা এবং বাংলাদেশের লোকাল মার্কেটে ক্লায়েন্ট খোঁজার স্ট্র্যাটেজি শেখা।",
+    ],
+    "dawah": [
+        "ফিকহ, আকিদা ও ইসলামী জীবনব্যবস্থার মৌলিক বিষয়সমূহ গভীরভাবে আয়ত্ত করা (General track)।",
+        "দাওয়াহর তত্ত্ব, পদ্ধতি ও আধুনিক যুগের বিশিষ্ট দায়ীদের কর্মপন্থা থেকে শিক্ষা নেওয়া (Alim track)।",
+        "খ্রিষ্টবাদ, হিন্দুইজম, জুদাইজমসহ বিশ্বের প্রধান ধর্মসমূহের তুলনামূলক পরিচিতি অর্জন করা।",
+        "Secularism, Atheism, LGBTQ+, Feminism-সহ সমকালীন ১৫টি মতবাদ ও বুদ্ধিবৃত্তিক চ্যালেঞ্জ মোকাবেলার যোগ্যতা তৈরি করা।",
+    ],
 };
 
 const SLUG_ORDER = [
@@ -73,6 +96,9 @@ const SLUG_ORDER = [
     "landing-page-content-marketing",
     "business-english",
     "dawah-business-ethics",
+    "art-of-sales-marketing",
+    "code-free-commerce",
+    "dawah",
 ];
 
 export async function POST(req: NextRequest) {
@@ -82,7 +108,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // First check if the table exists using raw SQL
+        // Check if the table exists
         const tableCheck = await prisma.$queryRaw<{ exists: boolean }[]>`
             SELECT EXISTS (
                 SELECT FROM information_schema.tables
@@ -101,6 +127,16 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Ensure seed_key column exists and backfill any blanks
+        await prisma.$executeRaw`
+            ALTER TABLE course_modules
+            ADD COLUMN IF NOT EXISTS seed_key TEXT NOT NULL DEFAULT ''
+        `;
+        await prisma.$executeRaw`
+            UPDATE course_modules SET seed_key = slug
+            WHERE seed_key = '' OR seed_key IS NULL
+        `;
+
         const results: string[] = [];
 
         for (let i = 0; i < SLUG_ORDER.length; i++) {
@@ -110,23 +146,23 @@ export async function POST(req: NextRequest) {
 
             const bullets = CARD_BULLETS[slug] ?? [];
             const curriculum = data.modules;
+            const teacher = TEACHER_INFO[slug] ?? { name: "", email: "" };
 
-            // Check if already exists
+            // Check by seed_key — not slug — so renamed modules are never re-imported
             const existing = await prisma.$queryRaw<{ id: string }[]>`
-                SELECT id FROM course_modules WHERE slug = ${slug} LIMIT 1
+                SELECT id FROM course_modules WHERE seed_key = ${slug} LIMIT 1
             `;
 
             if (existing.length > 0) {
-                results.push(`${slug}: skipped (already exists)`);
+                results.push(`${slug}: skipped (already seeded)`);
                 continue;
             }
 
-            // Insert using raw SQL to bypass prisma client model availability
             const id = `cm_${Date.now()}_${i}`;
             const now = new Date().toISOString();
 
             await prisma.$executeRaw`
-                INSERT INTO course_modules (id, slug, title, description, pdf_link, bullets, curriculum, is_published, "order", created_at, updated_at)
+                INSERT INTO course_modules (id, slug, title, description, pdf_link, bullets, curriculum, is_published, "order", teacher_name, teacher_email, seed_key, created_at, updated_at)
                 VALUES (
                     ${id},
                     ${slug},
@@ -137,6 +173,9 @@ export async function POST(req: NextRequest) {
                     ${JSON.stringify(curriculum)}::jsonb,
                     ${true},
                     ${i},
+                    ${teacher.name},
+                    ${teacher.email},
+                    ${slug},
                     ${now}::timestamptz,
                     ${now}::timestamptz
                 )

@@ -15,6 +15,8 @@ type RawModule = {
     curriculum: unknown;
     is_published: boolean;
     order: number;
+    teacher_name: string;
+    teacher_email: string;
     created_at: Date;
     updated_at: Date;
 };
@@ -30,6 +32,8 @@ function toClient(r: RawModule) {
         curriculum: r.curriculum,
         isPublished: r.is_published,
         order: r.order,
+        teacherName: r.teacher_name ?? "",
+        teacherEmail: r.teacher_email ?? "",
         createdAt: r.created_at,
         updatedAt: r.updated_at,
     };
@@ -39,7 +43,7 @@ export async function GET() {
     try {
         const rows = await prisma.$queryRaw<RawModule[]>`
             SELECT id, slug, title, description, pdf_link, bullets, curriculum,
-                   is_published, "order", created_at, updated_at
+                   is_published, "order", teacher_name, teacher_email, created_at, updated_at
             FROM course_modules
             ORDER BY "order" ASC, created_at ASC
         `;
@@ -65,7 +69,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { slug, title, description, pdfLink, bullets, curriculum, isPublished, order } = body;
+        const { slug, title, description, pdfLink, bullets, curriculum, isPublished, order, teacherName, teacherEmail } = body;
 
         if (!slug || !title) {
             return NextResponse.json({ error: "slug and title are required" }, { status: 400 });
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
         const now = new Date().toISOString();
 
         await prisma.$executeRaw`
-            INSERT INTO course_modules (id, slug, title, description, pdf_link, bullets, curriculum, is_published, "order", created_at, updated_at)
+            INSERT INTO course_modules (id, slug, title, description, pdf_link, bullets, curriculum, is_published, "order", teacher_name, teacher_email, created_at, updated_at)
             VALUES (
                 ${id},
                 ${slug},
@@ -93,6 +97,8 @@ export async function POST(req: NextRequest) {
                 ${JSON.stringify(curriculum ?? [])}::jsonb,
                 ${isPublished ?? true},
                 ${order ?? 0},
+                ${teacherName ?? ""},
+                ${teacherEmail ?? ""},
                 ${now}::timestamptz,
                 ${now}::timestamptz
             )
@@ -100,7 +106,7 @@ export async function POST(req: NextRequest) {
 
         const [row] = await prisma.$queryRaw<RawModule[]>`
             SELECT id, slug, title, description, pdf_link, bullets, curriculum,
-                   is_published, "order", created_at, updated_at
+                   is_published, "order", teacher_name, teacher_email, created_at, updated_at
             FROM course_modules WHERE id = ${id}
         `;
 
