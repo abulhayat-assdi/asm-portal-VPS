@@ -5,23 +5,36 @@ import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-/** GET /api/resources/module?moduleId=...&teacherUid=...&batchName=... */
+/**
+ * GET /api/resources/module
+ * ?teacherUid=xxx            → all files for a teacher
+ * ?teacherUid=xxx&root=true  → root-level files (no folder)
+ * ?folderId=xxx              → files inside a specific folder
+ * ?all=true                  → all files (admin)
+ */
 export async function GET(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(req.url);
-    const moduleId = searchParams.get("moduleId");
     const teacherUid = searchParams.get("teacherUid");
-    const folderId = searchParams.get("folderId");
+    const folderId   = searchParams.get("folderId");
+    const root       = searchParams.get("root") === "true";
+    const all        = searchParams.get("all") === "true";
 
-    const where: any = { isHidden: false };
-    if (moduleId) where.moduleId = moduleId;
-    if (teacherUid) where.teacherUid = teacherUid;
-    if (folderId) where.folderId = folderId;
+    const where: Record<string, unknown> = {};
 
-    if (isTeacherOrAdmin(user)) {
-        delete where.isHidden;
+    if (!isTeacherOrAdmin(user)) {
+        where.isHidden = false;
+    }
+
+    if (all) {
+        // no extra filter
+    } else if (folderId) {
+        where.folderId = folderId;
+    } else if (teacherUid) {
+        where.teacherUid = teacherUid;
+        if (root) where.folderId = null;
     }
 
     const resources = await prisma.moduleResource.findMany({
@@ -49,10 +62,10 @@ export async function POST(req: NextRequest) {
 
         const resource = await prisma.moduleResource.create({
             data: {
-                moduleId,
-                moduleTitle,
-                teacherName: teacherName || user.displayName,
-                teacherUid: teacherUid || user.id,
+                moduleId:    moduleId    || "",
+                moduleTitle: moduleTitle || "",
+                teacherName: teacherName || user.displayName || "",
+                teacherUid:  teacherUid  || user.id,
                 folderId: folderId || null,
                 title,
                 description: description || null,

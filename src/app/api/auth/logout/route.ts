@@ -1,11 +1,20 @@
-import { NextResponse } from 'next/server';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { getSessionUser } from '@/lib/auth';
 import { COOKIES } from '@/lib/constants';
 
-/**
- * DELETE /api/auth/logout
- * Clears the session cookie.
- */
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+    try {
+        const user = await getSessionUser(req);
+        if (user?.id) {
+            await prisma.activeSession.deleteMany({ where: { userId: user.id } });
+        }
+    } catch {
+        // Ignore errors — cookie will still be cleared
+    }
+
     const response = NextResponse.json({ success: true });
     response.cookies.set(COOKIES.SESSION, '', {
         httpOnly: true,

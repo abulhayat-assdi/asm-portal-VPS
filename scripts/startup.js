@@ -52,6 +52,40 @@ async function applySchemaPatches() {
         console.error("[startup] Schema patch error (routine_configs):", err.message);
     }
 
+    // ── Active sessions table (concurrent login tracking) ──────────
+    try {
+        await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS active_sessions (
+                id TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+                user_id TEXT NOT NULL,
+                expires_at TIMESTAMP(3) NOT NULL,
+                created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT active_sessions_pkey PRIMARY KEY (id)
+            );
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE UNIQUE INDEX IF NOT EXISTS active_sessions_user_id_key ON active_sessions(user_id);
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS active_sessions_expires_at_idx ON active_sessions(expires_at);
+        `);
+        await prisma.$executeRawUnsafe(`
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'active_sessions_user_id_fkey'
+                ) THEN
+                    ALTER TABLE active_sessions
+                    ADD CONSTRAINT active_sessions_user_id_fkey
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE;
+                END IF;
+            END $$;
+        `);
+        console.log("[startup] ✓ active_sessions table OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (active_sessions):", err.message);
+    }
+
     // ── Remove tenant system (idempotent cleanup) ───────────────
 
     const tablesWithTenantId = [

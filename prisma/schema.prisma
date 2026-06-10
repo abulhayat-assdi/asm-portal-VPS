@@ -130,11 +130,24 @@ model User {
   activityLogs        ActivityLog[]
   chatMessages        ChatMessage[]
   cvDrafts            CvDraft[]
+  activeSession       ActiveSession?
 
   @@index([email])
   @@index([role])
   @@index([studentBatchName, studentRoll])
   @@map("users")
+}
+
+model ActiveSession {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("active_sessions")
 }
 
 model PasswordResetToken {
@@ -539,27 +552,32 @@ model Resource {
 }
 
 model ModuleFolder {
-  id          String   @id @default(uuid())
-  moduleId    String   @map("module_id")
-  moduleTitle String   @map("module_title")
-  name        String
-  description String?
-  createdBy   String?  @map("created_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                String        @id @default(uuid())
+  teacherUid        String        @default("") @map("teacher_uid")
+  teacherName       String        @default("") @map("teacher_name")
+  parentFolderId    String?       @map("parent_folder_id")
+  title             String        @default("")
+  description       String?
+  visibleForBatches Json          @default("[\"all\"]") @map("visible_for_batches")
+  isHidden          Boolean       @default(false) @map("is_hidden")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
-  resources ModuleResource[]
+  parentFolder ModuleFolder?  @relation("SubFolders", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  subFolders   ModuleFolder[] @relation("SubFolders")
+  resources    ModuleResource[]
 
-  @@index([moduleTitle])
+  @@index([teacherUid])
+  @@index([parentFolderId])
   @@map("module_folders")
 }
 
 model ModuleResource {
   id                 String       @id @default(uuid())
-  moduleId           String       @map("module_id")
-  moduleTitle        String       @map("module_title")
-  teacherName        String       @map("teacher_name")
-  teacherUid         String       @map("teacher_uid")
+  moduleId           String       @default("") @map("module_id")
+  moduleTitle        String       @default("") @map("module_title")
+  teacherName        String       @default("") @map("teacher_name")
+  teacherUid         String       @default("") @map("teacher_uid")
   folderId           String?      @map("folder_id")
   title              String
   description        String?

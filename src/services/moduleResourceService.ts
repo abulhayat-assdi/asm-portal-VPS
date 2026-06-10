@@ -114,6 +114,13 @@ export const getModuleResourcesByTeacher = async (teacherUid: string): Promise<M
     return res.json();
 };
 
+/** Root-level files for a teacher (no folder) */
+export const getTeacherRootFiles = async (teacherUid: string): Promise<ModuleResource[]> => {
+    const res = await fetch(`/api/resources/module?teacherUid=${encodeURIComponent(teacherUid)}&root=true`, { cache: "no-store" });
+    if (!res.ok) return [];
+    return res.json();
+};
+
 export const updateModuleResource = async (id: string, data: Partial<Omit<ModuleResource, "id" | "uploadedAt">>): Promise<void> => {
     const res = await fetch("/api/resources/module", {
         method: "PATCH",

@@ -75,6 +75,35 @@ export const getAllResources = async (): Promise<Resource[]> => {
     return data.sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
 };
 
+/** Fetch course modules and map them to the Resource interface for the Resource Library. */
+export const getCourseModulesForLibrary = async (): Promise<Resource[]> => {
+    const res = await fetch("/api/admin/course-modules", { cache: "no-store" });
+    if (!res.ok) return [];
+    const modules: Array<{
+        id: string;
+        title: string;
+        description?: string;
+        teacherName?: string;
+        teacherEmail?: string;
+        order?: number;
+        isPublished?: boolean;
+    }> = await res.json();
+    return modules
+        .filter(m => m.isPublished !== false)
+        .map(m => ({
+            id: m.id,
+            title: m.title,
+            category: "Course Module" as const,
+            uploadedByUid: "",
+            uploadedByName: m.teacherName || "",
+            uploadDate: "",
+            description: m.description,
+            teacherName: m.teacherName || "",
+            order: m.order,
+            fileUrl: "",
+        }));
+};
+
 export const addResource = async (resource: Omit<Resource, "id" | "uploadDate" | "createdAt">): Promise<string> => {
     const res = await fetch("/api/resources", {
         method: "POST",

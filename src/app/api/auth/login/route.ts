@@ -13,38 +13,35 @@ const loginSchema = z.object({
     password: z.string().min(6),
 });
 
-// Simple in-memory rate limiter (per IP, resets on server restart)
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+// Rate limiter per email address (not IP) — safe for shared-network school environments
+const failedAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_CONCURRENT_SESSIONS = 100;
+const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days in seconds
 
-function checkRateLimit(ip: string): boolean {
+function isRateLimited(email: string): boolean {
     const now = Date.now();
-    const entry = loginAttempts.get(ip);
+    const entry = failedAttempts.get(email);
+    if (!entry || entry.resetAt < now) return false;
+    return entry.count >= MAX_ATTEMPTS;
+}
 
+function recordFailedAttempt(email: string): void {
+    const now = Date.now();
+    const entry = failedAttempts.get(email);
     if (!entry || entry.resetAt < now) {
-        loginAttempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-        return true;
+        failedAttempts.set(email, { count: 1, resetAt: now + WINDOW_MS });
+    } else {
+        entry.count++;
     }
+}
 
-    if (entry.count >= MAX_ATTEMPTS) {
-        return false;
-    }
-
-    entry.count++;
-    return true;
+function clearFailedAttempts(email: string): void {
+    failedAttempts.delete(email);
 }
 
 export async function POST(req: NextRequest) {
-    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-
-    if (!checkRateLimit(ip)) {
-        return NextResponse.json(
-            { error: 'Too many failed login attempts. Please wait 15 minutes and try again.' },
-            { status: 429 }
-        );
-    }
-
     try {
         const body = await req.json();
         const parsed = loginSchema.safeParse(body);
@@ -57,19 +54,59 @@ export async function POST(req: NextRequest) {
         }
 
         const { email, password } = parsed.data;
+        const normalizedEmail = email.toLowerCase().trim();
+
+        // Rate limit per email to protect individual accounts
+        if (isRateLimited(normalizedEmail)) {
+            return NextResponse.json(
+                { error: 'অনেক বেশি ব্যর্থ চেষ্টা হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন।' },
+                { status: 429 }
+            );
+        }
 
         const user = await prisma.user.findFirst({
-            where: { email: email.toLowerCase().trim(), deletedAt: null },
+            where: { email: normalizedEmail, deletedAt: null },
         });
 
         if (!user) {
+            recordFailedAttempt(normalizedEmail);
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
         }
 
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) {
+            recordFailedAttempt(normalizedEmail);
             return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
         }
+
+        // Successful login — clear failed attempt counter
+        clearFailedAttempts(normalizedEmail);
+
+        // Clean up expired sessions, then check concurrent session limit
+        await prisma.activeSession.deleteMany({
+            where: { expiresAt: { lt: new Date() } },
+        });
+
+        const existingSession = await prisma.activeSession.findUnique({
+            where: { userId: user.id },
+        });
+
+        if (!existingSession) {
+            const totalSessions = await prisma.activeSession.count();
+            if (totalSessions >= MAX_CONCURRENT_SESSIONS) {
+                return NextResponse.json(
+                    { error: `সর্বোচ্চ ${MAX_CONCURRENT_SESSIONS} জন একযোগে লগইন করা আছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।` },
+                    { status: 429 }
+                );
+            }
+        }
+
+        const sessionExpiry = new Date(Date.now() + SESSION_MAX_AGE * 1000);
+        await prisma.activeSession.upsert({
+            where: { userId: user.id },
+            update: { expiresAt: sessionExpiry },
+            create: { userId: user.id, expiresAt: sessionExpiry },
+        });
 
         const enforceRole = user.email === PORTAL_OWNER_EMAIL && user.role !== 'super_admin'
             ? { role: 'super_admin' as const }
@@ -109,7 +146,7 @@ export async function POST(req: NextRequest) {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 60 * 60 * 24 * 30,
+            maxAge: SESSION_MAX_AGE,
         });
 
         return response;
