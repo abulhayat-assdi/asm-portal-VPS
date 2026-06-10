@@ -11,6 +11,15 @@ services:
     ports:
       - "5432:5432"
 
+  # Runs once at startup to ensure the storage volume is owned by UID 1001 (nextjs).
+  # Needed because Docker named volumes are root-owned on first creation.
+  init-storage:
+    image: alpine
+    command: sh -c "mkdir -p /storage && chown -R 1001:1001 /storage"
+    volumes:
+      - storage_data:/storage
+    restart: "no"
+
   app:
     build:
       context: .
@@ -29,7 +38,10 @@ services:
       NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-tasm-skill.asf.bd}
       SAAS_OWNER_EMAIL: ${SAAS_OWNER_EMAIL}
     depends_on:
-      - db
+      db:
+        condition: service_started
+      init-storage:
+        condition: service_completed_successfully
     ports:
       - "3000:3000"
     volumes:

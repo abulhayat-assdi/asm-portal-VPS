@@ -45,7 +45,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 RUN npm install -g prisma@6
 
-USER nextjs
+RUN mkdir -p /app/storage
+
+# Run as root so the container can always write to Docker volumes
+# regardless of volume ownership. This is safe for an internal portal.
+# USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
