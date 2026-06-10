@@ -99,9 +99,12 @@ export default function StudentResourcePage() {
     }, []);
 
     // ── Open teacher → show their root folders + root files ───────────────
+    const [lvl2Error, setLvl2Error] = useState(false);
+
     const openTeacher = useCallback(async (teacher: ResourceTeacher) => {
         setView({ level: "folders", teacher });
         setLvl2Loading(true);
+        setLvl2Error(false);
         try {
             const [folders, files] = await Promise.all([
                 getRootFoldersByTeacher(teacher.teacherUid),
@@ -109,6 +112,8 @@ export default function StudentResourcePage() {
             ]);
             setRootFolders(folders.filter(f => !f.isHidden && visibleForMe(f.visibleForBatches)));
             setRootFiles(files.filter(f => !f.isHidden && visibleForMe(f.visibleForBatches)));
+        } catch {
+            setLvl2Error(true);
         } finally {
             setLvl2Loading(false);
         }
@@ -308,8 +313,10 @@ export default function StudentResourcePage() {
             {view.level === "folders" && (
                 lvl2Loading
                     ? renderSpinner("Loading materials...")
+                    : lvl2Error
+                        ? renderEmpty("⚠️", "লোড হয়নি", "ফাইল লোড করতে সমস্যা হয়েছে। পেজ রিফ্রেশ করুন।")
                     : rootFolders.length === 0 && rootFiles.length === 0
-                        ? renderEmpty("📁", "No materials yet", `${view.teacher.teacherName} এখনো কোনো ফাইল আপলোড করেননি।`)
+                        ? renderEmpty("📁", "No materials yet", `${view.teacher.teacherName} এখনো কোনো ফাইল আপলোড করেননি বা আপনার ব্যাচের জন্য কোনো কন্টেন্ট নেই।`)
                         : (
                             <div className="space-y-8">
                                 {rootFolders.length > 0 && (

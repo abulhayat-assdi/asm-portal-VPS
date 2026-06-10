@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
     },
     async rewrites() {
         return [
+            // Serve uploaded files through API route (standalone mode doesn't serve
+            // runtime-written public/ files reliably as static assets)
+            {
+                source: '/uploads/:path*',
+                destination: '/api/uploads/:path*',
+            },
             {
                 source: '/storage/public/:path*',
                 destination: '/:path*',

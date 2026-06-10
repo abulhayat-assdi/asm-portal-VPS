@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from "next/server";
+import path from "path";
+import fs from "fs";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+const MIME_TYPES: Record<string, string> = {
+    ".pdf":  "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc":  "application/msword",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".ppt":  "application/vnd.ms-powerpoint",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".xls":  "application/vnd.ms-excel",
+    ".jpg":  "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png":  "image/png",
+    ".gif":  "image/gif",
+    ".webp": "image/webp",
+    ".zip":  "application/zip",
+    ".mp4":  "video/mp4",
+    ".mp3":  "audio/mpeg",
+    ".txt":  "text/plain",
+    ".csv":  "text/csv",
+};
+
+/**
+ * GET /api/uploads/[...path]
+ * Serves uploaded files from public/uploads/ on the VPS filesystem.
+ * This is needed because output:'standalone' doesn't reliably serve runtime-written files
+ * from the public/ directory as static assets.
+ */
+export async function GET(
+    _req: NextRequest,
+    { params }: { params: Promise<{ path: string[] }> }
+) {
+    const { path: segments } = await params;
+    const relPath = segments.map(s => s.replace(/\.\./g, "")).join("/");
+
+    const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
+    const absolutePath = path.resolve(uploadsRoot, relPath);
+
+    // Security: prevent path traversal
+    if (!absolutePath.startsWith(uploadsRoot)) {
+        return new NextResponse("Forbidden", { status: 403 });
+    }
+
+    if (!fs.existsSync(absolutePath)) {
+        return new NextResponse("Not Found", { status: 404 });
+    }
+
+    const stat = fs.statSync(absolutePath);
+    if (!stat.isFile()) {
+        return new NextResponse("Not Found", { status: 404 });
+    }
+
+    const ext = path.extname(absolutePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
+    const fileName = path.basename(absolutePath);
+
+    const fileBuffer = fs.readFileSync(absolutePath);
+
+    return new NextResponse(fileBuffer, {
+        status: 200,
+        headers: {
+            "Content-Type":        contentType,
+            "Content-Length":      String(stat.size),
+            "Content-Disposition": `inline; filename="${encodeURIComponent(fileName)}"`,
+            "Cache-Control":       "public, max-age=31536000, immutable",
+        },
+    });
+}
