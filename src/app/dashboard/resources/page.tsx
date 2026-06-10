@@ -512,7 +512,17 @@ export default function ResourceManagementPage() {
                         <p className="text-[#6b7280] mt-1">ফোল্ডার তৈরি করুন, ফাইল আপলোড করুন এবং স্টুডেন্টদের জন্য ম্যানেজ করুন।</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={handleDbSetup}
+                        disabled={isSettingUp}
+                        title="Run DB migration for Resource Library"
+                        className="px-3 py-2 bg-amber-500 text-white text-sm font-bold rounded-xl hover:bg-amber-600 disabled:opacity-60 flex items-center gap-1.5"
+                    >
+                        {isSettingUp ? (
+                            <><span className="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span> Setting up...</>
+                        ) : <><span>⚙</span> Init DB</>}
+                    </button>
                     <button onClick={() => openCreateFolder(null)}
                         className="px-4 py-2 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2">
                         <span>📁</span> New Folder
@@ -524,12 +534,12 @@ export default function ResourceManagementPage() {
                 </div>
             </div>
 
-            {/* DB Setup Banner */}
+            {/* DB Setup Banner — only when schema error detected */}
             {dbError && (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 flex items-center justify-between gap-4">
                     <div>
                         <p className="font-bold text-amber-800">Database setup required</p>
-                        <p className="text-sm text-amber-600 mt-1">Resource Library-র জন্য DB columns তৈরি হয়নি। নিচের বাটনে ক্লিক করুন।</p>
+                        <p className="text-sm text-amber-600 mt-1">Resource Library-র জন্য DB columns তৈরি হয়নি। উপরে অথবা নিচের বাটনে ক্লিক করুন।</p>
                     </div>
                     <button
                         onClick={handleDbSetup}
