@@ -7,12 +7,20 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 /**
- * [API Route] Handle file uploads to local VPS storage
+ * Returns the base directory for stored files.
+ * Uses LOCAL_STORAGE_PATH (Docker volume) → UPLOAD_DIR → <cwd>/public fallback.
+ */
+function getStorageBase(): string {
+    return process.env.LOCAL_STORAGE_PATH
+        || process.env.UPLOAD_DIR
+        || path.resolve(process.cwd(), "public");
+}
+
+/**
  * POST /api/storage/upload
  * FormData: { file, category (homework|resource), path (optional) }
  */
 export async function POST(request: NextRequest) {
-    // Auth Check — accepts both cookie and Authorization: Bearer header (for XHR uploads)
     const sessionUser = await getSessionUserFromRequestOrBearer(request);
     if (!sessionUser) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -28,11 +36,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
         }
 
-        // 🔒 SECURITY: Allowed types
         const ALLOWED_EXTENSIONS = new Set([
-            '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp',
-            '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx',
-            '.csv', '.txt', '.zip', '.mp4', '.mp3'
+            ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp",
+            ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
+            ".csv", ".txt", ".zip", ".mp4", ".mp3",
         ]);
 
         const ext = path.extname(file.name).toLowerCase();
@@ -40,28 +47,25 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Invalid file extension" }, { status: 400 });
         }
 
-        // 📏 100 MB Size Limit
-        const MAX_SIZE = 100 * 1024 * 1024;
-        if (file.size > MAX_SIZE) {
+        if (file.size > 100 * 1024 * 1024) {
             return NextResponse.json({ error: "File too large (Max 100MB)" }, { status: 400 });
         }
 
-        const localStoragePath = "public";
-        let storagePath = "";
+        const storageBase = getStorageBase();
         const timestamp = Date.now();
-        const sanitizedFileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const safeName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
 
-        // 📁 Determine Folder Structure (all uploads go under public/uploads/ for persistent volume)
+        let storagePath: string;
         if (category === "homework") {
-            storagePath = `uploads/homework/${sessionUser.id}/${sanitizedFileName}`;
+            storagePath = `uploads/homework/${sessionUser.id}/${safeName}`;
         } else {
             const folder = subPath ? subPath.replace(/[^a-zA-Z0-9_]/g, "_") : "";
             storagePath = folder
-                ? `uploads/resources/${folder}/${sanitizedFileName}`
-                : `uploads/resources/${sanitizedFileName}`;
+                ? `uploads/resources/${folder}/${safeName}`
+                : `uploads/resources/${safeName}`;
         }
 
-        const absolutePath = path.resolve(process.cwd(), localStoragePath, storagePath);
+        const absolutePath = path.join(storageBase, storagePath);
         const dir = path.dirname(absolutePath);
 
         if (!fs.existsSync(dir)) {
@@ -71,17 +75,18 @@ export async function POST(request: NextRequest) {
         const buffer = Buffer.from(await file.arrayBuffer());
         fs.writeFileSync(absolutePath, buffer);
 
-        console.log(`[Upload API] Saved ${category} to ${storagePath}`);
+        console.log(`[Upload] ${category} saved → ${absolutePath}`);
 
         return NextResponse.json({
             success: true,
             fileUrl: `/${storagePath}`,
-            storagePath: storagePath,
-            fileName: file.name
+            storagePath,
+            fileName: file.name,
         });
 
     } catch (error) {
-        console.error("[Upload API] Error:", error);
-        return NextResponse.json({ error: "Failed to process upload" }, { status: 500 });
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error("[Upload] Error:", msg);
+        return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 500 });
     }
 }

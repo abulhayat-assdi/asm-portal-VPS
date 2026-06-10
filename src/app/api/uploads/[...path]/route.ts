@@ -38,7 +38,10 @@ export async function GET(
     const { path: segments } = await params;
     const relPath = segments.map(s => s.replace(/\.\./g, "")).join("/");
 
-    const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
+    const storageBase = process.env.LOCAL_STORAGE_PATH
+        || process.env.UPLOAD_DIR
+        || path.resolve(process.cwd(), "public");
+    const uploadsRoot = path.join(storageBase, "uploads");
     const absolutePath = path.resolve(uploadsRoot, relPath);
 
     // Security: prevent path traversal
