@@ -45,15 +45,17 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 RUN npm install -g prisma@6
 
-RUN mkdir -p /app/storage
+# Install su-exec for privilege dropping in the entrypoint
+RUN apk add --no-cache su-exec
 
-# Run as root so the container can always write to Docker volumes
-# regardless of volume ownership. This is safe for an internal portal.
-# USER nextjs
+# Entrypoint: fixes /app/storage ownership then drops to nextjs user
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Apply schema patches (idempotent), seed templates, then start the app
+# Entrypoint runs as root → fixes volume permissions → drops to nextjs
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["sh", "-c", "node scripts/startup.js && node prisma/seed.js && node server.js"]
