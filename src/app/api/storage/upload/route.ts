@@ -3,29 +3,16 @@ import path from "path";
 import fs from "fs";
 import { getSessionUserFromRequestOrBearer } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 /**
  * [API Route] Handle file uploads to local VPS storage
  * POST /api/storage/upload
  * FormData: { file, category (homework|resource), path (optional) }
  */
 export async function POST(request: NextRequest) {
-    // 🔒 CSRF: Reject requests whose Origin doesn't match our own domain.
-    const origin = request.headers.get("origin") || "";
-    const allowedOrigins = [
-        process.env.NEXT_PUBLIC_APP_URL || "",
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "https://tasm-skill.asf.bd",
-        "https://www.tasm-skill.asf.bd",
-    ].filter(Boolean);
-    const isLocalhost = origin.startsWith("http://localhost");
-    const isAllowedOrigin = allowedOrigins.some(o => o && origin.startsWith(o));
-    if (origin && !isLocalhost && !isAllowedOrigin) {
-        console.warn(`[Security] CSRF blocked: unknown Origin: ${origin}`);
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // 🔒 Auth Check — accepts both cookie and Authorization: Bearer header (for XHR uploads)
+    // Auth Check — accepts both cookie and Authorization: Bearer header (for XHR uploads)
     const sessionUser = await getSessionUserFromRequestOrBearer(request);
     if (!sessionUser) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

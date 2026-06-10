@@ -4,6 +4,9 @@ import { join } from "path";
 import { existsSync } from "fs";
 import { getSessionUser } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 // Allowed MIME types for homework
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",

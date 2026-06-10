@@ -24,7 +24,8 @@ function getJWTSecret(): Uint8Array {
 
 export async function signJWT(payload: JWTPayload): Promise<string> {
     const secret = getJWTSecret();
-    const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+    // Default to 30d to match SESSION_MAX_AGE cookie (was 24h — caused "expired token" failures)
+    const expiresIn = process.env.JWT_EXPIRES_IN || '30d';
 
     return new SignJWT({ ...payload })
         .setProtectedHeader({ alg: 'HS256' })

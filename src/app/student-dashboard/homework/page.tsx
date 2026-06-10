@@ -209,15 +209,28 @@ export default function HomeworkSubmissionPage() {
 
             // Upload all files if present
             if (selectedFiles.length > 0) {
-                uploadedFiles = await uploadMultipleHomeworkFiles(
-                    selectedFiles,
-                    (idx, progress) => setUploadProgress(progress)
-                );
+                try {
+                    uploadedFiles = await uploadMultipleHomeworkFiles(
+                        selectedFiles,
+                        (idx, progress) => setUploadProgress(progress)
+                    );
+                } catch (uploadErr) {
+                    const msg = uploadErr instanceof Error ? uploadErr.message : String(uploadErr);
+                    // Handle common upload errors with Bangla messages
+                    if (msg.includes("401") || msg.includes("Unauthorized")) {
+                        setSubmitError("Session expired. Please log out and log in again.");
+                    } else if (msg.includes("403") || msg.includes("Forbidden")) {
+                        setSubmitError("Upload permission denied. Please refresh and try again.");
+                    } else if (msg.includes("413") || msg.includes("too large")) {
+                        setSubmitError(`ফাইল সাইজ বেশি বড়। ${MAX_TOTAL_SIZE_MB}MB-এর মধ্যে রাখুন।`);
+                    } else {
+                        setSubmitError(`File upload failed: ${msg}`);
+                    }
+                    return;
+                }
             }
 
             const now = new Date();
-
-            // Build backward-compat fields from first file (for teacher view legacy support)
             const firstFile = uploadedFiles[0];
 
             await submitHomework({
@@ -228,11 +241,9 @@ export default function HomeworkSubmissionPage() {
                 teacherName: selectedTeacher,
                 subject: subject,
                 assignmentId: selectedAssignmentId,
-                // Legacy single-file fields (first file for backwards compat)
                 fileUrl: firstFile?.url,
                 storagePath: firstFile?.storagePath,
                 fileName: firstFile?.fileName,
-                // New multi-file array
                 files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
                 textContent: textContent.trim() || undefined,
                 submissionDate: formatHomeworkDate(now),
@@ -241,14 +252,20 @@ export default function HomeworkSubmissionPage() {
             setSubmitSuccess(true);
             resetForm();
 
-            // Refresh history
             const updated = await getHomeworkByStudent(uid);
             setMySubmissions(updated);
 
             setTimeout(() => setSubmitSuccess(false), 4000);
         } catch (err) {
-            console.error("Failed to submit homework:", err);
-            setSubmitError("Failed to submit homework. Please try again.");
+            console.error("Homework submission error:", err);
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes("401") || msg.includes("Unauthorized")) {
+                setSubmitError("Session expired. Please log out and log in again.");
+            } else if (msg.includes("500") || msg.includes("Internal")) {
+                setSubmitError("Server error. Please try again in a moment.");
+            } else {
+                setSubmitError(`Failed to submit: ${msg}`);
+            }
         } finally {
             setIsSubmitting(false);
             setUploadProgress(0);
