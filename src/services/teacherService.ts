@@ -12,6 +12,7 @@ export interface Teacher {
     email: string;
     loginEmail?: string;
     profileImageUrl?: string;
+    imageObjectPosition?: string;
     isAdmin: boolean;
     order?: number;
     leaveTrackingEnabled?: boolean;

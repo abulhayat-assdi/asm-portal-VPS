@@ -53,6 +53,23 @@ export default function TeachersPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+    // Debug panel (super_admin only)
+    const [debugData, setDebugData] = useState<any[] | null>(null);
+    const [debugLoading, setDebugLoading] = useState(false);
+
+    const loadDebugData = async () => {
+        setDebugLoading(true);
+        try {
+            const res = await fetch("/api/admin/teachers/debug");
+            const data = await res.json();
+            setDebugData(data);
+        } catch {
+            setDebugData(null);
+        } finally {
+            setDebugLoading(false);
+        }
+    };
+
     const fetchTeachers = async () => {
         setLoading(true);
         try {
@@ -268,8 +285,9 @@ export default function TeachersPage() {
                     designation: formData.designation,
                     about: formData.about,
                     phone: formData.phone,
-                    email: formData.email,           // display email
-                    loginEmail: formData.loginEmail, // login email
+                    email: formData.email || undefined,
+                    // only send loginEmail if non-empty (preserve existing if blank)
+                    loginEmail: formData.loginEmail || undefined,
                     profileImageUrl: finalImageUrl || undefined,
                     isAdmin: formData.isAdmin,
                     order: Number(formData.order),
@@ -376,6 +394,52 @@ export default function TeachersPage() {
                 </div>
             </div>
 
+            {/* Debug Panel — super_admin only */}
+            {isPortalOwner && (
+                <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-bold text-amber-800">🔧 DB Debug (Super Admin only)</span>
+                        <button
+                            onClick={loadDebugData}
+                            disabled={debugLoading}
+                            className="px-3 py-1 bg-amber-600 text-white text-xs font-semibold rounded hover:bg-amber-700 disabled:opacity-50"
+                        >
+                            {debugLoading ? "Loading..." : "Load Raw DB Data"}
+                        </button>
+                    </div>
+                    {debugData && (
+                        <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                            <table className="text-xs w-full border-collapse">
+                                <thead>
+                                    <tr className="bg-amber-100">
+                                        <th className="border border-amber-200 px-2 py-1 text-left">DB id</th>
+                                        <th className="border border-amber-200 px-2 py-1 text-left">teacherId</th>
+                                        <th className="border border-amber-200 px-2 py-1 text-left">name</th>
+                                        <th className="border border-amber-200 px-2 py-1 text-left">loginEmail</th>
+                                        <th className="border border-amber-200 px-2 py-1 text-left">email</th>
+                                        <th className="border border-amber-200 px-2 py-1 text-left">profileImageUrl</th>
+                                        <th className="border border-amber-200 px-2 py-1 text-left">isAdmin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {debugData.map((t: any) => (
+                                        <tr key={t.id} className={t.name?.includes("Mahim") || t.name?.includes("mahim") ? "bg-red-50" : ""}>
+                                            <td className="border border-amber-200 px-2 py-1 font-mono">{t.id}</td>
+                                            <td className="border border-amber-200 px-2 py-1">{t.teacherId}</td>
+                                            <td className="border border-amber-200 px-2 py-1">{t.name}</td>
+                                            <td className="border border-amber-200 px-2 py-1">{t.loginEmail || <span className="text-red-500">EMPTY</span>}</td>
+                                            <td className="border border-amber-200 px-2 py-1">{t.email || <span className="text-red-500">EMPTY</span>}</td>
+                                            <td className="border border-amber-200 px-2 py-1 max-w-xs truncate">{t.profileImageUrl || <span className="text-gray-400">null</span>}</td>
+                                            <td className="border border-amber-200 px-2 py-1">{String(t.isAdmin)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Search Bar */}
             <div className="flex gap-4">
                 <input
@@ -413,6 +477,8 @@ export default function TeachersPage() {
                                     teacher={teacher}
                                     onEdit={canEdit ? openEditModal : undefined}
                                     onDelete={canDelete ? openDeleteModal : undefined}
+                                    isAdmin={isAdminUser}
+                                    onPhotoUpdated={refreshTeachers}
                                 />
                             </div>
                         );
@@ -553,12 +619,12 @@ export default function TeachersPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                                        🔐 Login Email *
+                                        🔐 Login Email {isEditMode ? "" : "*"}
                                         <span className="ml-1 text-xs font-normal text-gray-500">(used to sign in to the portal)</span>
                                     </label>
                                     <input
                                         type="email"
-                                        required
+                                        required={!isEditMode}
                                         value={formData.loginEmail}
                                         onChange={(e) => setFormData({ ...formData, loginEmail: e.target.value })}
                                         placeholder="e.g., teacher.login@gmail.com"
@@ -568,12 +634,12 @@ export default function TeachersPage() {
 
                                 <div>
                                     <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                                        📧 Display Email *
+                                        📧 Display Email {isEditMode ? "" : "*"}
                                         <span className="ml-1 text-xs font-normal text-gray-500">(shown on portal & public page)</span>
                                     </label>
                                     <input
                                         type="email"
-                                        required
+                                        required={!isEditMode}
                                         value={formData.email}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         placeholder="e.g., teacher@example.com"

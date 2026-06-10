@@ -9,12 +9,30 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/teachers
  * Public API to fetch all teachers from PostgreSQL.
+ * Uses raw SQL so image_object_position is included without requiring prisma generate.
  */
 export async function GET() {
     try {
-        const teachers = await prisma.teacher.findMany({
-            orderBy: { order: "asc" },
-        });
+        const teachers = await prisma.$queryRaw<any[]>`
+            SELECT
+                id,
+                teacher_id          AS "teacherId",
+                name,
+                designation,
+                about,
+                phone,
+                email,
+                login_email         AS "loginEmail",
+                profile_image_url   AS "profileImageUrl",
+                image_object_position AS "imageObjectPosition",
+                is_admin            AS "isAdmin",
+                "order",
+                leave_tracking_enabled AS "leaveTrackingEnabled",
+                created_at          AS "createdAt",
+                updated_at          AS "updatedAt"
+            FROM teachers
+            ORDER BY "order" ASC
+        `;
 
         return NextResponse.json(teachers);
     } catch (error) {
@@ -41,6 +59,17 @@ export async function PATCH(req: NextRequest) {
             return NextResponse.json({ error: "Teacher id is required" }, { status: 400 });
         }
 
+        // If only updating image_object_position, use raw SQL to avoid Prisma schema mismatch
+        if (data.imageObjectPosition !== undefined && Object.keys(data).length === 1) {
+            await prisma.$executeRaw`
+                UPDATE teachers
+                SET image_object_position = ${String(data.imageObjectPosition)}
+                WHERE id = ${id}
+            `;
+            return NextResponse.json({ success: true });
+        }
+
+        // Standard Prisma update for all other fields
         const updateData: Record<string, unknown> = {};
         if (data.name !== undefined) updateData.name = data.name;
         if (data.teacherId !== undefined) updateData.teacherId = data.teacherId;
@@ -54,7 +83,18 @@ export async function PATCH(req: NextRequest) {
         if (data.order !== undefined) updateData.order = data.order;
         if (data.leaveTrackingEnabled !== undefined) updateData.leaveTrackingEnabled = data.leaveTrackingEnabled;
 
-        await prisma.teacher.update({ where: { id }, data: updateData });
+        if (Object.keys(updateData).length > 0) {
+            await prisma.teacher.update({ where: { id }, data: updateData });
+        }
+
+        // Also update image_object_position via raw SQL if included alongside other fields
+        if (data.imageObjectPosition !== undefined) {
+            await prisma.$executeRaw`
+                UPDATE teachers
+                SET image_object_position = ${String(data.imageObjectPosition)}
+                WHERE id = ${id}
+            `;
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {
