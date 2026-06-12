@@ -1,49 +1,60 @@
 // ============================================================
-// routinesService — All Firestore calls replaced with API calls
+// routinesService — per-batch routine IMAGE (one image per batch)
 // ============================================================
 
-export interface ClassRoutine {
+export interface BatchRoutine {
     id: string;
-    title: string;
-    batch?: string;
-    date: string;
+    batchName: string;
     fileUrl: string;
-    uploadedByUid: string;
-    uploadedByName: string;
+    storagePath: string;
+    fileName: string;
+    uploadedBy?: string | null;
     createdAt: string | Date;
+    updatedAt: string | Date;
 }
 
-export const getClassRoutines = async (): Promise<ClassRoutine[]> => {
+/** Get the current routine image for a batch (or null if none uploaded). */
+export const getRoutineByBatch = async (batchName: string): Promise<BatchRoutine | null> => {
     try {
-        const res = await fetch("/api/routines", { cache: "no-store" });
-        if (!res.ok) return [];
-        return res.json();
+        const res = await fetch(`/api/routines?batchName=${encodeURIComponent(batchName)}`, { cache: "no-store" });
+        if (!res.ok) return null;
+        const list = await res.json();
+        return Array.isArray(list) && list.length > 0 ? list[0] : null;
     } catch {
-        return [];
+        return null;
     }
 };
 
-export const addClassRoutine = async (routine: Omit<ClassRoutine, "id" | "createdAt">): Promise<string> => {
+/**
+ * Upload (or replace) the routine image for a batch.
+ * Uploads the file, then records it — the API removes any previous image.
+ */
+export const uploadRoutineImage = async (batchName: string, file: File): Promise<BatchRoutine> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("folder", "routines");
+
+    const up = await fetch("/api/upload", { method: "POST", body: fd });
+    const upData = await up.json();
+    if (!up.ok) throw new Error(upData.error || "File upload failed.");
+
     const res = await fetch("/api/routines", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(routine),
+        body: JSON.stringify({
+            batchName,
+            fileUrl: upData.url,
+            storagePath: upData.url,
+            fileName: file.name,
+        }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Failed to add routine.");
-    return data.id;
+    if (!res.ok) throw new Error(data.error || "Failed to save routine.");
+    return data;
 };
 
-export const updateClassRoutine = async (id: string, updates: Partial<Omit<ClassRoutine, "id" | "createdAt">>): Promise<void> => {
-    const res = await fetch("/api/routines", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...updates }),
-    });
-    if (!res.ok) throw new Error("Failed to update routine.");
-};
-
-export const deleteClassRoutine = async (id: string): Promise<void> => {
+/** Delete a routine image by id. */
+export const deleteRoutine = async (id: string): Promise<void> => {
     const res = await fetch(`/api/routines?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete routine.");
 };
