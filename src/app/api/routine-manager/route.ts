@@ -14,12 +14,23 @@ export async function GET(req: NextRequest) {
     const batch = searchParams.get("batch");
 
     const where: any = {};
-    if (batch) where.batch = batch;
+    // Tolerant match: ignore surrounding spaces / casing differences between the
+    // student's stored batch name and the batch name saved on routine entries.
+    if (batch) where.batch = { equals: batch.trim(), mode: "insensitive" };
 
-    const entries = await prisma.batchRoutineEntry.findMany({
+    let entries = await prisma.batchRoutineEntry.findMany({
         where,
         orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
     });
+
+    // Fallback for DB-side stray whitespace that an insensitive equals won't catch.
+    if (batch && entries.length === 0) {
+        const target = batch.trim().toLowerCase();
+        const all = await prisma.batchRoutineEntry.findMany({
+            orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
+        });
+        entries = all.filter(e => (e.batch ?? "").trim().toLowerCase() === target);
+    }
 
     return NextResponse.json(entries);
 }

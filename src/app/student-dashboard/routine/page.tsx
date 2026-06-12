@@ -89,8 +89,41 @@ const getColorThemeFromCustom = (subject: string, customs: CustomCategory[]): Co
     return null;
 };
 
-const normalizeDay = (day: string): string =>
-    DAYS_ORDER.find(d => d.toLowerCase() === day?.toLowerCase().trim()) ?? day;
+// Admin may type the day column as "Monday", "Monday, 15-Jun", "Mon 15/6" etc.
+// Match by substring (full name first, then 3-letter abbreviation) so a date
+// suffix doesn't break the day-of-week lookup.
+const DAY_ABBR: Record<string, string> = {
+    sat: "Saturday", sun: "Sunday", mon: "Monday", tue: "Tuesday",
+    wed: "Wednesday", thu: "Thursday", fri: "Friday",
+};
+
+const normalizeDay = (day: string): string => {
+    if (!day) return day;
+    const lower = day.toLowerCase().trim();
+    const full = DAYS_ORDER.find(d => lower.includes(d.toLowerCase()));
+    if (full) return full;
+    for (const [abbr, name] of Object.entries(DAY_ABBR)) {
+        if (lower.includes(abbr)) return name;
+    }
+    return day;
+};
+
+// Pull the date portion out of a day cell like "Friday, 12-Jun" -> "12-Jun".
+// Returns "" when only a day name (or nothing) was entered.
+const extractDate = (raw: string): string => {
+    if (!raw) return "";
+    let s = raw.trim();
+    const lower = s.toLowerCase();
+    const full = DAYS_ORDER.find(d => lower.includes(d.toLowerCase()));
+    if (full) {
+        s = s.replace(new RegExp(full, "i"), "");
+    } else {
+        for (const abbr of Object.keys(DAY_ABBR)) {
+            if (lower.includes(abbr)) { s = s.replace(new RegExp(abbr, "i"), ""); break; }
+        }
+    }
+    return s.replace(/^[\s,/–—-]+/, "").replace(/[\s,]+$/, "").trim();
+};
 
 type EntryWithMeta = BatchRoutineEntry & { classNum: string };
 
@@ -185,18 +218,39 @@ export default function StudentRoutinePage() {
         return { uniqueTimeSlots: sorted, lookup: map };
     }, [visibleEntries]);
 
-    // Legend from visible entries only
+    // Date shown under each day header — parsed from the admin's day cells.
+    const dayDates = useMemo(() => {
+        const map: Record<string, string> = {};
+        entries.forEach(e => {
+            const day = normalizeDay(e.dayOfWeek);
+            if (map[day]) return;
+            const d = extractDate(e.dayOfWeek);
+            if (d) map[day] = d;
+        });
+        return map;
+    }, [entries]);
+    const hasAnyDate = useMemo(() => Object.keys(dayDates).length > 0, [dayDates]);
+
+    // Legend — one item per active category. Admin-entered count wins; if blank,
+    // fall back to auto-counting matching entries.
     const legendItems = useMemo(() => {
-        const seen: Record<string, { id: string; label: string; dot: string; count: number }> = {};
+        const auto: Record<string, number> = {};
         visibleEntries.forEach(e => {
             if (isBreakSubject(e.subject)) return;
             const theme = resolveTheme(e.subject);
             if (!theme) return;
-            if (!seen[theme.id]) seen[theme.id] = { id: theme.id, label: theme.label, dot: theme.dot, count: 0 };
-            seen[theme.id].count++;
+            auto[theme.id] = (auto[theme.id] || 0) + 1;
         });
-        return Object.values(seen);
-    }, [visibleEntries, resolveTheme]);
+        return activeCategories
+            .filter(cat => !hiddenByConfig.has(cat.id))
+            .map(cat => {
+                const manualRaw = (cat.count ?? "").toString().trim();
+                const manual = manualRaw === "" ? NaN : parseInt(manualRaw, 10);
+                const count = Number.isFinite(manual) ? manual : (auto[cat.id] || 0);
+                return { id: cat.id, label: cat.label, dot: cat.color, count };
+            })
+            .filter(item => item.count > 0);
+    }, [visibleEntries, activeCategories, hiddenByConfig, resolveTheme]);
 
     if (authLoading || loading) {
         return (
@@ -284,6 +338,27 @@ export default function StudentRoutinePage() {
                                         </th>
                                     ))}
                                 </tr>
+                                {hasAnyDate && (
+                                    <tr>
+                                        {["", ...DAYS_ORDER].map((d, i) => (
+                                            <th
+                                                key={d || `date-${i}`}
+                                                style={{
+                                                    backgroundColor: "#18336F",
+                                                    color: "#93C5FD",
+                                                    border: "1px solid #2D4FA0",
+                                                    padding: "6px 12px",
+                                                    fontSize: 11,
+                                                    fontWeight: 600,
+                                                    textAlign: "center",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {i === 0 ? "" : (dayDates[d] || "—")}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                )}
                             </thead>
                             <tbody>
                                 {uniqueTimeSlots.map(slot => {

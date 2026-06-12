@@ -3,6 +3,7 @@ export interface CustomCategory {
     label: string;
     keywords: string; // comma-separated, e.g. "sales,mkt,marketing"
     color: string;    // hex color, e.g. "#2563EB"
+    count?: string;   // admin-entered number of classes for this topic (legend)
 }
 
 export interface RoutineConfig {

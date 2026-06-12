@@ -172,7 +172,7 @@ export default function ManageRoutinePage() {
     const addCategory = () =>
         setCustomCategories(prev => [
             ...prev,
-            { id: Date.now().toString(), label: "New Category", keywords: "keyword1,keyword2", color: "#6B7280" },
+            { id: Date.now().toString(), label: "New Category", keywords: "keyword1,keyword2", color: "#6B7280", count: "" },
         ]);
 
     const deleteCategory = async (idx: number) => {
@@ -354,6 +354,12 @@ export default function ManageRoutinePage() {
                                         onChange={e => updateCategory(idx, "keywords", e.target.value)}
                                         placeholder="keyword1,keyword2 — subject এ থাকলে এই color পাবে"
                                         className="flex-1 px-2 py-1 text-xs text-gray-600 border border-gray-300 rounded focus:ring-1 focus:ring-blue-400 outline-none" />
+                                    <input value={cat.count ?? ""}
+                                        onChange={e => updateCategory(idx, "count", e.target.value.replace(/[^0-9]/g, ""))}
+                                        placeholder="ক্লাস"
+                                        inputMode="numeric"
+                                        title="এই টপিকে মোট কতগুলো ক্লাস (legend এ দেখাবে)"
+                                        className="w-16 flex-shrink-0 px-2 py-1 text-xs text-center text-gray-700 border border-gray-300 rounded focus:ring-1 focus:ring-blue-400 outline-none" />
                                     <button
                                         onClick={() => toggleVisibility(cat.id)}
                                         title={hiddenCategories.has(cat.id) ? "Hidden from students" : "Visible to students"}
@@ -373,7 +379,7 @@ export default function ManageRoutinePage() {
                             ))}
                         </div>
                         <p className="text-[11px] text-gray-400 mt-2">
-                            💡 Checkmark = students দেখবে · ✕ = delete · Color = color change
+                            💡 Checkmark = students দেখবে · ✕ = delete · Color = color change · &quot;ক্লাস&quot; = legend এ এই সংখ্যাটা দেখাবে (খালি রাখলে অটো গণনা)
                         </p>
                     </div>
                 )}

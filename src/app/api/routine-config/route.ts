@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         const rows = await prisma.$queryRaw<ConfigRow[]>`
             SELECT batch, title, subtitle, footer_text, hidden_categories, custom_categories
             FROM routine_configs
-            WHERE batch = ${batch}
+            WHERE LOWER(TRIM(batch)) = LOWER(TRIM(${batch}))
             LIMIT 1
         `;
         if (rows.length === 0) {
