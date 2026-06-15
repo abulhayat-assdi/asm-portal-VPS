@@ -11,12 +11,16 @@ export const runtime = "nodejs";
 async function removeUploadedFile(storagePath?: string | null) {
     if (!storagePath) return;
     try {
-        const publicDir = process.env.UPLOAD_DIR
-            ? path.resolve(process.env.UPLOAD_DIR)
-            : path.join(process.cwd(), "public");
-        const clean = storagePath.startsWith("/") ? storagePath.slice(1) : storagePath;
-        const filePath = path.resolve(publicDir, clean);
-        if (!filePath.startsWith(publicDir + path.sep)) return; // traversal guard
+        const storageBase = process.env.LOCAL_STORAGE_PATH
+            || process.env.UPLOAD_DIR
+            || path.join(process.cwd(), "public");
+        const clean = storagePath.startsWith("/api/uploads/")
+            ? storagePath.replace(/^\/api\/uploads\//, "")
+            : storagePath.startsWith("/")
+                ? storagePath.slice(1)
+                : storagePath;
+        const filePath = path.resolve(storageBase, clean);
+        if (!filePath.startsWith(storageBase + path.sep) && filePath !== storageBase) return; // traversal guard
         await unlink(filePath);
     } catch (e: any) {
         if (e?.code !== "ENOENT") console.warn("[Routines] could not delete old file:", e?.message);
@@ -35,7 +39,15 @@ export async function GET(req: NextRequest) {
     if (batchName) where.batchName = { equals: batchName.trim(), mode: "insensitive" };
 
     const routines = await prisma.routine.findMany({ where, orderBy: { createdAt: "desc" } });
-    return NextResponse.json(routines);
+
+    const normalized = routines.map(routine => ({
+        ...routine,
+        fileUrl: routine.fileUrl.startsWith("/api/uploads/")
+            ? routine.fileUrl
+            : `/api/uploads/${(routine.fileUrl.startsWith("/") ? routine.fileUrl.slice(1) : routine.fileUrl)}`,
+    }));
+
+    return NextResponse.json(normalized);
 }
 
 /**

@@ -18,6 +18,12 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
+function getStorageBase(): string {
+    return process.env.LOCAL_STORAGE_PATH
+        || process.env.UPLOAD_DIR
+        || path.join(process.cwd(), "public");
+}
+
 export async function POST(req: NextRequest) {
     const user = await getSessionUser(req);
     if (!user) {
@@ -46,13 +52,9 @@ export async function POST(req: NextRequest) {
         // Determine the upload directory
         const uploadSubDir = folder === "routines" ? "documents/routines" : folder;
 
-        // Resolve public dir: prefer UPLOAD_DIR env var (for VPS/standalone deployments),
-        // otherwise fall back to process.cwd()/public
-        const publicDir = process.env.UPLOAD_DIR
-            ? path.resolve(process.env.UPLOAD_DIR)
-            : path.join(process.cwd(), "public");
-        const uploadDir = path.resolve(publicDir, uploadSubDir);
-        if (!uploadDir.startsWith(publicDir + path.sep) && uploadDir !== publicDir) {
+        const storageBase = getStorageBase();
+        const uploadDir = path.resolve(storageBase, uploadSubDir);
+        if (!uploadDir.startsWith(storageBase + path.sep) && uploadDir !== storageBase) {
             return NextResponse.json({ error: "Forbidden: Invalid upload path" }, { status: 403 });
         }
 
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
         const bytes = await file.arrayBuffer();
         await writeFile(filePath, Buffer.from(bytes));
 
-        const url = `/${uploadSubDir}/${uniqueFilename}`;
+        const url = `/api/uploads/${uploadSubDir}/${uniqueFilename}`;
         return NextResponse.json({ url });
     } catch (error) {
         console.error("Error uploading file:", error);

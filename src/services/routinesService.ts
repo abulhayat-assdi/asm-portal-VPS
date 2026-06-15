@@ -13,13 +13,28 @@ export interface BatchRoutine {
     updatedAt: string | Date;
 }
 
+const normalizeRoutineUrl = (url: string): string => {
+    if (!url) return "";
+    if (url.startsWith("/api/uploads/")) return url;
+
+    const clean = url.startsWith("/") ? url.slice(1) : url;
+    return `/api/uploads/${clean}`;
+};
+
 /** Get the current routine image for a batch (or null if none uploaded). */
 export const getRoutineByBatch = async (batchName: string): Promise<BatchRoutine | null> => {
     try {
         const res = await fetch(`/api/routines?batchName=${encodeURIComponent(batchName)}`, { cache: "no-store" });
         if (!res.ok) return null;
         const list = await res.json();
-        return Array.isArray(list) && list.length > 0 ? list[0] : null;
+        if (!Array.isArray(list) || list.length === 0) return null;
+
+        const [first] = list;
+        return {
+            ...first,
+            fileUrl: normalizeRoutineUrl(first.fileUrl || first.storagePath || ""),
+            storagePath: first.storagePath || first.fileUrl || "",
+        };
     } catch {
         return null;
     }

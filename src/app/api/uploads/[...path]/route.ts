@@ -41,11 +41,10 @@ export async function GET(
     const storageBase = process.env.LOCAL_STORAGE_PATH
         || process.env.UPLOAD_DIR
         || path.resolve(process.cwd(), "public");
-    const uploadsRoot = path.join(storageBase, "uploads");
-    const absolutePath = path.resolve(uploadsRoot, relPath);
+    const absolutePath = path.resolve(storageBase, relPath);
 
     // Security: prevent path traversal
-    if (!absolutePath.startsWith(uploadsRoot)) {
+    if (!absolutePath.startsWith(storageBase + path.sep) && absolutePath !== storageBase) {
         return new NextResponse("Forbidden", { status: 403 });
     }
 
