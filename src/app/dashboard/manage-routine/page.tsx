@@ -6,9 +6,12 @@ import Button from "@/components/ui/Button";
 import { getBatches } from "@/services/scheduleService";
 import { getRoutineByBatch, uploadRoutineImage, deleteRoutine, BatchRoutine } from "@/services/routinesService";
 import { useConfirm } from "@/contexts/ConfirmContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ManageRoutinePage() {
     const confirm = useConfirm();
+    const { hasPermission } = useAuth();
+    const canManageRoutine = hasPermission("routine");
     const [batches, setBatches] = useState<{ id: string; name: string; status: string }[]>([]);
     const [loadingBatches, setLoadingBatches] = useState(true);
     const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
@@ -83,8 +86,13 @@ export default function ManageRoutinePage() {
                 <h1 className="no-gradient text-2xl font-bold text-[#1f2937] mb-6">Manage Class Routine</h1>
                 <Card className="max-w-xl mx-auto shadow-sm border border-[#e5e7eb]">
                     <CardBody className="p-6">
-                        <h2 className="no-gradient text-lg font-semibold text-gray-800 mb-1">Select Batch to Upload Routine</h2>
-                        <p className="text-sm text-gray-500 mb-4">ব্যাচ সিলেক্ট করে সেই ব্যাচের রুটিন ইমেজ আপলোড করুন।</p>
+                        <h2 className="no-gradient text-lg font-semibold text-gray-800 mb-1">Select Batch to View Routine</h2>
+                        <p className="text-sm text-gray-500 mb-4">ব্যাচ সিলেক্ট করে এই সেকশনের রুটিন ইমেজ দেখতে পারবেন। আপলোড/replace শুধু Routine access থাকলে সম্ভব।</p>
+                        {!canManageRoutine && (
+                            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                                View-only mode: you can inspect the selected routine image, but editing is disabled.
+                            </div>
+                        )}
                         {loadingBatches ? (
                             <p className="text-gray-500">Loading batches...</p>
                         ) : batches.length === 0 ? (
@@ -132,7 +140,7 @@ export default function ManageRoutinePage() {
                     />
 
                     {loadingRoutine ? (
-                        <div className="py-16 text-center text-gray-500">Loading...</div>
+                        <div className="py-16 text-center text-gray-500">Loading routine...</div>
                     ) : routine ? (
                         <div className="space-y-4">
                             <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
@@ -141,25 +149,29 @@ export default function ManageRoutinePage() {
                             </div>
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <p className="text-xs text-gray-400 truncate">{routine.fileName}</p>
-                                <div className="flex gap-2">
-                                    <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                                        {uploading ? "Uploading..." : "Replace Image"}
-                                    </Button>
-                                    <Button variant="outline" className="bg-white text-red-600 border-red-300 hover:bg-red-50" onClick={handleDelete} disabled={uploading}>
-                                        Delete
-                                    </Button>
-                                </div>
+                                {canManageRoutine ? (
+                                    <div className="flex gap-2">
+                                        <Button onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                                            {uploading ? "Uploading..." : "Replace Image"}
+                                        </Button>
+                                        <Button variant="outline" className="bg-white text-red-600 border-red-300 hover:bg-red-50" onClick={handleDelete} disabled={uploading}>
+                                            Delete
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">View only</span>
+                                )}
                             </div>
                         </div>
                     ) : (
                         <button
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={uploading}
+                            onClick={() => canManageRoutine ? fileInputRef.current?.click() : undefined}
+                            disabled={uploading || !canManageRoutine}
                             className="w-full py-16 border-2 border-dashed border-gray-300 rounded-xl text-center hover:border-emerald-500 hover:bg-emerald-50/40 transition-colors disabled:opacity-60"
                         >
                             <div className="text-5xl mb-3">🖼️</div>
-                            <p className="font-semibold text-gray-700">{uploading ? "Uploading..." : "রুটিন ইমেজ আপলোড করুন"}</p>
-                            <p className="text-sm text-gray-400 mt-1">JPG / PNG / WebP — ক্লিক করে ফাইল সিলেক্ট করুন</p>
+                            <p className="font-semibold text-gray-700">{uploading ? "Uploading..." : canManageRoutine ? "রুটিন ইমেজ আপলোড করুন" : "No routine image uploaded yet"}</p>
+                            <p className="text-sm text-gray-400 mt-1">{canManageRoutine ? "JPG / PNG / WebP — ক্লিক করে ফাইল সিলেক্ট করুন" : "এই ব্যাচের রুটিন দেখার জন্য শুধু view mode।"}</p>
                         </button>
                     )}
                 </CardBody>

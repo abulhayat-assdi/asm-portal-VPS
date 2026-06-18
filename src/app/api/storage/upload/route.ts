@@ -11,9 +11,11 @@ export const runtime = "nodejs";
  * Uses LOCAL_STORAGE_PATH (Docker volume) → UPLOAD_DIR → <cwd>/public fallback.
  */
 function getStorageBase(): string {
-    return process.env.LOCAL_STORAGE_PATH
-        || process.env.UPLOAD_DIR
-        || path.resolve(process.cwd(), "public");
+    const configured = process.env.LOCAL_STORAGE_PATH || process.env.UPLOAD_DIR;
+    if (configured) {
+        return path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
+    }
+    return path.resolve(process.cwd(), "public");
 }
 
 /**

@@ -19,9 +19,11 @@ const ALLOWED_MIME_TYPES = new Set([
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 function getStorageBase(): string {
-    return process.env.LOCAL_STORAGE_PATH
-        || process.env.UPLOAD_DIR
-        || path.join(process.cwd(), "public");
+    const configured = process.env.LOCAL_STORAGE_PATH || process.env.UPLOAD_DIR;
+    if (configured) {
+        return path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
+    }
+    return path.resolve(process.cwd(), "public");
 }
 
 export async function POST(req: NextRequest) {

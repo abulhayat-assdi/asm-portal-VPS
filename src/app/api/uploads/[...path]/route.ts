@@ -38,13 +38,17 @@ export async function GET(
     const { path: segments } = await params;
     const relPath = segments.map(s => s.replace(/\.\./g, "")).join("/");
 
-    const storageBase = process.env.LOCAL_STORAGE_PATH
-        || process.env.UPLOAD_DIR
-        || path.resolve(process.cwd(), "public");
-    const absolutePath = path.resolve(storageBase, relPath);
+    const configured = process.env.LOCAL_STORAGE_PATH || process.env.UPLOAD_DIR;
+    const storageBase = configured
+        ? (path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured))
+        : path.resolve(process.cwd(), "public");
+    const primaryPath = path.resolve(storageBase, relPath);
+    const fallbackPath = path.resolve(process.cwd(), "public", relPath);
+    const absolutePath = fs.existsSync(primaryPath) ? primaryPath : fallbackPath;
 
     // Security: prevent path traversal
-    if (!absolutePath.startsWith(storageBase + path.sep) && absolutePath !== storageBase) {
+    const allowedBase = fs.existsSync(primaryPath) ? storageBase : path.resolve(process.cwd(), "public");
+    if (!absolutePath.startsWith(allowedBase + path.sep) && absolutePath !== allowedBase) {
         return new NextResponse("Forbidden", { status: 403 });
     }
 

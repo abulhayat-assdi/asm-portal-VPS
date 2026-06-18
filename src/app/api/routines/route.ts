@@ -1,26 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
+import fs from "fs";
 import { unlink } from "fs/promises";
 import path from "path";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function getStorageBase(): string {
+    const configured = process.env.LOCAL_STORAGE_PATH || process.env.UPLOAD_DIR;
+    return configured
+        ? (path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured))
+        : path.resolve(process.cwd(), "public");
+}
+
+function resolveRoutineFilePath(storagePath: string): string {
+    const clean = storagePath.startsWith("/api/uploads/")
+        ? storagePath.replace(/^\/api\/uploads\//, "")
+        : storagePath.startsWith("/")
+            ? storagePath.slice(1)
+            : storagePath;
+
+    const storageBase = getStorageBase();
+    const primaryPath = path.resolve(storageBase, clean);
+    const fallbackPath = path.resolve(process.cwd(), "public", clean);
+    return fs.existsSync(primaryPath) ? primaryPath : fallbackPath;
+}
+
 // Best-effort removal of a previously uploaded file from disk.
 async function removeUploadedFile(storagePath?: string | null) {
     if (!storagePath) return;
     try {
-        const storageBase = process.env.LOCAL_STORAGE_PATH
-            || process.env.UPLOAD_DIR
-            || path.join(process.cwd(), "public");
+        const configured = process.env.LOCAL_STORAGE_PATH || process.env.UPLOAD_DIR;
+        const storageBase = configured
+            ? (path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured))
+            : path.resolve(process.cwd(), "public");
         const clean = storagePath.startsWith("/api/uploads/")
             ? storagePath.replace(/^\/api\/uploads\//, "")
             : storagePath.startsWith("/")
                 ? storagePath.slice(1)
                 : storagePath;
-        const filePath = path.resolve(storageBase, clean);
-        if (!filePath.startsWith(storageBase + path.sep) && filePath !== storageBase) return; // traversal guard
+        const primaryPath = path.resolve(storageBase, clean);
+        const fallbackPath = path.resolve(process.cwd(), "public", clean);
+        const filePath = await (async () => {
+            if (await import("fs/promises").then(m => m.access(primaryPath).then(() => true).catch(() => false))) return primaryPath;
+            return fs.existsSync(fallbackPath) ? fallbackPath : primaryPath;
+        })();
+        const allowedBase = fs.existsSync(primaryPath) ? storageBase : path.resolve(process.cwd(), "public");
+        if (!filePath.startsWith(allowedBase + path.sep) && filePath !== allowedBase) return;
         await unlink(filePath);
     } catch (e: any) {
         if (e?.code !== "ENOENT") console.warn("[Routines] could not delete old file:", e?.message);
@@ -40,7 +68,20 @@ export async function GET(req: NextRequest) {
 
     const routines = await prisma.routine.findMany({ where, orderBy: { createdAt: "desc" } });
 
-    const normalized = routines.map(routine => ({
+    const existingRoutines = routines.filter((routine) => {
+        const filePath = resolveRoutineFilePath(routine.storagePath || routine.fileUrl);
+        return fs.existsSync(filePath);
+    });
+
+    const missingIds = routines
+        .filter((routine) => !existingRoutines.some((item) => item.id === routine.id))
+        .map((routine) => routine.id);
+
+    if (missingIds.length > 0) {
+        await prisma.routine.deleteMany({ where: { id: { in: missingIds } } });
+    }
+
+    const normalized = existingRoutines.map(routine => ({
         ...routine,
         fileUrl: routine.fileUrl.startsWith("/api/uploads/")
             ? routine.fileUrl
