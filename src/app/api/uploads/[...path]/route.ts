@@ -42,8 +42,15 @@ export async function GET(
     const storageBase = configured
         ? (path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured))
         : path.resolve(process.cwd(), "public");
-    const primaryPath = path.resolve(storageBase, relPath);
-    const fallbackPath = path.resolve(process.cwd(), "public", relPath);
+
+    // Files are saved as storageBase/uploads/<relPath> by the upload route.
+    // The URL /uploads/<relPath> is rewritten to /api/uploads/<relPath>, so
+    // segments already has the path *after* /uploads/. We must prepend "uploads/"
+    // to look up the correct location on disk.
+    const relPathWithPrefix = `uploads/${relPath}`;
+    const primaryPath = path.resolve(storageBase, relPathWithPrefix);
+    // Fallback: check public/uploads/ (for local dev without LOCAL_STORAGE_PATH)
+    const fallbackPath = path.resolve(process.cwd(), "public", relPathWithPrefix);
     const absolutePath = fs.existsSync(primaryPath) ? primaryPath : fallbackPath;
 
     // Security: prevent path traversal
