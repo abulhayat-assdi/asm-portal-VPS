@@ -239,7 +239,7 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     const hasSkills = Array.isArray(data.skills) && data.skills.length > 0;
     const hasLangs = Array.isArray(data.languages) && data.languages.length > 0;
     const hasHobbies = Array.isArray(data.hobbies) && data.hobbies.length > 0;
-    const personalFields = [data.dateOfBirth, data.bloodGroup, data.religion, data.maritalStatus, data.nationality].filter(Boolean);
+    const personalFields = [data.dateOfBirth, data.bloodGroup, data.religion, data.maritalStatus, data.nationality].filter(Boolean) as string[];
     const hasPersonal = personalFields.length > 0;
 
     const addSidebarSection = (contentHeight: number) => {
