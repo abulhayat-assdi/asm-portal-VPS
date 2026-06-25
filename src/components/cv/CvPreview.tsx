@@ -10,7 +10,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
     const color = config.sidebarColor || "#1e3a5f";
     const initial = data.fullName?.charAt(0)?.toUpperCase() ?? "?";
 
-    const { scale, spacingScale } = getCvDensityScale(data);
+    const { scale, spacingScale } = getCvDensityScale(data, config);
     const sz = (baseRem: number) => `${(baseRem * scale).toFixed(3)}rem`;
     const sp = (basePx: number) => Math.max(1, Math.round(basePx * spacingScale));
 

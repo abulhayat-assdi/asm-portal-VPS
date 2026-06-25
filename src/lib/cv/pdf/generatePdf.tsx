@@ -218,7 +218,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
     const showPhoto = rawCfg?.showPhoto !== false;
     const photoShape = rawCfg?.photoShape ?? 'circle';
 
-    const { scale, spacingScale } = getCvDensityScale(data);
+    const { scale, spacingScale } = getCvDensityScale(data, rawCfg as TemplateConfig);
     const s = buildStyles(sidebarColor, sidebarWidth, scale, spacingScale);
     const initial = data.fullName ? data.fullName.charAt(0).toUpperCase() : '?';
     const photoContainer = photoShape === 'circle' ? s.photoCircle : s.photoSquare;
