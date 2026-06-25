@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { CvPreview } from "@/components/cv/CvPreview";
+import { CvPreview, A4ScaledPreview } from "@/components/cv/CvPreview";
 import type { CvFormData } from "@/lib/cv/schemas";
 import type { TemplateConfig } from "@/lib/cv/constants";
 
@@ -571,8 +571,8 @@ export default function CvManagerPage() {
                                 </div>
                             )}
                             {!previewLoading && previewData && previewConfig && (
-                                <div className="mx-auto rounded-xl border border-gray-200 shadow overflow-hidden" style={{ aspectRatio: "210/297", maxWidth: 560 }}>
-                                    <CvPreview data={previewData} config={previewConfig} fillHeight />
+                                <div className="mx-auto rounded-xl border border-gray-200 shadow overflow-hidden" style={{ maxWidth: 560 }}>
+                                    <A4ScaledPreview data={previewData} config={previewConfig} />
                                 </div>
                             )}
                         </div>

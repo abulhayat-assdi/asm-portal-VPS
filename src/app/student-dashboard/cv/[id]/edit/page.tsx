@@ -8,7 +8,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 import toast from "react-hot-toast";
 import compressImage from "browser-image-compression";
 import { cvFormSchema, type CvFormData, type CvDraftFull } from "@/lib/cv/schemas";
-import { CvPreview } from "@/components/cv/CvPreview";
+import { CvPreview, A4ScaledPreview } from "@/components/cv/CvPreview";
 import {
     SECTION_LABELS,
     MAIN_SECTION_KEYS,
@@ -864,8 +864,8 @@ export default function CvEditorPage() {
                     <div className="sticky top-32">
                         <h3 className="font-bold text-gray-600 text-xs uppercase tracking-widest mb-3">Live Preview (A4)</h3>
                         {/* A4 ratio: 210mm × 297mm = 1 : 1.4142 */}
-                        <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden" style={{ aspectRatio: "210/297", overflowY: "auto" }}>
-                            <CvPreview data={watchedValues} config={config} fillHeight />
+                        <div className="rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                            <A4ScaledPreview data={watchedValues} config={config} />
                         </div>
                     </div>
                 </div>

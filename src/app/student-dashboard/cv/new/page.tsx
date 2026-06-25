@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { CvPreview } from "@/components/cv/CvPreview";
+import { CvPreview, A4ScaledPreview } from "@/components/cv/CvPreview";
 import type { CvFormData } from "@/lib/cv/schemas";
 import type { TemplateConfig } from "@/lib/cv/constants";
 
@@ -174,37 +174,7 @@ function ScaledCvPreview({ data, config }: { data: CvFormData; config: TemplateC
     );
 }
 
-// A4 fixed-size preview — sidebar extends full page, exactly like PDF output
-function A4ScaledPreview({ data, config }: { data: CvFormData; config: TemplateConfig }) {
-    const wrapRef = useRef<HTMLDivElement>(null);
-    const [scale, setScale] = useState(0.7);
 
-    useEffect(() => {
-        const el = wrapRef.current;
-        if (!el) return;
-        const update = () => setScale(el.getBoundingClientRect().width / PREVIEW_WIDTH);
-        const ro = new ResizeObserver(update);
-        ro.observe(el);
-        update();
-        return () => ro.disconnect();
-    }, []);
-
-    return (
-        <div ref={wrapRef} style={{ width: "100%", height: Math.round(PREVIEW_HEIGHT * scale), overflow: "hidden", position: "relative" }}>
-            <div style={{
-                width: PREVIEW_WIDTH,
-                height: PREVIEW_HEIGHT,
-                position: "absolute",
-                top: 0, left: 0,
-                transformOrigin: "top left",
-                transform: `scale(${scale})`,
-                pointerEvents: "none",
-            }}>
-                <CvPreview data={data} config={config} fillHeight />
-            </div>
-        </div>
-    );
-}
 
 // Zoomed A4 modal
 function TemplateViewModal({

@@ -32,7 +32,7 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         page: { flexDirection: 'row', backgroundColor: '#ffffff', fontSize: sz(10.5), fontFamily: 'Helvetica' },
 
         // Sidebar
-        sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, padding: `${sp(20)} ${sp(14)}`, flexDirection: 'column' },
+        sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, paddingTop: sp(20), paddingLeft: sp(14), paddingRight: sp(14), paddingBottom: 36, flexDirection: 'column' },
         photoWrap: { alignSelf: 'center', marginBottom: sp(10) },
         photoCircle: { width: sz(72), height: sz(72), borderRadius: sz(36), overflow: 'hidden', border: `${sz(2)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
         photoSquare: { width: sz(72), height: sz(72), borderRadius: sz(6), overflow: 'hidden', border: `${sz(2)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
@@ -62,7 +62,7 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         bulletText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(9.5), flex: 1, lineHeight: 1.4 },
 
         // Main content
-        main: { width: `${main}%`, backgroundColor: '#ffffff', padding: `${sp(20)} ${sp(18)} ${sp(24)} ${sp(18)}`, flexDirection: 'column' },
+        main: { width: `${main}%`, backgroundColor: '#ffffff', paddingTop: sp(20), paddingLeft: sp(18), paddingRight: sp(18), paddingBottom: 36, flexDirection: 'column' },
         mainName: { fontSize: sz(25), fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: sp(14), lineHeight: 1.2 },
 
         mainSection: { marginBottom: sp(10) },

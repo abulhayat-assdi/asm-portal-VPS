@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { CvFormData } from "@/lib/cv/schemas";
 import { SECTION_LABELS, type TemplateConfig } from "@/lib/cv/constants";
 import { getCvDensityScale } from "@/lib/cv/density";
@@ -126,7 +126,21 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
         <div style={{ background: "#fff", overflow: "hidden", fontSize: sz(0.85), fontFamily: "sans-serif", height: fillHeight ? "100%" : "auto" }}>
             <div style={{ display: "flex", flexDirection: "row", height: fillHeight ? "100%" : "auto", minHeight: 400 }}>
                 {/* Sidebar */}
-                <div style={{ flexShrink: 0, width: `${sw}%`, minWidth: `${sw}%`, backgroundColor: color, padding: `${sp(20)}px ${sp(14)}px`, color: "#fff", display: "flex", flexDirection: "column", gap: sp(12), boxSizing: "border-box" }}>
+                <div style={{
+                    flexShrink: 0,
+                    width: `${sw}%`,
+                    minWidth: `${sw}%`,
+                    backgroundColor: color,
+                    paddingTop: `${sp(20)}px`,
+                    paddingLeft: `${sp(14)}px`,
+                    paddingRight: `${sp(14)}px`,
+                    paddingBottom: "48px",
+                    color: "#fff",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: sp(12),
+                    boxSizing: "border-box"
+                }}>
                     {config.showPhoto !== false && (
                         <div style={{ alignSelf: "center" }}>
                             <div style={{ width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: `${Math.max(1, Math.round(2 * scale))}px solid rgba(255,255,255,0.4)`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -182,7 +196,18 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 </div>
 
                 {/* Main column */}
-                <div style={{ flex: 1, minWidth: 0, padding: `${sp(20)}px ${sp(18)}px ${sp(24)}px ${sp(18)}px`, display: "flex", flexDirection: "column", gap: sp(12), boxSizing: "border-box" }}>
+                <div style={{
+                    flex: 1,
+                    minWidth: 0,
+                    paddingTop: `${sp(20)}px`,
+                    paddingLeft: `${sp(18)}px`,
+                    paddingRight: `${sp(18)}px`,
+                    paddingBottom: "48px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: sp(12),
+                    boxSizing: "border-box"
+                }}>
                     {data.fullName && <p style={{ fontWeight: 900, fontSize: sz(1.1), color, marginBottom: sp(6) }}>{data.fullName}</p>}
                     {mainOrder.map(key => (
                         <React.Fragment key={key}>
@@ -190,6 +215,40 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                         </React.Fragment>
                     ))}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+const PREVIEW_WIDTH  = 794;
+const PREVIEW_HEIGHT = 1123; // A4 at 96 dpi: 794 × (297/210)
+
+export function A4ScaledPreview({ data, config }: { data: CvFormData; config: TemplateConfig }) {
+    const wrapRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(0.7);
+
+    useEffect(() => {
+        const el = wrapRef.current;
+        if (!el) return;
+        const update = () => setScale(el.getBoundingClientRect().width / PREVIEW_WIDTH);
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        update();
+        return () => ro.disconnect();
+    }, []);
+
+    return (
+        <div ref={wrapRef} style={{ width: "100%", height: Math.round(PREVIEW_HEIGHT * scale), overflow: "hidden", position: "relative" }}>
+            <div style={{
+                width: PREVIEW_WIDTH,
+                height: PREVIEW_HEIGHT,
+                position: "absolute",
+                top: 0, left: 0,
+                transformOrigin: "top left",
+                transform: `scale(${scale})`,
+                pointerEvents: "none",
+            }}>
+                <CvPreview data={data} config={config} fillHeight />
             </div>
         </div>
     );

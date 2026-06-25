@@ -101,29 +101,29 @@ export function getCvDensityScale(data: CvDensityData) {
     let spacingScale = 1.0;
 
     if (totalScore <= 12) {
-        scale = 1.30;
-        spacingScale = 1.80; // Make spacing larger to fill up the A4 page
+        scale = 1.20;
+        spacingScale = 1.50; // Make spacing larger to fill up the A4 page
     } else if (totalScore <= 18) {
-        scale = 1.22;
-        spacingScale = 1.50;
+        scale = 1.05;
+        spacingScale = 1.10;
     } else if (totalScore <= 25) {
-        scale = 1.15;
-        spacingScale = 1.25;
-    } else if (totalScore <= 32) {
-        scale = 1.08;
-        spacingScale = 1.05;
-    } else if (totalScore <= 38) {
-        scale = 1.00;
-        spacingScale = 0.90;
-    } else if (totalScore <= 45) {
         scale = 0.92;
-        spacingScale = 0.75;
-    } else if (totalScore <= 52) {
+        spacingScale = 0.80;
+    } else if (totalScore <= 32) {
         scale = 0.85;
-        spacingScale = 0.60;
-    } else {
+        spacingScale = 0.65;
+    } else if (totalScore <= 38) {
         scale = 0.78;
-        spacingScale = 0.45; // Pack tightly to fit on one A4 page
+        spacingScale = 0.52;
+    } else if (totalScore <= 45) {
+        scale = 0.72;
+        spacingScale = 0.42;
+    } else if (totalScore <= 52) {
+        scale = 0.68;
+        spacingScale = 0.35;
+    } else {
+        scale = 0.63;
+        spacingScale = 0.28; // Pack tightly to fit on one A4 page
     }
 
     return { scale, spacingScale };
