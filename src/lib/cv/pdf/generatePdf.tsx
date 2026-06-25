@@ -62,7 +62,7 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         bulletText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(9.5), flex: 1, lineHeight: 1.4 },
 
         // Main content
-        main: { width: `${main}%`, backgroundColor: '#ffffff', padding: `${sp(20)} ${sp(18)}`, flexDirection: 'column' },
+        main: { width: `${main}%`, backgroundColor: '#ffffff', padding: `${sp(20)} ${sp(18)} ${sp(24)} ${sp(18)}`, flexDirection: 'column' },
         mainName: { fontSize: sz(25), fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: sp(14), lineHeight: 1.2 },
 
         mainSection: { marginBottom: sp(10) },

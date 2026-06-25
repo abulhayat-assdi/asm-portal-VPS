@@ -47,14 +47,14 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
         switch (key) {
             case "careerObjective":
                 return data.careerObjective ? (
-                    <div style={{ marginBottom: sp(10) }}>
+                    <div>
                         <h4 style={mSH(color)}>Career Objective</h4>
                         <p style={{ fontSize: sz(0.74), color: "#333", lineHeight: 1.6 }}>{data.careerObjective}</p>
                     </div>
                 ) : null;
             case "workExperience":
                 return data.workExperience?.length ? (
-                    <div style={{ marginBottom: sp(10) }}>
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.workExperience}</h4>
                         {data.workExperience.map((item, i) => (
                             <div key={i} style={{ marginBottom: sp(8) }}>
@@ -67,7 +67,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 ) : null;
             case "training":
                 return data.training?.length ? (
-                    <div style={{ marginBottom: sp(10) }}>
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.training}</h4>
                         {data.training.map((item, i) => (
                             <div key={i} style={{ marginBottom: sp(8) }}>
@@ -80,7 +80,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 ) : null;
             case "education":
                 return data.education?.length ? (
-                    <div style={{ marginBottom: sp(10) }}>
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.education}</h4>
                         {data.education.map((item, i) => (
                             <div key={i} style={{ marginBottom: sp(8) }}>
@@ -96,7 +96,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 ) : null;
             case "references":
                 return data.references?.length ? (
-                    <div style={{ marginBottom: sp(10) }}>
+                    <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.references}</h4>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: sp(10) }}>
                             {data.references.map((ref, i) => (
@@ -113,7 +113,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 ) : null;
             case "declaration":
                 return data.declaration ? (
-                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: sp(10), marginTop: sp(10) }}>
+                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: sp(10), marginTop: sp(4) }}>
                         <p style={{ fontSize: sz(0.70), color: "#444", lineHeight: 1.5, fontStyle: "italic" }}>{data.declaration}</p>
                         {data.signature && <p style={{ fontSize: sz(0.76), color: "#222", fontWeight: 700, textAlign: "right", marginTop: sp(6) }}>{data.signature}</p>}
                     </div>
@@ -182,7 +182,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 </div>
 
                 {/* Main column */}
-                <div style={{ flex: 1, minWidth: 0, padding: `${sp(20)}px ${sp(18)}px`, display: "flex", flexDirection: "column", gap: sp(12), boxSizing: "border-box" }}>
+                <div style={{ flex: 1, minWidth: 0, padding: `${sp(20)}px ${sp(18)}px ${sp(24)}px ${sp(18)}px`, display: "flex", flexDirection: "column", gap: sp(12), boxSizing: "border-box" }}>
                     {data.fullName && <p style={{ fontWeight: 900, fontSize: sz(1.1), color, marginBottom: sp(6) }}>{data.fullName}</p>}
                     {mainOrder.map(key => (
                         <React.Fragment key={key}>
