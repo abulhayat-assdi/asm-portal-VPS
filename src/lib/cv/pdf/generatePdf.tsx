@@ -17,73 +17,79 @@ import type {
     CvReferenceItem,
 } from '../schemas';
 import { SECTION_LABELS, type TemplateConfig } from '../constants';
+import { getCvDensityScale } from '../density';
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
-function buildStyles(sidebarColor: string, sidebarWidthPct: number) {
+function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: number, spacingScale: number) {
     const main = 100 - sidebarWidthPct;
+    
+    // Scale helpers
+    const sz = (base: number) => Math.round(base * scale * 10) / 10;
+    const sp = (base: number) => Math.round(base * spacingScale * 10) / 10;
+
     return StyleSheet.create({
-        page: { flexDirection: 'row', backgroundColor: '#ffffff', fontSize: 9, fontFamily: 'Helvetica' },
+        page: { flexDirection: 'row', backgroundColor: '#ffffff', fontSize: sz(9), fontFamily: 'Helvetica' },
 
         // Sidebar
-        sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, padding: '20 14', flexDirection: 'column' },
-        photoWrap: { alignSelf: 'center', marginBottom: 10 },
-        photoCircle: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden', border: '2 solid rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-        photoSquare: { width: 72, height: 72, borderRadius: 6, overflow: 'hidden', border: '2 solid rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-        photoImg: { width: 72, height: 72, objectFit: 'cover' },
-        photoInitial: { color: '#fff', fontSize: 28, fontFamily: 'Helvetica-Bold' },
-        sidebarName: { color: '#fff', fontSize: 13, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: 14, lineHeight: 1.3 },
+        sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, padding: `${sp(20)} ${sp(14)}`, flexDirection: 'column' },
+        photoWrap: { alignSelf: 'center', marginBottom: sp(10) },
+        photoCircle: { width: sz(72), height: sz(72), borderRadius: sz(36), overflow: 'hidden', border: `${sz(2)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+        photoSquare: { width: sz(72), height: sz(72), borderRadius: sz(6), overflow: 'hidden', border: `${sz(2)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+        photoImg: { width: sz(72), height: sz(72), objectFit: 'cover' },
+        photoInitial: { color: '#fff', fontSize: sz(28), fontFamily: 'Helvetica-Bold' },
+        sidebarName: { color: '#fff', fontSize: sz(13), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(14), lineHeight: 1.3 },
 
-        sidebarSection: { marginBottom: 12 },
+        sidebarSection: { marginBottom: sp(12) },
         sidebarHeading: {
-            color: 'rgba(255,255,255,0.85)', fontSize: 7, fontFamily: 'Helvetica-Bold',
-            letterSpacing: 1.2, textTransform: 'uppercase', borderBottom: '0.5 solid rgba(255,255,255,0.35)',
-            paddingBottom: 3, marginBottom: 6,
+            color: 'rgba(255,255,255,0.85)', fontSize: sz(7), fontFamily: 'Helvetica-Bold',
+            letterSpacing: 1.2, textTransform: 'uppercase', borderBottom: `${sz(0.5)} solid rgba(255,255,255,0.35)`,
+            paddingBottom: sp(3), marginBottom: sp(6),
         },
-        sidebarRow: { flexDirection: 'row', marginBottom: 3, alignItems: 'flex-start' },
-        sidebarIcon: { color: 'rgba(255,255,255,0.7)', fontSize: 8, width: 12, marginRight: 3, marginTop: 1 },
-        sidebarText: { color: 'rgba(255,255,255,0.9)', fontSize: 8, flex: 1, lineHeight: 1.4 },
-        sidebarLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 7.5, width: 68, lineHeight: 1.4 },
-        sidebarValue: { color: 'rgba(255,255,255,0.9)', fontSize: 7.5, flex: 1, lineHeight: 1.4 },
-        skillBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 3, paddingTop: 2, paddingBottom: 2, paddingLeft: 6, paddingRight: 6, marginBottom: 4, marginRight: 4 },
-        skillText: { color: '#fff', fontSize: 7.5 },
+        sidebarRow: { flexDirection: 'row', marginBottom: sp(3), alignItems: 'flex-start' },
+        sidebarIcon: { color: 'rgba(255,255,255,0.7)', fontSize: sz(8), width: sz(12), marginRight: sz(3), marginTop: sz(1) },
+        sidebarText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8), flex: 1, lineHeight: 1.4 },
+        sidebarLabel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.5), width: sz(68), lineHeight: 1.4 },
+        sidebarValue: { color: 'rgba(255,255,255,0.9)', fontSize: sz(7.5), flex: 1, lineHeight: 1.4 },
+        skillBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: sz(3), paddingTop: sp(2), paddingBottom: sp(2), paddingLeft: sp(6), paddingRight: sp(6), marginBottom: sp(4), marginRight: sp(4) },
+        skillText: { color: '#fff', fontSize: sz(7.5) },
         skillsRow: { flexDirection: 'row', flexWrap: 'wrap' },
-        langRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
-        langName: { color: 'rgba(255,255,255,0.9)', fontSize: 8 },
-        langLevel: { color: 'rgba(255,255,255,0.6)', fontSize: 7.5 },
-        bulletItem: { flexDirection: 'row', marginBottom: 3 },
-        bulletDot: { color: 'rgba(255,255,255,0.7)', fontSize: 8, width: 10 },
-        bulletText: { color: 'rgba(255,255,255,0.9)', fontSize: 8, flex: 1, lineHeight: 1.4 },
+        langRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: sp(3) },
+        langName: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8) },
+        langLevel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.5) },
+        bulletItem: { flexDirection: 'row', marginBottom: sp(3) },
+        bulletDot: { color: 'rgba(255,255,255,0.7)', fontSize: sz(8), width: sz(10) },
+        bulletText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8), flex: 1, lineHeight: 1.4 },
 
         // Main content
-        main: { width: `${main}%`, backgroundColor: '#ffffff', padding: '20 18', flexDirection: 'column' },
-        mainName: { fontSize: 22, fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: 14, lineHeight: 1.2 },
+        main: { width: `${main}%`, backgroundColor: '#ffffff', padding: `${sp(20)} ${sp(18)}`, flexDirection: 'column' },
+        mainName: { fontSize: sz(22), fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: sp(14), lineHeight: 1.2 },
 
-        mainSection: { marginBottom: 10 },
+        mainSection: { marginBottom: sp(10) },
         mainHeading: {
-            fontSize: 10, fontFamily: 'Helvetica-Bold', color: sidebarColor,
-            textTransform: 'uppercase', borderBottom: `1.5 solid ${sidebarColor}`,
-            paddingBottom: 2, marginBottom: 6, letterSpacing: 0.5,
+            fontSize: sz(10), fontFamily: 'Helvetica-Bold', color: sidebarColor,
+            textTransform: 'uppercase', borderBottom: `${sz(1.5)} solid ${sidebarColor}`,
+            paddingBottom: sp(2), marginBottom: sp(6), letterSpacing: 0.5,
         },
-        objectiveTxt: { fontSize: 8.5, color: '#333', lineHeight: 1.6 },
+        objectiveTxt: { fontSize: sz(8.5), color: '#333', lineHeight: 1.6 },
 
-        entryBlock: { marginBottom: 7 },
-        entryTitle: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
-        entrySubRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 1 },
-        entryOrg: { fontSize: 8, color: '#555', fontFamily: 'Helvetica-Oblique', flex: 1 },
-        entryDate: { fontSize: 7.5, color: '#888' },
-        bulletMain: { flexDirection: 'row', marginTop: 2, marginLeft: 8 },
-        bulletMainDot: { color: '#555', fontSize: 8, width: 8 },
-        bulletMainText: { fontSize: 8, color: '#333', flex: 1, lineHeight: 1.45 },
+        entryBlock: { marginBottom: sp(7) },
+        entryTitle: { fontSize: sz(9), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
+        entrySubRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: sz(1) },
+        entryOrg: { fontSize: sz(8), color: '#555', fontFamily: 'Helvetica-Oblique', flex: 1 },
+        entryDate: { fontSize: sz(7.5), color: '#888' },
+        bulletMain: { flexDirection: 'row', marginTop: sp(2), marginLeft: sp(8) },
+        bulletMainDot: { color: '#555', fontSize: sz(8), width: sz(8) },
+        bulletMainText: { fontSize: sz(8), color: '#333', flex: 1, lineHeight: 1.45 },
 
-        refGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-        refItem: { width: '47%', marginBottom: 4 },
-        refName: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
-        refDetail: { fontSize: 7.5, color: '#555', marginTop: 1, lineHeight: 1.3 },
+        refGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: sz(6) },
+        refItem: { width: '47%', marginBottom: sp(4) },
+        refName: { fontSize: sz(9), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
+        refDetail: { fontSize: sz(7.5), color: '#555', marginTop: sz(1), lineHeight: 1.3 },
 
-        declaration: { marginTop: 8, borderTop: '0.5 solid #ddd', paddingTop: 6 },
-        declarationTxt: { fontSize: 8, color: '#444', lineHeight: 1.5, fontFamily: 'Helvetica-Oblique' },
-        signatureTxt: { fontSize: 8.5, color: '#222', marginTop: 6, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
+        declaration: { marginTop: sp(8), borderTop: `${sz(0.5)} solid #ddd`, paddingTop: sp(6) },
+        declarationTxt: { fontSize: sz(8), color: '#444', lineHeight: 1.5, fontFamily: 'Helvetica-Oblique' },
+        signatureTxt: { fontSize: sz(8.5), color: '#222', marginTop: sp(6), fontFamily: 'Helvetica-Bold', textAlign: 'right' },
     });
 }
 
@@ -212,7 +218,8 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
     const showPhoto = rawCfg?.showPhoto !== false;
     const photoShape = rawCfg?.photoShape ?? 'circle';
 
-    const s = buildStyles(sidebarColor, sidebarWidth);
+    const { scale, spacingScale } = getCvDensityScale(data);
+    const s = buildStyles(sidebarColor, sidebarWidth, scale, spacingScale);
     const initial = data.fullName ? data.fullName.charAt(0).toUpperCase() : '?';
     const photoContainer = photoShape === 'circle' ? s.photoCircle : s.photoSquare;
     const langs = (data.languages ?? []) as CvLanguageItem[];
