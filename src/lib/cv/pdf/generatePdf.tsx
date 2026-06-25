@@ -29,7 +29,7 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
     const sp = (base: number) => Math.round(base * spacingScale * 10) / 10;
 
     return StyleSheet.create({
-        page: { flexDirection: 'row', backgroundColor: '#ffffff', fontSize: sz(9), fontFamily: 'Helvetica' },
+        page: { flexDirection: 'row', backgroundColor: '#ffffff', fontSize: sz(10.5), fontFamily: 'Helvetica' },
 
         // Sidebar
         sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, padding: `${sp(20)} ${sp(14)}`, flexDirection: 'column' },
@@ -37,59 +37,59 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         photoCircle: { width: sz(72), height: sz(72), borderRadius: sz(36), overflow: 'hidden', border: `${sz(2)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
         photoSquare: { width: sz(72), height: sz(72), borderRadius: sz(6), overflow: 'hidden', border: `${sz(2)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
         photoImg: { width: sz(72), height: sz(72), objectFit: 'cover' },
-        photoInitial: { color: '#fff', fontSize: sz(28), fontFamily: 'Helvetica-Bold' },
-        sidebarName: { color: '#fff', fontSize: sz(13), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(14), lineHeight: 1.3 },
+        photoInitial: { color: '#fff', fontSize: sz(30), fontFamily: 'Helvetica-Bold' },
+        sidebarName: { color: '#fff', fontSize: sz(14), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(14), lineHeight: 1.3 },
 
         sidebarSection: { marginBottom: sp(12) },
         sidebarHeading: {
-            color: 'rgba(255,255,255,0.85)', fontSize: sz(7), fontFamily: 'Helvetica-Bold',
+            color: 'rgba(255,255,255,0.85)', fontSize: sz(8.5), fontFamily: 'Helvetica-Bold',
             letterSpacing: 1.2, textTransform: 'uppercase', borderBottom: `${sz(0.5)} solid rgba(255,255,255,0.35)`,
             paddingBottom: sp(3), marginBottom: sp(6),
         },
         sidebarRow: { flexDirection: 'row', marginBottom: sp(3), alignItems: 'flex-start' },
-        sidebarIcon: { color: 'rgba(255,255,255,0.7)', fontSize: sz(8), width: sz(12), marginRight: sz(3), marginTop: sz(1) },
-        sidebarText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8), flex: 1, lineHeight: 1.4 },
-        sidebarLabel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.5), width: sz(68), lineHeight: 1.4 },
-        sidebarValue: { color: 'rgba(255,255,255,0.9)', fontSize: sz(7.5), flex: 1, lineHeight: 1.4 },
+        sidebarIcon: { color: 'rgba(255,255,255,0.7)', fontSize: sz(10), width: sz(12), marginRight: sz(3), marginTop: sz(1) },
+        sidebarText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(9.5), flex: 1, lineHeight: 1.4 },
+        sidebarLabel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(9.2), width: sz(72), lineHeight: 1.4 },
+        sidebarValue: { color: 'rgba(255,255,255,0.9)', fontSize: sz(9.2), flex: 1, lineHeight: 1.4 },
         skillBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: sz(3), paddingTop: sp(2), paddingBottom: sp(2), paddingLeft: sp(6), paddingRight: sp(6), marginBottom: sp(4), marginRight: sp(4) },
-        skillText: { color: '#fff', fontSize: sz(7.5) },
+        skillText: { color: '#fff', fontSize: sz(9.2) },
         skillsRow: { flexDirection: 'row', flexWrap: 'wrap' },
         langRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: sp(3) },
-        langName: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8) },
-        langLevel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.5) },
+        langName: { color: 'rgba(255,255,255,0.9)', fontSize: sz(9.5) },
+        langLevel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(9.2) },
         bulletItem: { flexDirection: 'row', marginBottom: sp(3) },
-        bulletDot: { color: 'rgba(255,255,255,0.7)', fontSize: sz(8), width: sz(10) },
-        bulletText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8), flex: 1, lineHeight: 1.4 },
+        bulletDot: { color: 'rgba(255,255,255,0.7)', fontSize: sz(9.5), width: sz(10) },
+        bulletText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(9.5), flex: 1, lineHeight: 1.4 },
 
         // Main content
         main: { width: `${main}%`, backgroundColor: '#ffffff', padding: `${sp(20)} ${sp(18)}`, flexDirection: 'column' },
-        mainName: { fontSize: sz(22), fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: sp(14), lineHeight: 1.2 },
+        mainName: { fontSize: sz(25), fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: sp(14), lineHeight: 1.2 },
 
         mainSection: { marginBottom: sp(10) },
         mainHeading: {
-            fontSize: sz(10), fontFamily: 'Helvetica-Bold', color: sidebarColor,
+            fontSize: sz(12.5), fontFamily: 'Helvetica-Bold', color: sidebarColor,
             textTransform: 'uppercase', borderBottom: `${sz(1.5)} solid ${sidebarColor}`,
             paddingBottom: sp(2), marginBottom: sp(6), letterSpacing: 0.5,
         },
-        objectiveTxt: { fontSize: sz(8.5), color: '#333', lineHeight: 1.6 },
+        objectiveTxt: { fontSize: sz(10.5), color: '#333', lineHeight: 1.6 },
 
-        entryBlock: { marginBottom: sp(7) },
-        entryTitle: { fontSize: sz(9), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
+        entryBlock: { marginBottom: sp(8) },
+        entryTitle: { fontSize: sz(11), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
         entrySubRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: sz(1) },
-        entryOrg: { fontSize: sz(8), color: '#555', fontFamily: 'Helvetica-Oblique', flex: 1 },
-        entryDate: { fontSize: sz(7.5), color: '#888' },
+        entryOrg: { fontSize: sz(10), color: '#555', fontFamily: 'Helvetica-Oblique', flex: 1 },
+        entryDate: { fontSize: sz(9.5), color: '#888' },
         bulletMain: { flexDirection: 'row', marginTop: sp(2), marginLeft: sp(8) },
-        bulletMainDot: { color: '#555', fontSize: sz(8), width: sz(8) },
-        bulletMainText: { fontSize: sz(8), color: '#333', flex: 1, lineHeight: 1.45 },
+        bulletMainDot: { color: '#555', fontSize: sz(9.5), width: sz(8) },
+        bulletMainText: { fontSize: sz(10), color: '#333', flex: 1, lineHeight: 1.45 },
 
         refGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: sz(6) },
         refItem: { width: '47%', marginBottom: sp(4) },
-        refName: { fontSize: sz(9), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
-        refDetail: { fontSize: sz(7.5), color: '#555', marginTop: sz(1), lineHeight: 1.3 },
+        refName: { fontSize: sz(11), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
+        refDetail: { fontSize: sz(9.5), color: '#555', marginTop: sz(1), lineHeight: 1.3 },
 
-        declaration: { marginTop: sp(8), borderTop: `${sz(0.5)} solid #ddd`, paddingTop: sp(6) },
-        declarationTxt: { fontSize: sz(8), color: '#444', lineHeight: 1.5, fontFamily: 'Helvetica-Oblique' },
-        signatureTxt: { fontSize: sz(8.5), color: '#222', marginTop: sp(6), fontFamily: 'Helvetica-Bold', textAlign: 'right' },
+        declaration: { marginTop: sp(10), borderTop: `${sz(0.5)} solid #ddd`, paddingTop: sp(8) },
+        declarationTxt: { fontSize: sz(10), color: '#444', lineHeight: 1.5, fontFamily: 'Helvetica-Oblique' },
+        signatureTxt: { fontSize: sz(11), color: '#222', marginTop: sp(6), fontFamily: 'Helvetica-Bold', textAlign: 'right' },
     });
 }
 
