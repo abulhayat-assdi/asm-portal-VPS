@@ -143,7 +143,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 }}>
                     {config.showPhoto !== false && (
                         <div style={{ alignSelf: "center" }}>
-                            <div style={{ width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: `${Math.max(1, Math.round(2 * scale))}px solid rgba(255,255,255,0.4)`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                            <div style={{ width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                                 {data.profilePhoto
                                     ? <img src={data.profilePhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     : <span style={{ fontWeight: 900, fontSize: sz(1.4), color: "#fff" }}>{initial}</span>}
@@ -154,9 +154,32 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     {(data.phone || data.email || data.address) && (
                         <div>
                             <p style={sSH}>Contact</p>
-                            {data.phone && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: sp(3) }}>✆ {data.phone}</p>}
-                            {data.email && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: sp(3), wordBreak: "break-all" }}>✉ {data.email}</p>}
-                            {data.address && <p style={{ color: "rgba(255,255,255,0.9)", fontSize: sz(0.70) }}>⌂ {data.address}</p>}
+                            {data.phone && (
+                                <p style={{ display: "flex", alignItems: "center", gap: `${sp(5)}px`, color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: sp(3) }}>
+                                    <svg style={{ width: sz(0.68), height: sz(0.68), fill: "rgba(255,255,255,0.7)", flexShrink: 0 }} viewBox="0 0 24 24">
+                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                    </svg>
+                                    <span style={{ flex: 1 }}>{data.phone}</span>
+                                </p>
+                            )}
+                            {data.email && (
+                                <p style={{ display: "flex", alignItems: "center", gap: `${sp(5)}px`, color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: sp(3), wordBreak: "break-all" }}>
+                                    <svg style={{ width: sz(0.68), height: sz(0.68), fill: "none", stroke: "rgba(255,255,255,0.7)", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", flexShrink: 0 }} viewBox="0 0 24 24">
+                                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                                    </svg>
+                                    <span style={{ flex: 1 }}>{data.email}</span>
+                                </p>
+                            )}
+                            {data.address && (
+                                <p style={{ display: "flex", alignItems: "center", gap: `${sp(5)}px`, color: "rgba(255,255,255,0.9)", fontSize: sz(0.70) }}>
+                                    <svg style={{ width: sz(0.68), height: sz(0.68), fill: "none", stroke: "rgba(255,255,255,0.7)", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", flexShrink: 0 }} viewBox="0 0 24 24">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                    </svg>
+                                    <span style={{ flex: 1 }}>{data.address}</span>
+                                </p>
+                            )}
                         </div>
                     )}
                     {data.skills?.length > 0 && (

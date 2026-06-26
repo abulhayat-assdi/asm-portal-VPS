@@ -7,6 +7,8 @@ import {
     StyleSheet,
     pdf,
     Image,
+    Svg,
+    Path,
 } from '@react-pdf/renderer';
 import type {
     CvDraftFull,
@@ -34,8 +36,8 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         // Sidebar
         sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, paddingTop: sp(20), paddingLeft: sp(14), paddingRight: sp(14), paddingBottom: 36, flexDirection: 'column' },
         photoWrap: { alignSelf: 'center', marginBottom: sp(10) },
-        photoCircle: { width: sz(48), height: sz(48), borderRadius: sz(24), overflow: 'hidden', border: `${sz(1.5)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-        photoSquare: { width: sz(48), height: sz(48), borderRadius: sz(4.5), overflow: 'hidden', border: `${sz(1.5)} solid rgba(255,255,255,0.5)`, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+        photoCircle: { width: sz(48), height: sz(48), borderRadius: sz(24), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+        photoSquare: { width: sz(48), height: sz(48), borderRadius: sz(4.5), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
         photoImg: { width: sz(48), height: sz(48), objectFit: 'cover' },
         photoInitial: { color: '#fff', fontSize: sz(16.8), fontFamily: 'Helvetica-Bold' },
         sidebarName: { color: '#fff', fontSize: sz(10), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(12), lineHeight: 1.3 },
@@ -46,8 +48,8 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
             letterSpacing: 1.2, textTransform: 'uppercase', borderBottom: `${sz(0.5)} solid rgba(255,255,255,0.35)`,
             paddingBottom: sp(3), marginBottom: sp(8),
         },
-        sidebarRow: { flexDirection: 'row', marginBottom: sp(3), alignItems: 'flex-start' },
-        sidebarIcon: { color: 'rgba(255,255,255,0.7)', fontSize: sz(8), width: sz(10), marginRight: sz(3), marginTop: sz(1) },
+        sidebarRow: { flexDirection: 'row', marginBottom: sp(3), alignItems: 'center' },
+        sidebarIcon: { width: sz(8), height: sz(8), marginRight: sz(5), flexShrink: 0 },
         sidebarText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8.4), flex: 1, lineHeight: 1.4 },
         sidebarLabel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.9), width: sz(45), lineHeight: 1.4 },
         sidebarValue: { color: 'rgba(255,255,255,0.9)', fontSize: sz(7.9), flex: 1, lineHeight: 1.4 },
@@ -271,19 +273,25 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                         <SSection title="Contact" s={s}>
                             {data.phone && (
                                 <View style={s.sidebarRow}>
-                                    <Text style={s.sidebarIcon}>✆</Text>
+                                    <Svg viewBox="0 0 24 24" style={s.sidebarIcon}>
+                                        <Path fill="rgba(255,255,255,0.7)" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                                    </Svg>
                                     <Text style={s.sidebarText}>{data.phone}</Text>
                                 </View>
                             )}
                             {data.email && (
                                 <View style={s.sidebarRow}>
-                                    <Text style={s.sidebarIcon}>✉</Text>
+                                    <Svg viewBox="0 0 24 24" style={s.sidebarIcon}>
+                                        <Path fill="rgba(255,255,255,0.7)" d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                                    </Svg>
                                     <Text style={s.sidebarText}>{data.email}</Text>
                                 </View>
                             )}
                             {data.address && (
                                 <View style={s.sidebarRow}>
-                                    <Text style={s.sidebarIcon}>⌂</Text>
+                                    <Svg viewBox="0 0 24 24" style={s.sidebarIcon}>
+                                        <Path fill="rgba(255,255,255,0.7)" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                    </Svg>
                                     <Text style={s.sidebarText}>{data.address}</Text>
                                 </View>
                             )}
