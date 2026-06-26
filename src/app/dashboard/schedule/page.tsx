@@ -6,17 +6,19 @@ import Button from "@/components/ui/Button";
 import { useAuth } from "@/contexts/AuthContext";
 import { getBatchClassCounts, getBatches, BatchItem } from "@/services/scheduleService";
 import { getRoutineByBatch, BatchRoutine, uploadRoutineImage } from "@/services/routinesService";
+import ImageLightbox from "@/components/ui/ImageLightbox";
 
 export default function SchedulePage() {
     const { loading: authLoading, hasPermission } = useAuth();
 
     const [selectedRoutineBatch, setSelectedRoutineBatch] = useState("");
-    const [routineImage, setRoutineImage] = useState<BatchRoutine | null>(null);
+    const [routines, setRoutines] = useState<Record<string, BatchRoutine | null>>({});
     const [routineImageLoading, setRoutineImageLoading] = useState(false);
     const [availableRoutineBatches, setAvailableRoutineBatches] = useState<string[]>([]);
     const [batchStats, setBatchStats] = useState<Record<string, { subjectName: string; classCount: number }[]>>({});
     const [batchStatsLoading, setBatchStatsLoading] = useState(true);
     const [uploadingRoutine, setUploadingRoutine] = useState(false);
+    const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canManageRoutine = hasPermission("routine");
 
@@ -30,7 +32,7 @@ export default function SchedulePage() {
                 }
             })
             .catch(console.error);
-    }, [selectedRoutineBatch]);
+    }, []);
 
     useEffect(() => {
         const fetchBatchStats = async () => {
@@ -47,14 +49,29 @@ export default function SchedulePage() {
         fetchBatchStats();
     }, []);
 
+    // Fetch all active batch routines in parallel
     useEffect(() => {
-        if (!selectedRoutineBatch) return;
-        setRoutineImageLoading(true);
-        getRoutineByBatch(selectedRoutineBatch)
-            .then(setRoutineImage)
-            .catch(console.error)
-            .finally(() => setRoutineImageLoading(false));
-    }, [selectedRoutineBatch]);
+        if (availableRoutineBatches.length === 0) return;
+
+        const loadAllRoutines = async () => {
+            setRoutineImageLoading(true);
+            const results: Record<string, BatchRoutine | null> = {};
+            await Promise.all(
+                availableRoutineBatches.map(async (batchName) => {
+                    try {
+                        const r = await getRoutineByBatch(batchName);
+                        results[batchName] = r;
+                    } catch {
+                        results[batchName] = null;
+                    }
+                })
+            );
+            setRoutines(results);
+            setRoutineImageLoading(false);
+        };
+
+        loadAllRoutines();
+    }, [availableRoutineBatches]);
 
     const handleRoutineUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -69,7 +86,7 @@ export default function SchedulePage() {
         setUploadingRoutine(true);
         try {
             const saved = await uploadRoutineImage(selectedRoutineBatch, file);
-            setRoutineImage(saved);
+            setRoutines(prev => ({ ...prev, [selectedRoutineBatch]: saved }));
         } catch (error: any) {
             console.error("Routine upload failed", error);
             alert(error?.message || "রুটিন আপলোড ব্যর্থ হয়েছে।");
@@ -98,26 +115,6 @@ export default function SchedulePage() {
 
             <Card>
                 <CardBody className="p-6 space-y-8">
-                    <div className="flex flex-wrap gap-2">
-                        {availableRoutineBatches.length === 0 ? (
-                            <p className="text-sm text-[#6b7280]">No active batch routine is available yet.</p>
-                        ) : (
-                            availableRoutineBatches.map((batch) => (
-                                <button
-                                    key={batch}
-                                    onClick={() => setSelectedRoutineBatch(batch)}
-                                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                                        selectedRoutineBatch === batch
-                                            ? "bg-[#1e3a5f] text-white shadow-sm"
-                                            : "bg-white text-[#1e3a5f] border border-[#1e3a5f] hover:bg-[#f0f4ff]"
-                                    }`}
-                                >
-                                    {batch}
-                                </button>
-                            ))
-                        )}
-                    </div>
-
                     {canManageRoutine && (
                         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 space-y-3">
                             <div>
@@ -148,33 +145,58 @@ export default function SchedulePage() {
                         </div>
                     )}
 
-                    {routineImageLoading ? (
-                        <div className="flex items-center justify-center py-16">
-                            <div className="text-center">
-                                <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-[#059669] mb-3"></div>
-                                <p className="text-gray-500 font-medium">Loading routine...</p>
+                    {/* Batch-wise Class Routines Grid: 1 col on mobile, 2 cols on PC */}
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            Active Batch Routines
+                        </h2>
+
+                        {availableRoutineBatches.length === 0 ? (
+                            <div className="py-8 text-center text-[#6b7280] bg-white rounded-lg border border-gray-100 italic">No active batch routine is available yet.</div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {availableRoutineBatches.map((batchName) => {
+                                    const rImg = routines[batchName];
+                                    return (
+                                        <div key={batchName} className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden flex flex-col">
+                                            <div style={{ backgroundColor: "#0D1B4A", textAlign: "center", padding: "12px 24px" }} className="shrink-0">
+                                                <div style={{ color: "#FFFFFF", fontSize: "1.1rem", fontWeight: 800, letterSpacing: "0.02em", lineHeight: 1.2 }}>
+                                                    {batchName}
+                                                </div>
+                                            </div>
+                                            <div className="p-3 md:p-5 flex-1 flex flex-col items-center justify-center bg-gray-50/30 min-h-[220px]">
+                                                {routineImageLoading && !rImg ? (
+                                                    <div className="text-center py-8">
+                                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#059669] mb-2"></div>
+                                                        <p className="text-sm text-gray-500">Loading routine...</p>
+                                                    </div>
+                                                ) : rImg ? (
+                                                    <button
+                                                        onClick={() => setLightboxImage({ src: rImg.fileUrl, alt: `${batchName} class routine` })}
+                                                        className="w-full text-left focus:outline-none block hover:opacity-95 transition-opacity cursor-zoom-in"
+                                                        title="Click to zoom"
+                                                    >
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img
+                                                            src={rImg.fileUrl}
+                                                            alt={`${batchName} class routine`}
+                                                            className="w-full h-auto rounded-lg border border-gray-100"
+                                                        />
+                                                    </button>
+                                                ) : (
+                                                    <div className="text-center py-8 text-[#6b7280] italic text-sm">
+                                                        🖼️ No class routine uploaded yet for {batchName}.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        </div>
-                    ) : !selectedRoutineBatch ? (
-                        <div className="py-8 text-center text-[#6b7280] bg-white rounded-lg border border-gray-100 italic">No batch selected.</div>
-                    ) : !routineImage ? (
-                        <div className="py-8 text-center text-[#6b7280] bg-white rounded-lg border border-gray-100 italic">No class routine uploaded yet for {selectedRoutineBatch}.</div>
-                    ) : (
-                        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                            <div style={{ backgroundColor: "#0D1B4A", textAlign: "center", padding: "10px 24px" }}>
-                                <div style={{ color: "#FFFFFF", fontSize: "clamp(0.95rem, 1.4vw, 1.25rem)", fontWeight: 800, letterSpacing: "0.02em", lineHeight: 1.2 }}>{selectedRoutineBatch}</div>
-                            </div>
-                            <div className="p-3 md:p-5">
-                                <a href={routineImage.fileUrl} target="_blank" rel="noopener noreferrer" title="Open full size">
-                                    <img
-                                        src={routineImage.fileUrl}
-                                        alt={`${selectedRoutineBatch} class routine`}
-                                        className="w-full h-auto rounded-lg border border-gray-100"
-                                    />
-                                </a>
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+
                     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
                         <div className="flex items-center justify-between gap-3 mb-4">
                             <div>
@@ -220,6 +242,14 @@ export default function SchedulePage() {
                     </div>
                 </CardBody>
             </Card>
+
+            {lightboxImage && (
+                <ImageLightbox
+                    src={lightboxImage.src}
+                    alt={lightboxImage.alt}
+                    onClose={() => setLightboxImage(null)}
+                />
+            )}
         </div>
     );
 }

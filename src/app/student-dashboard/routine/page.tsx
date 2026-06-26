@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRoutineByBatch, BatchRoutine } from "@/services/routinesService";
+import ImageLightbox from "@/components/ui/ImageLightbox";
 
 export default function StudentRoutinePage() {
     const { userProfile, loading: authLoading } = useAuth();
     const [routine, setRoutine] = useState<BatchRoutine | null>(null);
     const [loading, setLoading] = useState(true);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
 
     useEffect(() => {
         const load = async () => {
@@ -65,17 +67,29 @@ export default function StudentRoutinePage() {
                         </div>
                     </div>
                     <div className="p-3 md:p-5">
-                        <a href={routine.fileUrl} target="_blank" rel="noopener noreferrer" title="Open full size">
+                        <button 
+                            onClick={() => setLightboxOpen(true)}
+                            className="w-full text-left focus:outline-none block" 
+                            title="Click to zoom"
+                        >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={routine.fileUrl}
                                 alt={`${userProfile.studentBatchName} class routine`}
-                                className="w-full h-auto rounded-lg border border-gray-100"
+                                className="w-full h-auto rounded-lg border border-gray-100 hover:opacity-95 transition-opacity cursor-zoom-in"
                             />
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {lightboxOpen && (
+                <ImageLightbox
+                    src={routine.fileUrl}
+                    alt={`${userProfile.studentBatchName} class routine`}
+                    onClose={() => setLightboxOpen(false)}
+                />
+            )}
         </div>
     );
 }
