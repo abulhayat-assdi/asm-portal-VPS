@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         await writeFile(filePath, Buffer.from(bytes));
 
         const url = `/api/uploads/${uploadSubDir}/${uniqueFilename}`;
-        return NextResponse.json({ url });
+        return NextResponse.json({ url, path: url });
     } catch (error) {
         console.error("Error uploading file:", error);
         const errorMessage = error instanceof Error ? error.message : "Failed to upload file";

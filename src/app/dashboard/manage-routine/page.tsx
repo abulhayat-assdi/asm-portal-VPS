@@ -23,7 +23,7 @@ export default function ManageRoutinePage() {
 
     useEffect(() => {
         getBatches()
-            .then(d => setBatches(d))
+            .then(d => setBatches(d.filter(b => b.status === "active")))
             .catch(() => {})
             .finally(() => setLoadingBatches(false));
     }, []);

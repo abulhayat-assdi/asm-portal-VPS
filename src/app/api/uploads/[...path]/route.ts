@@ -43,29 +43,38 @@ export async function GET(
         ? (path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured))
         : path.resolve(process.cwd(), "public");
 
-    // Files are saved as storageBase/uploads/<relPath> by the upload route.
-    // The URL /uploads/<relPath> is rewritten to /api/uploads/<relPath>, so
-    // segments already has the path *after* /uploads/. We must prepend "uploads/"
-    // to look up the correct location on disk.
+    // Support serving files whether they were saved with or without the "uploads/" directory prefix on disk.
     const relPathWithPrefix = `uploads/${relPath}`;
-    const primaryPath = path.resolve(storageBase, relPathWithPrefix);
-    // Fallback: check public/uploads/ (for local dev without LOCAL_STORAGE_PATH)
-    const fallbackPath = path.resolve(process.cwd(), "public", relPathWithPrefix);
-    const absolutePath = fs.existsSync(primaryPath) ? primaryPath : fallbackPath;
+    const baseDir = storageBase;
+    const fallbackBaseDir = path.resolve(process.cwd(), "public");
+
+    const candidates = [
+        { absolutePath: path.resolve(baseDir, relPathWithPrefix), allowedBase: baseDir },
+        { absolutePath: path.resolve(fallbackBaseDir, relPathWithPrefix), allowedBase: fallbackBaseDir },
+        { absolutePath: path.resolve(baseDir, relPath), allowedBase: baseDir },
+        { absolutePath: path.resolve(fallbackBaseDir, relPath), allowedBase: fallbackBaseDir },
+    ];
+
+    let matchedCandidate = null;
+    for (const c of candidates) {
+        if (fs.existsSync(c.absolutePath)) {
+            const stat = fs.statSync(c.absolutePath);
+            if (stat.isFile()) {
+                matchedCandidate = { ...c, stat };
+                break;
+            }
+        }
+    }
+
+    if (!matchedCandidate) {
+        return new NextResponse("Not Found", { status: 404 });
+    }
+
+    const { absolutePath, allowedBase, stat } = matchedCandidate;
 
     // Security: prevent path traversal
-    const allowedBase = fs.existsSync(primaryPath) ? storageBase : path.resolve(process.cwd(), "public");
     if (!absolutePath.startsWith(allowedBase + path.sep) && absolutePath !== allowedBase) {
         return new NextResponse("Forbidden", { status: 403 });
-    }
-
-    if (!fs.existsSync(absolutePath)) {
-        return new NextResponse("Not Found", { status: 404 });
-    }
-
-    const stat = fs.statSync(absolutePath);
-    if (!stat.isFile()) {
-        return new NextResponse("Not Found", { status: 404 });
     }
 
     const ext = path.extname(absolutePath).toLowerCase();
