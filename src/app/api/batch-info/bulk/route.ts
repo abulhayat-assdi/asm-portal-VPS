@@ -51,17 +51,18 @@ export async function POST(req: NextRequest) {
 
         // Find or create the Batch record
         let batch = await prisma.batch.findUnique({ where: { name: batchName } });
+        const expectedStatus = batchType === "Completed" ? "archived" : "active";
         if (!batch) {
             batch = await prisma.batch.create({
                 data: {
                     name: batchName,
-                    status: batchType === "Completed" ? "archived" : "active",
+                    status: expectedStatus,
                 },
             });
-        } else if (batchType === "Completed") {
+        } else {
             batch = await prisma.batch.update({
                 where: { id: batch.id },
-                data: { status: "archived" },
+                data: { status: expectedStatus },
             });
         }
 
