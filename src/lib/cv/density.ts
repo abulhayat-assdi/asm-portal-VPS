@@ -306,8 +306,9 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
 
     if (hasPersonal) {
         let personalH = 0;
-        const labelW = Math.round(60 * scale);
-        const valW = W_sidebar - labelW - sp(3);
+        const labelW = Math.round(75 * scale);
+        const colonW = Math.round(12 * scale);
+        const valW = W_sidebar - labelW - colonW;
         const fs = sz(0.66);
         personalFields.forEach((val: string) => {
             const charsPerLine = Math.max(1, valW / (0.47 * fs));

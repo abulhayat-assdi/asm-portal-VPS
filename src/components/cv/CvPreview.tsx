@@ -207,10 +207,11 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     )}
                     {personalData.length > 0 && (
                         <div>
-                            <p style={sSH}>Personal Data</p>
+                            <p style={sSH}>Personal Information</p>
                             {personalData.map((f, i) => (
-                                <div key={i} style={{ display: "flex", gap: sp(3), marginBottom: sp(3) }}>
-                                    <span style={{ color: "rgba(255,255,255,0.65)", fontSize: sz(0.66), minWidth: Math.round(60 * scale) }}>{f.label} :</span>
+                                <div key={i} style={{ display: "flex", flexDirection: "row", alignItems: "flex-start", marginBottom: sp(3) }}>
+                                    <span style={{ color: "rgba(255,255,255,0.65)", fontSize: sz(0.66), width: Math.round(75 * scale), flexShrink: 0 }}>{f.label}</span>
+                                    <span style={{ color: "rgba(255,255,255,0.65)", fontSize: sz(0.66), width: Math.round(12 * scale), flexShrink: 0 }}>:</span>
                                     <span style={{ color: "rgba(255,255,255,0.9)", fontSize: sz(0.66), flex: 1 }}>{f.value}</span>
                                 </div>
                             ))}

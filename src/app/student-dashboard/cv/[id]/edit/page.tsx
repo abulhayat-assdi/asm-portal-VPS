@@ -526,8 +526,8 @@ export default function CvEditorPage() {
                         </div>
                     </CollapsibleSection>
 
-                    {/* Personal Data */}
-                    <CollapsibleSection title="Personal Data">
+                    {/* Personal Information */}
+                    <CollapsibleSection title="Personal Information">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className={labelCls()}>Date of Birth</label>

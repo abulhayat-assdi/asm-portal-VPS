@@ -53,6 +53,10 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         sidebarText: { color: 'rgba(255,255,255,0.9)', fontSize: sz(8.4), flex: 1, lineHeight: 1.4 },
         sidebarLabel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.9), width: sz(45), lineHeight: 1.4 },
         sidebarValue: { color: 'rgba(255,255,255,0.9)', fontSize: sz(7.9), flex: 1, lineHeight: 1.4 },
+        personalRow: { flexDirection: 'row', marginBottom: sp(3), alignItems: 'flex-start' },
+        personalLabel: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.9), width: sz(58), flexShrink: 0, lineHeight: 1.4 },
+        personalColon: { color: 'rgba(255,255,255,0.6)', fontSize: sz(7.9), width: sz(8), flexShrink: 0, lineHeight: 1.4 },
+        personalValue: { color: 'rgba(255,255,255,0.9)', fontSize: sz(7.9), flex: 1, lineHeight: 1.4 },
         skillBadge: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: sz(3), paddingTop: sp(2), paddingBottom: sp(2), paddingLeft: sp(6), paddingRight: sp(6), marginBottom: sp(4), marginRight: sp(4) },
         skillText: { color: '#fff', fontSize: sz(8.4) },
         skillsRow: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -334,13 +338,14 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                         </SSection>
                     )}
 
-                    {/* Personal Data */}
+                    {/* Personal Information */}
                     {personalData.length > 0 && (
-                        <SSection title="Personal Data" s={s}>
+                        <SSection title="Personal Information" s={s}>
                             {personalData.map((f, i) => (
-                                <View key={i} style={s.sidebarRow}>
-                                    <Text style={s.sidebarLabel}>{f.label} :</Text>
-                                    <Text style={s.sidebarValue}>{f.value}</Text>
+                                <View key={i} style={s.personalRow}>
+                                    <Text style={s.personalLabel}>{f.label}</Text>
+                                    <Text style={s.personalColon}>:</Text>
+                                    <Text style={s.personalValue}>{f.value}</Text>
                                 </View>
                             ))}
                         </SSection>
