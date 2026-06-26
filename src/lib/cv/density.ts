@@ -41,16 +41,6 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     // 1. Estimate Main Column Height
     let H_main = 0;
 
-    // Full Name at top of main column
-    if (data.fullName) {
-        const fs = sz(1.1);
-        const lh = 1.2;
-        const charWidth = 0.47 * fs;
-        const charsPerLine = Math.max(1, W_main / charWidth);
-        const lines = Math.max(1, Math.ceil(data.fullName.length / charsPerLine));
-        H_main += lines * fs * lh + sp(6); // sp(6) is marginBottom
-    }
-
     // Determine main sections in order
     const rawOrder: string[] = Array.isArray((data as any).sectionOrder) && (data as any).sectionOrder.length
         ? ((data as any).sectionOrder as string[])

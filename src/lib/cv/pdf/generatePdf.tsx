@@ -77,7 +77,7 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
             textTransform: 'uppercase', borderBottom: `${sz(1.1)} solid ${sidebarColor}`,
             paddingBottom: sp(2), marginBottom: sp(10), letterSpacing: 0.5,
         },
-        objectiveTxt: { fontSize: sz(8.9), color: '#333', lineHeight: 1.6 },
+        objectiveTxt: { fontSize: sz(8.9), color: '#333', lineHeight: 1.6, textAlign: 'justify' },
 
         entryBlock: { marginBottom: sp(8) },
         entryTitle: { fontSize: sz(9.4), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
@@ -354,9 +354,6 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
 
                 {/* ── Main ── */}
                 <View style={s.main}>
-
-                    {/* Name — always at top */}
-                    {data.fullName && <Text style={s.mainName}>{data.fullName}</Text>}
 
                     {/* All main sections rendered in sectionOrder */}
                     {mainSections.map(key => {

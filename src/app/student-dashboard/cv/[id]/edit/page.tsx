@@ -48,7 +48,7 @@ function FieldLabel({ label, cur, max }: { label: string; cur?: number; max?: nu
 // ─── Limits (keeps CV to 1 A4 page) ──────────────────────────────────────────
 
 const LIM = {
-    fullName: 50, careerObjective: 450, address: 60,
+    fullName: 50, careerObjective: 400, address: 60,
     jobTitle: 50, company: 40, location: 30,
     bullet: 90, bulletsPerEntry: 3, weEntries: 3,
     trainingName: 60, institute: 50, trainingEntries: 2,

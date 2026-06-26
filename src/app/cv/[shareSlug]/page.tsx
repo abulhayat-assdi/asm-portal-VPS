@@ -241,9 +241,6 @@ function CvViewer({ data, config }: { data: Record<string, unknown>; config: Tem
 
                 {/* Main content */}
                 <div className="flex-1 p-6 min-w-0">
-                    {fullName && (
-                        <h1 className="text-2xl font-black mb-4" style={{ color }}>{fullName}</h1>
-                    )}
 
                     {careerObjective && (
                         <div className="mb-5">

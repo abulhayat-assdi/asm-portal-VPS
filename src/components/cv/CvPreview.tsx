@@ -49,7 +49,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 return data.careerObjective ? (
                     <div>
                         <h4 style={mSH(color)}>Career Objective</h4>
-                        <p style={{ fontSize: sz(0.74), color: "#333", lineHeight: 1.6 }}>{data.careerObjective}</p>
+                        <p style={{ fontSize: sz(0.74), color: "#333", lineHeight: 1.6, textAlign: "justify" }}>{data.careerObjective}</p>
                     </div>
                 ) : null;
             case "workExperience":
@@ -232,7 +232,6 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     gap: sp(12),
                     boxSizing: "border-box"
                 }}>
-                    {data.fullName && <p style={{ fontWeight: 900, fontSize: sz(1.1), color, marginBottom: sp(6) }}>{data.fullName}</p>}
                     {mainOrder.map(key => (
                         <React.Fragment key={key}>
                             {renderSection(key)}
