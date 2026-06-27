@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getBatchClassCounts, getBatches, BatchItem } from "@/services/scheduleService";
 import { getRoutineByBatch, BatchRoutine, uploadRoutineImage } from "@/services/routinesService";
 import ImageLightbox from "@/components/ui/ImageLightbox";
+import * as XLSX from "xlsx";
 
 export default function SchedulePage() {
     const { loading: authLoading, hasPermission } = useAuth();
@@ -21,6 +22,11 @@ export default function SchedulePage() {
     const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const canManageRoutine = hasPermission("routine");
+
+    const [editingBatch, setEditingBatch] = useState<string | null>(null);
+    const [editSubjects, setEditSubjects] = useState<{ subjectName: string; classCount: number }[]>([]);
+    const [savingBatch, setSavingBatch] = useState(false);
+    const [excelFileLoading, setExcelFileLoading] = useState(false);
 
     useEffect(() => {
         getBatches()
@@ -92,6 +98,156 @@ export default function SchedulePage() {
             alert(error?.message || "রুটিন আপলোড ব্যর্থ হয়েছে।");
         } finally {
             setUploadingRoutine(false);
+        }
+    };
+
+    const handleStartEdit = (batchName: string) => {
+        setEditingBatch(batchName);
+        setEditSubjects([...(batchStats[batchName] || [])]);
+    };
+
+    const handleSubjectChange = (index: number, field: "subjectName" | "classCount", value: any) => {
+        setEditSubjects(prev => {
+            const updated = [...prev];
+            updated[index] = {
+                ...updated[index],
+                [field]: value
+            };
+            return updated;
+        });
+    };
+
+    const handleAddSubjectRow = () => {
+        setEditSubjects(prev => [...prev, { subjectName: "", classCount: 0 }]);
+    };
+
+    const handleDeleteSubjectRow = (index: number) => {
+        setEditSubjects(prev => prev.filter((_, idx) => idx !== index));
+    };
+
+    const handleCancelEdit = () => {
+        setEditingBatch(null);
+        setEditSubjects([]);
+    };
+
+    const handleSaveEdit = async (batchName: string) => {
+        const hasEmptySubject = editSubjects.some(s => !s.subjectName.trim());
+        if (hasEmptySubject) {
+            alert("দয়া করে বিষয়ের নাম পূরণ করুন।");
+            return;
+        }
+
+        setSavingBatch(true);
+        try {
+            const res = await fetch("/api/schedule/class-counts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    isBulk: false,
+                    batchName,
+                    subjects: editSubjects
+                }),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData?.error || "Failed to save changes");
+            }
+
+            const stats = await getBatchClassCounts();
+            setBatchStats(stats);
+            setEditingBatch(null);
+            setEditSubjects([]);
+        } catch (error: any) {
+            console.error("Save edit failed", error);
+            alert(error?.message || "পরিবর্তন সংরক্ষণ করতে ব্যর্থ হয়েছে।");
+        } finally {
+            setSavingBatch(false);
+        }
+    };
+
+    const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        setExcelFileLoading(true);
+        try {
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const data = evt.target?.result;
+                    if (!data) throw new Error("Could not read file data");
+
+                    const workbook = XLSX.read(data, { type: "array" });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json<any>(worksheet);
+
+                    if (json.length === 0) {
+                        alert("Excel ফাইলটি খালি অথবা সঠিক ডাটা নেই।");
+                        setExcelFileLoading(false);
+                        return;
+                    }
+
+                    const findKey = (row: any, candidates: string[]) => {
+                        const keys = Object.keys(row);
+                        for (const candidate of candidates) {
+                            const match = keys.find(k => k.toLowerCase().replace(/[\s\-_]/g, '') === candidate);
+                            if (match) return row[match];
+                        }
+                        return null;
+                    };
+
+                    const parsedData: { batchName: string; subjectName: string; classCount: number }[] = [];
+
+                    for (const row of json) {
+                        const batch = findKey(row, ['batch', 'batchname', 'batch_name', 'batch name']);
+                        const subject = findKey(row, ['subject', 'subjectname', 'subject_name', 'subject name', 'course']);
+                        const count = findKey(row, ['classes', 'classcount', 'class_count', 'class count', 'classestaken', 'classes_taken', 'classes taken', 'count']);
+
+                        if (batch && subject) {
+                            parsedData.push({
+                                batchName: String(batch).trim(),
+                                subjectName: String(subject).trim(),
+                                classCount: Number(count) || 0
+                            });
+                        }
+                    }
+
+                    if (parsedData.length === 0) {
+                        alert("Excel ফাইলে সঠিক কলাম পাওয়া যায়নি। কলামগুলো অবশ্যই Batch, Subject, এবং Classes Taken হতে হবে।");
+                        setExcelFileLoading(false);
+                        return;
+                    }
+
+                    const res = await fetch("/api/schedule/class-counts", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ isBulk: true, data: parsedData }),
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData?.error || "Failed to save imported data");
+                    }
+
+                    const stats = await getBatchClassCounts();
+                    setBatchStats(stats);
+                    alert(`সফলভাবে ${parsedData.length} টি বিষয়ের ক্লাস কাউন্ট আপডেট করা হয়েছে!`);
+                } catch (err: any) {
+                    console.error("Excel processing error:", err);
+                    alert(err?.message || "Excel ফাইল প্রসেস করতে ত্রুটি হয়েছে।");
+                } finally {
+                    setExcelFileLoading(false);
+                }
+            };
+
+            reader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.error("Excel upload failed", error);
+            alert("ফাইল আপলোড ব্যর্থ হয়েছে।");
+            setExcelFileLoading(false);
         }
     };
 
@@ -198,45 +354,152 @@ export default function SchedulePage() {
                     </div>
 
                     <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                        <div className="flex items-center justify-between gap-3 mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                             <div>
                                 <h2 className="text-xl font-semibold text-[#1f2937]">Batch-wise Class Count</h2>
                                 <p className="text-sm text-[#6b7280] mt-1">এখানে ব্যাচ অনুযায়ী ক্লাসের সংখ্যা দেখা যাবে। আপনি চাইলে Excel/Sheets থেকে manually update করতে পারেন।</p>
                             </div>
-                            <span className="text-xs font-semibold text-[#1e3a5f] bg-blue-50 border border-blue-100 rounded-full px-3 py-1">Manual update ready</span>
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                                {canManageRoutine && (
+                                    <>
+                                        <input
+                                            type="file"
+                                            id="excel-upload-input"
+                                            accept=".xlsx, .xls, .csv"
+                                            className="hidden"
+                                            onChange={handleExcelUpload}
+                                        />
+                                        <Button
+                                            onClick={() => document.getElementById("excel-upload-input")?.click()}
+                                            disabled={excelFileLoading}
+                                            size="sm"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
+                                        >
+                                            {excelFileLoading ? "Uploading..." : "📊 Excel Upload"}
+                                        </Button>
+                                    </>
+                                )}
+                                <span className="text-xs font-semibold text-[#1e3a5f] bg-blue-50 border border-blue-100 rounded-full px-3 py-1.5">Manual update ready</span>
+                            </div>
                         </div>
 
                         {batchStatsLoading ? (
-                            <div className="text-sm text-gray-500">Loading class count...</div>
+                            <div className="text-sm text-gray-500 py-4 text-center">Loading class count...</div>
                         ) : batchCountSummary.length === 0 ? (
-                            <div className="text-sm text-gray-500">No batch class count data available yet.</div>
+                            <div className="text-sm text-gray-500 py-4 text-center">No batch class count data available yet.</div>
                         ) : (
-                            <div className="space-y-6">
-                                {batchCountSummary.map((batchName) => (
-                                    <div key={batchName} className="border border-gray-200 rounded-xl overflow-hidden">
-                                        <div className="bg-[#1e3a5f] px-4 py-3 text-white font-semibold">{batchName}</div>
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full text-sm">
-                                                <thead className="bg-gray-50 text-gray-600">
-                                                    <tr>
-                                                        <th className="px-4 py-3 text-left font-semibold">#</th>
-                                                        <th className="px-4 py-3 text-left font-semibold">Subject</th>
-                                                        <th className="px-4 py-3 text-right font-semibold">Classes Taken</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {batchStats[batchName].map((item, idx) => (
-                                                        <tr key={`${batchName}-${item.subjectName}`} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                                                            <td className="px-4 py-3 text-gray-500">{idx + 1}</td>
-                                                            <td className="px-4 py-3 text-gray-700">{item.subjectName}</td>
-                                                            <td className="px-4 py-3 text-right font-semibold text-[#1e3a5f]">{item.classCount}</td>
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                {batchCountSummary.map((batchName) => {
+                                    const isEditingThisBatch = editingBatch === batchName;
+                                    const subjectsList = isEditingThisBatch ? editSubjects : (batchStats[batchName] || []);
+
+                                    return (
+                                        <div key={batchName} className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm flex flex-col">
+                                            <div className="bg-[#1e3a5f] px-4 py-3 text-white font-semibold flex items-center justify-between">
+                                                <span>{batchName}</span>
+                                                {canManageRoutine && (
+                                                    <div className="flex gap-1.5">
+                                                        {isEditingThisBatch ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={handleAddSubjectRow}
+                                                                    className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded transition-colors"
+                                                                >
+                                                                    + Add Subject
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleSaveEdit(batchName)}
+                                                                    disabled={savingBatch}
+                                                                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded transition-colors disabled:opacity-50"
+                                                                >
+                                                                    {savingBatch ? "Saving..." : "Save"}
+                                                                </button>
+                                                                <button
+                                                                    onClick={handleCancelEdit}
+                                                                    className="text-xs bg-gray-500 hover:bg-gray-600 text-white px-2.5 py-1 rounded transition-colors"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleStartEdit(batchName)}
+                                                                className="text-xs bg-white/20 hover:bg-white/35 text-white px-2.5 py-1 rounded transition-colors border border-white/30"
+                                                            >
+                                                                Edit Counts
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="overflow-x-auto flex-1">
+                                                <table className="min-w-full text-sm">
+                                                    <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
+                                                        <tr>
+                                                            <th className="px-4 py-2.5 text-left font-semibold w-12">#</th>
+                                                            <th className="px-4 py-2.5 text-left font-semibold">Subject</th>
+                                                            <th className="px-4 py-2.5 text-right font-semibold w-32">Classes Taken</th>
+                                                            {isEditingThisBatch && (
+                                                                <th className="px-4 py-2.5 text-center font-semibold w-24">Action</th>
+                                                            )}
                                                         </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100">
+                                                        {subjectsList.length === 0 ? (
+                                                            <tr>
+                                                                <td colSpan={isEditingThisBatch ? 4 : 3} className="px-4 py-6 text-center text-gray-500 italic">
+                                                                    No class counts defined yet. {isEditingThisBatch ? 'Click "+ Add Subject" to start.' : ''}
+                                                                </td>
+                                                            </tr>
+                                                        ) : (
+                                                            subjectsList.map((item, idx) => (
+                                                                <tr key={`${batchName}-${idx}`} className="hover:bg-gray-50/50 transition-colors">
+                                                                    <td className="px-4 py-3 text-gray-500">{idx + 1}</td>
+                                                                    <td className="px-4 py-2.5">
+                                                                        {isEditingThisBatch ? (
+                                                                            <input
+                                                                                type="text"
+                                                                                value={item.subjectName}
+                                                                                onChange={(e) => handleSubjectChange(idx, "subjectName", e.target.value)}
+                                                                                placeholder="Subject Name"
+                                                                                className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:border-[#1e3a5f] focus:outline-none text-gray-700 bg-white"
+                                                                            />
+                                                                        ) : (
+                                                                            <span className="text-gray-700 font-medium">{item.subjectName}</span>
+                                                                        )}
+                                                                    </td>
+                                                                    <td className="px-4 py-2.5 text-right">
+                                                                        {isEditingThisBatch ? (
+                                                                            <input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                value={item.classCount}
+                                                                                onChange={(e) => handleSubjectChange(idx, "classCount", parseInt(e.target.value) || 0)}
+                                                                                className="w-20 px-2 py-1 text-sm border border-gray-300 rounded text-right focus:border-[#1e3a5f] focus:outline-none text-gray-700 bg-white"
+                                                                            />
+                                                                        ) : (
+                                                                            <span className="font-semibold text-[#1e3a5f] bg-blue-50/50 px-2.5 py-1 rounded-md border border-blue-100/50">{item.classCount}</span>
+                                                                        )}
+                                                                    </td>
+                                                                    {isEditingThisBatch && (
+                                                                        <td className="px-4 py-2.5 text-center">
+                                                                            <button
+                                                                                onClick={() => handleDeleteSubjectRow(idx)}
+                                                                                className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                                                            >
+                                                                                ✕ Remove
+                                                                            </button>
+                                                                        </td>
+                                                                    )}
+                                                                </tr>
+                                                            ))
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>

@@ -1029,3 +1029,20 @@ model VideoStory {
   @@index([order])
   @@map("video_stories")
 }
+
+// ============================================================
+// BATCH CLASS COUNTS
+// ============================================================
+
+model BatchClassCount {
+  id          String   @id @default(uuid())
+  batchName   String   @map("batch_name")
+  subjectName String   @map("subject_name")
+  classCount  Int      @default(0) @map("class_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([batchName, subjectName])
+  @@map("batch_class_counts")
+}
+

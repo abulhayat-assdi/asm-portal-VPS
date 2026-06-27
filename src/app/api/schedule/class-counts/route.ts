@@ -17,34 +17,136 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Only show active batches
-    const activeBatches = await prisma.batch.findMany({
-        where: { status: "active" },
-        select: { name: true },
-    });
-    const activeBatchNames = activeBatches.map(b => b.name);
+    try {
+        // Only show active batches
+        const activeBatches = await prisma.batch.findMany({
+            where: { status: "active" },
+            select: { name: true },
+        });
+        const activeBatchNames = activeBatches.map(b => b.name);
 
-    if (activeBatchNames.length === 0) return NextResponse.json({});
+        const formatted: Record<string, { subjectName: string; classCount: number }[]> = {};
+        for (const name of activeBatchNames) {
+            formatted[name] = [];
+        }
 
-    const classes = await prisma.class.findMany({
-        where: { batch: { in: activeBatchNames } },
-        select: { batch: true, subject: true },
-        orderBy: { batch: "asc" },
-    });
+        if (activeBatchNames.length === 0) return NextResponse.json({});
 
-    const result: Record<string, Record<string, number>> = {};
+        const counts = await prisma.batchClassCount.findMany({
+            where: { batchName: { in: activeBatchNames } },
+        });
 
-    for (const cls of classes) {
-        if (!result[cls.batch]) result[cls.batch] = {};
-        result[cls.batch][cls.subject] = (result[cls.batch][cls.subject] || 0) + 1;
+        for (const item of counts) {
+            formatted[item.batchName].push({
+                subjectName: item.subjectName,
+                classCount: item.classCount,
+            });
+        }
+
+        // Sort by classCount descending
+        for (const batchName of Object.keys(formatted)) {
+            formatted[batchName].sort((a, b) => b.classCount - a.classCount);
+        }
+
+        return NextResponse.json(formatted);
+    } catch (error) {
+        console.error("[class-counts GET]", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
-
-    const formatted: Record<string, { subjectName: string; classCount: number }[]> = {};
-    for (const [batchName, subjects] of Object.entries(result)) {
-        formatted[batchName] = Object.entries(subjects)
-            .map(([subjectName, classCount]) => ({ subjectName, classCount }))
-            .sort((a, b) => b.classCount - a.classCount);
-    }
-
-    return NextResponse.json(formatted);
 }
+
+/**
+ * POST /api/schedule/class-counts
+ * Supports manual update of a single batch, or bulk sync from Excel.
+ */
+export async function POST(req: NextRequest) {
+    const user = await getSessionUser(req);
+    if (!user || !isTeacherOrAdmin(user)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const actorRole = user.role === "teacher" ? "TEACHER" : "ADMIN";
+
+    try {
+        const body = await req.json();
+        const { isBulk, batchName, subjects, data } = body;
+
+        if (isBulk) {
+            if (!Array.isArray(data)) {
+                return NextResponse.json({ error: "data array required for bulk sync" }, { status: 400 });
+            }
+
+            // Sync/Upsert all rows
+            for (const row of data) {
+                if (!row.batchName || !row.subjectName) continue;
+                await prisma.batchClassCount.upsert({
+                    where: {
+                        batchName_subjectName: {
+                            batchName: row.batchName.trim(),
+                            subjectName: row.subjectName.trim(),
+                        }
+                    },
+                    update: {
+                        classCount: Number(row.classCount) || 0,
+                    },
+                    create: {
+                        batchName: row.batchName.trim(),
+                        subjectName: row.subjectName.trim(),
+                        classCount: Number(row.classCount) || 0,
+                    }
+                });
+            }
+
+            // Log activity
+            await prisma.activityLog.create({
+                data: {
+                    actorUid: user.id,
+                    actorRole: actorRole,
+                    actionType: "CLASS_COUNTS_IMPORT",
+                    targetType: "batch_class_counts",
+                    targetId: "bulk",
+                    description: `User imported class counts from Excel (${data.length} records)`,
+                }
+            });
+
+            return NextResponse.json({ success: true, count: data.length });
+        } else {
+            if (!batchName || !Array.isArray(subjects)) {
+                return NextResponse.json({ error: "batchName and subjects array required" }, { status: 400 });
+            }
+
+            // Clean existing subjects for this batch and replace with new set
+            await prisma.batchClassCount.deleteMany({
+                where: { batchName }
+            });
+
+            if (subjects.length > 0) {
+                await prisma.batchClassCount.createMany({
+                    data: subjects.map((s: any) => ({
+                        batchName,
+                        subjectName: s.subjectName.trim(),
+                        classCount: Number(s.classCount) || 0,
+                    }))
+                });
+            }
+
+            // Log activity
+            await prisma.activityLog.create({
+                data: {
+                    actorUid: user.id,
+                    actorRole: actorRole,
+                    actionType: "CLASS_COUNTS_UPDATE",
+                    targetType: "batch_class_counts",
+                    targetId: batchName,
+                    description: `User updated class counts for batch ${batchName} (${subjects.length} subjects)`,
+                }
+            });
+
+            return NextResponse.json({ success: true });
+        }
+    } catch (error) {
+        console.error("[class-counts POST]", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    }
+}
+
