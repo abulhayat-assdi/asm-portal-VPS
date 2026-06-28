@@ -1211,11 +1211,14 @@ function AdjustModal({ imageSrc, shape, onClose, onSave }: AdjustModalProps) {
                         />
 
                         {/* Visual overlay mask with centered cutout window */}
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
                             <div 
-                                className={`w-[200px] h-[200px] border-[999px] border-black/50 transition-all duration-300 ${
+                                className={`w-[200px] h-[200px] bg-transparent pointer-events-none transition-all duration-300 ${
                                     shape === "circle" ? "rounded-full" : "rounded-2xl"
                                 }`} 
+                                style={{
+                                    boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6)"
+                                }}
                             />
                         </div>
                     </div>
