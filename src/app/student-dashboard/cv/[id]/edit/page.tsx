@@ -207,6 +207,8 @@ export default function CvEditorPage() {
     const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
     const [showVersions, setShowVersions] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [showAdjustModal, setShowAdjustModal] = useState(false);
+    const [rawImageSrc, setRawImageSrc] = useState<string>("");
     const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const config: TemplateConfig = draft?.template?.config ?? {
@@ -384,10 +386,12 @@ export default function CvEditorPage() {
         const file = e.target.files?.[0];
         if (!file) return;
         try {
-            const compressed = await compressImage(file, { maxSizeMB: 0.3, maxWidthOrHeight: 400, useWebWorker: true });
+            const compressed = await compressImage(file, { maxSizeMB: 1.0, maxWidthOrHeight: 1200, useWebWorker: true });
             const reader = new FileReader();
             reader.onload = () => {
-                form.setValue("profilePhoto", reader.result as string);
+                const src = reader.result as string;
+                setRawImageSrc(src);
+                setShowAdjustModal(true);
             };
             reader.readAsDataURL(compressed);
         } catch {
@@ -512,7 +516,21 @@ export default function CvEditorPage() {
                             <label className={labelCls()}>Profile Photo</label>
                             <div className="flex items-center gap-3">
                                 {watchedValues.profilePhoto && (
-                                    <img src={watchedValues.profilePhoto} alt="Profile" className="w-12 h-12 rounded-full object-cover border-2 border-gray-200" />
+                                    <div className="relative group w-14 h-14 rounded-full overflow-hidden border-2 border-gray-200 cursor-pointer">
+                                        <img src={watchedValues.profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                                        <div 
+                                            onClick={() => {
+                                                setRawImageSrc(watchedValues.profilePhoto || "");
+                                                setShowAdjustModal(true);
+                                            }}
+                                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-all text-white text-[9px] font-bold"
+                                        >
+                                            <svg className="w-3.5 h-3.5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                                            </svg>
+                                            Adjust
+                                        </div>
+                                    </div>
                                 )}
                                 <input type="file" accept="image/*" onChange={handlePhotoUpload} className="text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#d1fae5] file:text-[#065f46] file:font-bold hover:file:bg-[#a7f3d0]" />
                                 {watchedValues.profilePhoto && (
@@ -1028,6 +1046,213 @@ export default function CvEditorPage() {
                     onRestore={handleRestored}
                 />
             )}
+
+            {/* Photo Adjust Modal */}
+            {showAdjustModal && rawImageSrc && (
+                <AdjustModal
+                    imageSrc={rawImageSrc}
+                    shape={config.photoShape || "circle"}
+                    onClose={() => setShowAdjustModal(false)}
+                    onSave={(croppedBase64) => {
+                        form.setValue("profilePhoto", croppedBase64, { shouldDirty: true });
+                        setShowAdjustModal(false);
+                    }}
+                />
+            )}
+        </div>
+    );
+}
+
+// ─── Photo Adjustment Modal (Cropping, Zooming & Panning) ─────────────────────
+
+interface AdjustModalProps {
+    imageSrc: string;
+    shape: string;
+    onClose: () => void;
+    onSave: (croppedBase64: string) => void;
+}
+
+function AdjustModal({ imageSrc, shape, onClose, onSave }: AdjustModalProps) {
+    const [zoom, setZoom] = useState(1.0);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        const natW = img.naturalWidth || 400;
+        const natH = img.naturalHeight || 400;
+
+        // Cutout size is 200px. Center of parent container (280px) is at 140px.
+        const scaleToCover = Math.max(200 / natW, 200 / natH);
+        const baseW = natW * scaleToCover;
+        const baseH = natH * scaleToCover;
+
+        setDimensions({ width: baseW, height: baseH });
+        setOffset({
+            x: 140 - baseW / 2,
+            y: 140 - baseH / 2
+        });
+        setZoom(1.0);
+    };
+
+    // Mouse handlers
+    const handleMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging) return;
+        setOffset({
+            x: e.clientX - dragStart.x,
+            y: e.clientY - dragStart.y
+        });
+    };
+
+    // Touch handlers for mobile support
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (e.touches.length !== 1) return;
+        setIsDragging(true);
+        const touch = e.touches[0];
+        setDragStart({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        setOffset({
+            x: touch.clientX - dragStart.x,
+            y: touch.clientY - dragStart.y
+        });
+    };
+
+    const handleDragEnd = () => {
+        setIsDragging(false);
+    };
+
+    const handleApply = () => {
+        // Create canvas of size 400x400 for high resolution print
+        const canvas = document.createElement("canvas");
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const img = new Image();
+        img.onload = () => {
+            // Cutout top-left is at (40, 40) inside 280x280 container.
+            // Relativize the image offset to the cutout's top-left:
+            const relX = offset.x - 40;
+            const relY = offset.y - 40;
+
+            // Multiply everything by 2 because canvas is 400x400 (cutout is 200x200)
+            const drawX = relX * 2;
+            const drawY = relY * 2;
+            const drawW = dimensions.width * zoom * 2;
+            const drawH = dimensions.height * zoom * 2;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, 400, 400);
+            
+            // Draw image to canvas
+            ctx.drawImage(img, drawX, drawY, drawW, drawH);
+            
+            const base64 = canvas.toDataURL("image/jpeg", 0.9);
+            onSave(base64);
+        };
+        img.src = imageSrc;
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-bold text-gray-900 text-sm">প্রোফাইল ছবি এডজাস্ট করুন</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 p-6 flex flex-col items-center gap-6">
+                    {/* View Box Container */}
+                    <div 
+                        className="relative w-[280px] h-[280px] bg-gray-100 border border-gray-200 rounded-2xl overflow-hidden cursor-move select-none touch-none shadow-inner"
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleDragEnd}
+                        onMouseLeave={handleDragEnd}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleDragEnd}
+                    >
+                        {/* Cropped Image */}
+                        <img
+                            ref={imgRef}
+                            src={imageSrc}
+                            alt="Adjusting"
+                            draggable={false}
+                            onLoad={handleImageLoad}
+                            style={{
+                                position: "absolute",
+                                left: `${offset.x}px`,
+                                top: `${offset.y}px`,
+                                width: `${dimensions.width * zoom}px`,
+                                height: `${dimensions.height * zoom}px`,
+                                maxWidth: "none",
+                            }}
+                        />
+
+                        {/* Visual overlay mask with centered cutout window */}
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                            <div 
+                                className={`w-[200px] h-[200px] border-[999px] border-black/50 transition-all duration-300 ${
+                                    shape === "circle" ? "rounded-full" : "rounded-2xl"
+                                }`} 
+                            />
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="w-full space-y-2">
+                        <div className="flex justify-between items-center text-xs font-semibold text-gray-500">
+                            <span>Zoom: {Math.round(zoom * 100)}%</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="1.0"
+                            max="3.0"
+                            step="0.05"
+                            value={zoom}
+                            onChange={(e) => setZoom(parseFloat(e.target.value))}
+                            className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#059669]"
+                        />
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+                    <button 
+                        onClick={onClose}
+                        className="px-4 py-2 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                    >
+                        বাতিল
+                    </button>
+                    <button 
+                        onClick={handleApply}
+                        className="px-5 py-2 bg-[#059669] text-white text-xs font-bold rounded-xl hover:bg-[#047857] shadow-sm shadow-green-200 transition-colors"
+                    >
+                        সম্পন্ন করুন
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
