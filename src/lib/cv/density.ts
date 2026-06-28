@@ -8,6 +8,8 @@ export interface CvDensityData {
     phone?: string | null;
     email?: string | null;
     address?: string | null;
+    linkedin?: string | null;
+    visibleSections?: any;
     workExperience?: any;
     training?: any;
     education?: any;
@@ -21,6 +23,32 @@ export interface CvDensityData {
     religion?: string | null;
     maritalStatus?: string | null;
     nationality?: string | null;
+}
+
+/**
+ * Extracts the username and URL from a LinkedIn input (full URL or just a username).
+ */
+export function getLinkedInDisplayAndUrl(val: string | null | undefined) {
+    if (!val) return { display: "", url: "" };
+    const trimmed = val.trim();
+    let display = trimmed;
+    let href = trimmed;
+
+    if (trimmed.includes("linkedin.com/")) {
+        // Clean trailing slashes & query parameters
+        const clean = trimmed.replace(/\/+$/, "").split("?")[0];
+        const parts = clean.split("/");
+        display = parts[parts.length - 1] || trimmed;
+        
+        if (!/^https?:\/\//i.test(trimmed)) {
+            href = "https://" + trimmed;
+        }
+    } else {
+        display = trimmed;
+        href = `https://www.linkedin.com/in/${trimmed}`;
+    }
+
+    return { display, url: href };
 }
 
 /**
@@ -68,6 +96,11 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     // Section gap: reduced to sp(8) from sp(12)
     const gap = sp(8);
 
+    // Retrieve list of visible sections (fall back to all if not defined)
+    const visibleSections = data.visibleSections || [
+        "careerObjective", "workExperience", "training", "education", "references", "skills", "languages", "hobbies", "personalInfo", "declaration"
+    ];
+
     // 1. Estimate Main Column Height
     let H_main = 0;
 
@@ -85,6 +118,8 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     let mainSectionsCount = 0;
 
     mainOrder.forEach(key => {
+        if (!visibleSections.includes(key)) return;
+
         let sectionHeight = 0;
         let isSectionActive = false;
 
@@ -274,12 +309,12 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
         H_sidebar += lines * fs * 1.3 + sp(8);
     }
 
-    const hasContact = data.phone || data.email || data.address;
-    const hasSkills = Array.isArray(data.skills) && data.skills.length > 0;
-    const hasLangs = Array.isArray(data.languages) && data.languages.length > 0;
-    const hasHobbies = Array.isArray(data.hobbies) && data.hobbies.length > 0;
+    const hasContact = data.phone || data.email || data.address || data.linkedin;
+    const hasSkills = Array.isArray(data.skills) && data.skills.length > 0 && visibleSections.includes("skills");
+    const hasLangs = Array.isArray(data.languages) && data.languages.length > 0 && visibleSections.includes("languages");
+    const hasHobbies = Array.isArray(data.hobbies) && data.hobbies.length > 0 && visibleSections.includes("hobbies");
     const personalFields = [data.dateOfBirth, data.bloodGroup, data.religion, data.maritalStatus, data.nationality].filter(Boolean) as string[];
-    const hasPersonal = personalFields.length > 0;
+    const hasPersonal = personalFields.length > 0 && visibleSections.includes("personalInfo");
 
     const addSidebarSection = (contentHeight: number) => {
         const fs_h = sz(0.65);
@@ -299,7 +334,11 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
             contactH += estimateWrappedLines(data.email, textW, fs) * fs * 1.4 + sp(3);
         }
         if (data.address) {
-            contactH += estimateWrappedLines(data.address, textW, fs) * fs * 1.4;
+            contactH += estimateWrappedLines(data.address, textW, fs) * fs * 1.4 + (data.linkedin ? sp(3) : 0);
+        }
+        if (data.linkedin) {
+            const { display } = getLinkedInDisplayAndUrl(data.linkedin);
+            contactH += estimateWrappedLines(display, textW, fs) * fs * 1.4;
         }
         addSidebarSection(contactH);
     }

@@ -305,6 +305,10 @@ export default function CvManagerPage() {
                 declaration: data.declaration ?? "",
                 signature: data.signature ?? "",
                 sectionOrder: data.sectionOrder ?? [],
+                linkedin: data.linkedin ?? "",
+                visibleSections: data.visibleSections ?? [
+                    'careerObjective', 'workExperience', 'training', 'education', 'references', 'skills', 'languages', 'hobbies', 'personalInfo', 'declaration'
+                ],
             });
         } catch {
             toast.error("Failed to load CV");

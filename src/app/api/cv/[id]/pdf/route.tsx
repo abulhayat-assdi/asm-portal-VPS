@@ -61,6 +61,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         sectionOrder: (draft.sectionOrder as string[]) ?? [
             "workExperience", "training", "education", "references",
         ],
+        linkedin: draft.linkedin ?? "",
+        visibleSections: (draft.visibleSections as string[]) ?? [
+            'careerObjective', 'workExperience', 'training', 'education', 'references', 'skills', 'languages', 'hobbies', 'personalInfo', 'declaration'
+        ],
         shareSlug: draft.shareSlug,
         isPublic: draft.isPublic,
         downloadCount: draft.downloadCount,

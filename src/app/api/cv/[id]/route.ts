@@ -70,6 +70,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             declaration: parsed.data.declaration,
             signature: parsed.data.signature,
             sectionOrder: parsed.data.sectionOrder,
+            linkedin: parsed.data.linkedin,
+            visibleSections: parsed.data.visibleSections,
         },
         include: { template: { select: { id: true, name: true, slug: true, config: true } } },
     });

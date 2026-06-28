@@ -820,6 +820,8 @@ model CvDraft {
   declaration    String?
   signature      String?
   sectionOrder   Json     @default("[\"workExperience\",\"training\",\"education\",\"languages\",\"references\",\"skills\",\"hobbies\"]") @map("section_order")
+  linkedin       String?
+  visibleSections Json?   @map("visible_sections")
 
   shareSlug      String?  @unique @map("share_slug")
   isPublic       Boolean  @default(false) @map("is_public")

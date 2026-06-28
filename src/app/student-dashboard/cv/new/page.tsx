@@ -132,6 +132,8 @@ const DUMMY_DATA: CvFormData = {
     declaration: "I do hereby state that the above statement are true and I will be responsible for any wrong information.",
     signature: "Your Name",
     sectionOrder: ["careerObjective", "workExperience", "training", "education", "references", "declaration", "skills", "languages", "hobbies"],
+    linkedin: "",
+    visibleSections: ["careerObjective", "workExperience", "training", "education", "references", "skills", "languages", "hobbies", "personalInfo", "declaration"],
 };
 
 // Scales CvPreview to fit container width, height follows content naturally

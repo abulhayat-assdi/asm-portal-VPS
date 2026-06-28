@@ -46,6 +46,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (data.declaration !== undefined) updateData.declaration = data.declaration;
     if (data.signature !== undefined) updateData.signature = data.signature;
     if (data.sectionOrder !== undefined) updateData.sectionOrder = data.sectionOrder;
+    if (data.linkedin !== undefined) updateData.linkedin = data.linkedin;
+    if (data.visibleSections !== undefined) updateData.visibleSections = data.visibleSections;
 
     if (Object.keys(updateData).length === 0) {
         return NextResponse.json({ success: true });

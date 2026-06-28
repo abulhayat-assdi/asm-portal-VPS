@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { CvFormData } from "@/lib/cv/schemas";
 import { SECTION_LABELS, type TemplateConfig } from "@/lib/cv/constants";
-import { getCvDensityScale } from "@/lib/cv/density";
+import { getCvDensityScale, getLinkedInDisplayAndUrl } from "@/lib/cv/density";
 
 export function CvPreview({ data, config, fillHeight = false }: { data: CvFormData; config: TemplateConfig; fillHeight?: boolean }) {
     const sw = config.sidebarWidth || 38;
@@ -13,6 +13,10 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
     const { scale, spacingScale } = getCvDensityScale(data, config);
     const sz = (baseRem: number) => `${(baseRem * scale).toFixed(3)}rem`;
     const sp = (basePx: number) => Math.max(1, Math.round(basePx * spacingScale));
+
+    const visibleSections = data.visibleSections || [
+        "careerObjective", "workExperience", "training", "education", "references", "skills", "languages", "hobbies", "personalInfo", "declaration"
+    ];
 
     const rawOrder: string[] = Array.isArray(data.sectionOrder) && data.sectionOrder.length
         ? (data.sectionOrder as string[])
@@ -151,7 +155,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                         </div>
                     )}
                     {data.fullName && <p style={{ fontWeight: 900, textAlign: "center", fontSize: sz(0.84), lineHeight: 1.3, color: "#fff" }}>{data.fullName}</p>}
-                    {(data.phone || data.email || data.address) && (
+                    {(data.phone || data.email || data.address || data.linkedin) && (
                         <div>
                             <p style={sSH}>Contact</p>
                             {data.phone && (
@@ -172,7 +176,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                                 </p>
                             )}
                             {data.address && (
-                                <p style={{ display: "flex", alignItems: "center", gap: `${sp(5)}px`, color: "rgba(255,255,255,0.9)", fontSize: sz(0.70) }}>
+                                <p style={{ display: "flex", alignItems: "center", gap: `${sp(5)}px`, color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: data.linkedin ? sp(3) : 0 }}>
                                     <svg style={{ width: sz(0.68), height: sz(0.68), fill: "none", stroke: "rgba(255,255,255,0.7)", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", flexShrink: 0 }} viewBox="0 0 24 24">
                                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                                         <circle cx="12" cy="10" r="3" />
@@ -180,15 +184,30 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                                     <span style={{ flex: 1 }}>{data.address}</span>
                                 </p>
                             )}
+                            {data.linkedin && (
+                                <p style={{ display: "flex", alignItems: "center", gap: `${sp(5)}px`, color: "rgba(255,255,255,0.9)", fontSize: sz(0.70) }}>
+                                    <svg style={{ width: sz(0.68), height: sz(0.68), fill: "rgba(255,255,255,0.7)", flexShrink: 0 }} viewBox="0 0 24 24">
+                                        <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                                    </svg>
+                                    <a
+                                        href={getLinkedInDisplayAndUrl(data.linkedin).url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ flex: 1, color: "#93c5fd", textDecoration: "underline", wordBreak: "break-all" }}
+                                    >
+                                        {getLinkedInDisplayAndUrl(data.linkedin).display}
+                                    </a>
+                                </p>
+                            )}
                         </div>
                     )}
-                    {data.skills?.length > 0 && (
+                    {data.skills?.length > 0 && visibleSections.includes("skills") && (
                         <div>
                             <p style={sSH}>Skills</p>
                             {data.skills.map((sk, i) => <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: sp(3) }}>• {sk}</p>)}
                         </div>
                     )}
-                    {data.languages?.length > 0 && (
+                    {data.languages?.length > 0 && visibleSections.includes("languages") && (
                         <div>
                             <p style={sSH}>Languages</p>
                             {data.languages.map((l, i) => (
@@ -199,13 +218,13 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                             ))}
                         </div>
                     )}
-                    {data.hobbies?.length > 0 && (
+                    {data.hobbies?.length > 0 && visibleSections.includes("hobbies") && (
                         <div>
                             <p style={sSH}>Hobbies</p>
                             {data.hobbies.map((h, i) => <p key={i} style={{ color: "rgba(255,255,255,0.9)", fontSize: sz(0.70), marginBottom: sp(3) }}>• {h}</p>)}
                         </div>
                     )}
-                    {personalData.length > 0 && (
+                    {personalData.length > 0 && visibleSections.includes("personalInfo") && (
                         <div>
                             <p style={sSH}>Personal Information</p>
                             {personalData.map((f, i) => (
@@ -232,11 +251,14 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     gap: sp(8),
                     boxSizing: "border-box"
                 }}>
-                    {mainOrder.map(key => (
-                        <React.Fragment key={key}>
-                            {renderSection(key)}
-                        </React.Fragment>
-                    ))}
+                    {mainOrder.map(key => {
+                        if (!visibleSections.includes(key)) return null;
+                        return (
+                            <React.Fragment key={key}>
+                                {renderSection(key)}
+                            </React.Fragment>
+                        );
+                    })}
                 </div>
             </div>
         </div>

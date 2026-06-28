@@ -62,6 +62,7 @@ export const cvFormSchema = z.object({
         .default(''),
     email: z.string().optional().default(''),
     address: z.string().optional().default(''),
+    linkedin: z.string().optional().default(''),
 
     // Personal data
     dateOfBirth: z.string().optional().default(''),
@@ -90,6 +91,18 @@ export const cvFormSchema = z.object({
         'references',
         'skills',
         'hobbies',
+    ]),
+    visibleSections: z.array(z.string()).default([
+        'careerObjective',
+        'workExperience',
+        'training',
+        'education',
+        'references',
+        'skills',
+        'languages',
+        'hobbies',
+        'personalInfo',
+        'declaration',
     ]),
 });
 

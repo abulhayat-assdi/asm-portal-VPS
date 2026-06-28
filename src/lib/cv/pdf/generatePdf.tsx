@@ -9,6 +9,7 @@ import {
     Image,
     Svg,
     Path,
+    Link,
 } from '@react-pdf/renderer';
 import type {
     CvDraftFull,
@@ -19,7 +20,7 @@ import type {
     CvReferenceItem,
 } from '../schemas';
 import { SECTION_LABELS, type TemplateConfig } from '../constants';
-import { getCvDensityScale } from '../density';
+import { getCvDensityScale, getLinkedInDisplayAndUrl } from '../density';
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
@@ -232,6 +233,10 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
     const skills = (data.skills ?? []) as string[];
     const hobbies = (data.hobbies ?? []) as string[];
 
+    const visibleSections = data.visibleSections || [
+        'careerObjective', 'workExperience', 'training', 'education', 'references', 'skills', 'languages', 'hobbies', 'personalInfo', 'declaration'
+    ];
+
     const personalData = [
         { label: 'Date of Birth', value: data.dateOfBirth },
         { label: 'Blood Group', value: data.bloodGroup },
@@ -273,7 +278,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                     {data.fullName && <Text style={s.sidebarName}>{data.fullName}</Text>}
 
                     {/* Contact */}
-                    {(data.phone || data.email || data.address) && (
+                    {(data.phone || data.email || data.address || data.linkedin) && (
                         <SSection title="Contact" s={s}>
                             {data.phone && (
                                 <View style={s.sidebarRow}>
@@ -299,11 +304,21 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                                     <Text style={s.sidebarText}>{data.address}</Text>
                                 </View>
                             )}
+                            {data.linkedin && (
+                                <View style={s.sidebarRow}>
+                                    <Svg viewBox="0 0 24 24" style={s.sidebarIcon}>
+                                        <Path fill="rgba(255,255,255,0.7)" d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                                    </Svg>
+                                    <Link style={{ ...s.sidebarText, color: '#93c5fd', textDecoration: 'underline' }} src={getLinkedInDisplayAndUrl(data.linkedin).url}>
+                                        {getLinkedInDisplayAndUrl(data.linkedin).display}
+                                    </Link>
+                                </View>
+                            )}
                         </SSection>
                     )}
 
                     {/* Skills */}
-                    {skills.length > 0 && (
+                    {skills.length > 0 && visibleSections.includes('skills') && (
                         <SSection title="Skills" s={s}>
                             {skills.map((sk, i) => (
                                 <View key={i} style={s.bulletItem}>
@@ -315,7 +330,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                     )}
 
                     {/* Languages */}
-                    {langs.length > 0 && (
+                    {langs.length > 0 && visibleSections.includes('languages') && (
                         <SSection title="Languages" s={s}>
                             {langs.map((l, i) => (
                                 <View key={i} style={s.langRow}>
@@ -327,7 +342,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                     )}
 
                     {/* Hobbies */}
-                    {hobbies.length > 0 && (
+                    {hobbies.length > 0 && visibleSections.includes('hobbies') && (
                         <SSection title="Hobbies" s={s}>
                             {hobbies.map((h, i) => (
                                 <View key={i} style={s.bulletItem}>
@@ -339,7 +354,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                     )}
 
                     {/* Personal Information */}
-                    {personalData.length > 0 && (
+                    {personalData.length > 0 && visibleSections.includes('personalInfo') && (
                         <SSection title="Personal Information" s={s}>
                             {personalData.map((f, i) => (
                                 <View key={i} style={s.personalRow}>
@@ -357,6 +372,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
 
                     {/* All main sections rendered in sectionOrder */}
                     {mainSections.map(key => {
+                        if (!visibleSections.includes(key)) return null;
                         if (key === 'careerObjective' && data.careerObjective) {
                             return (
                                 <MSection key="co" title="Career Objective" s={s}>

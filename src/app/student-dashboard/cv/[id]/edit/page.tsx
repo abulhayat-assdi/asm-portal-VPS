@@ -223,12 +223,13 @@ export default function CvEditorPage() {
         defaultValues: {
             title: "My CV",
             fullName: "", profilePhoto: "", careerObjective: "",
-            phone: "", email: "", address: "",
+            phone: "", email: "", address: "", linkedin: "",
             dateOfBirth: "", bloodGroup: "", religion: "", maritalStatus: "", nationality: "",
             skills: [], languages: [], hobbies: [],
             workExperience: [], training: [], education: [], references: [],
             declaration: "", signature: "",
             sectionOrder: ["careerObjective","workExperience","training","education","references","declaration","skills","languages","hobbies"],
+            visibleSections: ["careerObjective","workExperience","training","education","references","skills","languages","hobbies","personalInfo","declaration"],
         },
     });
 
@@ -262,6 +263,7 @@ export default function CvEditorPage() {
                     phone: data.phone ?? "",
                     email: data.email ?? "",
                     address: data.address ?? "",
+                    linkedin: (data as any).linkedin ?? "",
                     dateOfBirth: data.dateOfBirth ?? "",
                     bloodGroup: data.bloodGroup ?? "",
                     religion: data.religion ?? "",
@@ -277,6 +279,9 @@ export default function CvEditorPage() {
                     declaration: data.declaration ?? "",
                     signature: data.signature ?? "",
                     sectionOrder,
+                    visibleSections: ((data as any).visibleSections as string[]) ?? [
+                        'careerObjective', 'workExperience', 'training', 'education', 'references', 'skills', 'languages', 'hobbies', 'personalInfo', 'declaration'
+                    ],
                 });
             })
             .catch(() => { toast.error("Failed to load CV"); router.push("/student-dashboard/cv"); })
@@ -414,6 +419,20 @@ export default function CvEditorPage() {
         setSaveStatus("unsaved");
     };
 
+    const toggleSection = (key: string, checked: boolean) => {
+        const current = form.getValues("visibleSections") || [
+            'careerObjective', 'workExperience', 'training', 'education', 'references', 'skills', 'languages', 'hobbies', 'personalInfo', 'declaration'
+        ];
+        let next;
+        if (checked) {
+            next = [...current];
+            if (!next.includes(key)) next.push(key);
+        } else {
+            next = current.filter(k => k !== key);
+        }
+        form.setValue("visibleSections", next, { shouldDirty: true });
+    };
+
     // useWatch is more reliably reactive than form.watch() for DnD updates
     // Must be declared before any conditional return to satisfy Rules of Hooks
     const sectionOrder = useWatch({ control: form.control, name: "sectionOrder" }) ?? [];
@@ -490,10 +509,6 @@ export default function CvEditorPage() {
                             <input {...form.register("fullName")} maxLength={LIM.fullName} className={inputCls()} placeholder="Your full name" />
                         </div>
                         <div>
-                            <FieldLabel label="Career Objective" cur={watchedValues.careerObjective?.length ?? 0} max={LIM.careerObjective} />
-                            <textarea {...form.register("careerObjective")} maxLength={LIM.careerObjective} className={inputCls("min-h-[80px] resize-y")} rows={3} placeholder="Brief professional summary..." />
-                        </div>
-                        <div>
                             <label className={labelCls()}>Profile Photo</label>
                             <div className="flex items-center gap-3">
                                 {watchedValues.profilePhoto && (
@@ -504,6 +519,28 @@ export default function CvEditorPage() {
                                     <button type="button" onClick={() => form.setValue("profilePhoto", "")} className="text-xs text-red-500 hover:underline">Remove</button>
                                 )}
                             </div>
+                        </div>
+                        <div className="border-t border-gray-100 pt-3 mt-3">
+                            <div className="flex items-center justify-between mb-1">
+                                <FieldLabel label="Career Objective" cur={watchedValues.careerObjective?.length ?? 0} max={LIM.careerObjective} />
+                                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={watchedValues.visibleSections?.includes('careerObjective') ?? true}
+                                        onChange={(e) => toggleSection('careerObjective', e.target.checked)}
+                                        className="w-3.5 h-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                                    />
+                                    Show in CV
+                                </label>
+                            </div>
+                            <textarea
+                                {...form.register("careerObjective")}
+                                maxLength={LIM.careerObjective}
+                                disabled={!(watchedValues.visibleSections?.includes('careerObjective') ?? true)}
+                                className={inputCls("min-h-[80px] resize-y" + (!(watchedValues.visibleSections?.includes('careerObjective') ?? true) ? " opacity-50" : ""))}
+                                rows={3}
+                                placeholder="Brief professional summary..."
+                            />
                         </div>
                     </CollapsibleSection>
 
@@ -524,39 +561,53 @@ export default function CvEditorPage() {
                             <FieldLabel label="Address" cur={watchedValues.address?.length ?? 0} max={LIM.address} />
                             <input {...form.register("address")} maxLength={LIM.address} className={inputCls()} placeholder="City, Country" />
                         </div>
+                        <div>
+                            <label className={labelCls()}>LinkedIn URL / Username</label>
+                            <input {...form.register("linkedin")} className={inputCls()} placeholder="e.g. linkedin.com/in/username or username" />
+                        </div>
                     </CollapsibleSection>
 
                     {/* Personal Information */}
                     <CollapsibleSection title="Personal Information">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-personalInfo"
+                                checked={watchedValues.visibleSections?.includes('personalInfo') ?? true}
+                                onChange={(e) => toggleSection('personalInfo', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-personalInfo" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={`grid grid-cols-2 gap-4 ${!(watchedValues.visibleSections?.includes('personalInfo') ?? true) ? "opacity-50 pointer-events-none" : ""}`}>
                             <div>
                                 <label className={labelCls()}>Date of Birth</label>
-                                <input type="date" {...form.register("dateOfBirth")} className={inputCls()} />
+                                <input type="date" {...form.register("dateOfBirth")} className={inputCls()} disabled={!(watchedValues.visibleSections?.includes('personalInfo') ?? true)} />
                             </div>
                             <div>
                                 <label className={labelCls()}>Blood Group</label>
-                                <select {...form.register("bloodGroup")} className={inputCls()}>
+                                <select {...form.register("bloodGroup")} className={inputCls()} disabled={!(watchedValues.visibleSections?.includes('personalInfo') ?? true)}>
                                     <option value="">Select</option>
                                     {BLOOD_GROUPS.map((g) => <option key={g}>{g}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className={labelCls()}>Marital Status</label>
-                                <select {...form.register("maritalStatus")} className={inputCls()}>
+                                <select {...form.register("maritalStatus")} className={inputCls()} disabled={!(watchedValues.visibleSections?.includes('personalInfo') ?? true)}>
                                     <option value="">Select</option>
                                     {MARITAL_STATUSES.map((s) => <option key={s}>{s}</option>)}
                                 </select>
                             </div>
                             <div>
                                 <label className={labelCls()}>Religion</label>
-                                <select {...form.register("religion")} className={inputCls()}>
+                                <select {...form.register("religion")} className={inputCls()} disabled={!(watchedValues.visibleSections?.includes('personalInfo') ?? true)}>
                                     <option value="">Select</option>
                                     {RELIGIONS.map((r) => <option key={r}>{r}</option>)}
                                 </select>
                             </div>
                             <div className="col-span-2">
                                 <label className={labelCls()}>Nationality</label>
-                                <select {...form.register("nationality")} className={inputCls()}>
+                                <select {...form.register("nationality")} className={inputCls()} disabled={!(watchedValues.visibleSections?.includes('personalInfo') ?? true)}>
                                     <option value="">Select</option>
                                     {NATIONALITIES.map((n) => <option key={n}>{n}</option>)}
                                 </select>
@@ -566,258 +617,356 @@ export default function CvEditorPage() {
 
                     {/* Skills */}
                     <CollapsibleSection title={`Skills (max ${LIM.maxSkills})`}>
-                        <Controller
-                            control={form.control}
-                            name="skills"
-                            render={({ field }) => (
-                                <TagInput value={field.value} onChange={field.onChange} placeholder="Add a skill (e.g. Excel, Photoshop)" maxLen={LIM.skill} maxItems={LIM.maxSkills} />
-                            )}
-                        />
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-skills"
+                                checked={watchedValues.visibleSections?.includes('skills') ?? true}
+                                onChange={(e) => toggleSection('skills', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-skills" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('skills') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            <Controller
+                                control={form.control}
+                                name="skills"
+                                render={({ field }) => (
+                                    <TagInput value={field.value} onChange={field.onChange} placeholder="Add a skill (e.g. Excel, Photoshop)" maxLen={LIM.skill} maxItems={LIM.maxSkills} />
+                                )}
+                            />
+                        </div>
                     </CollapsibleSection>
 
                     {/* Languages */}
                     <CollapsibleSection title={`Languages (max ${LIM.maxLanguages})`}>
-                        {langFields.map((field, index) => (
-                            <div key={field.id} className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl">
-                                <div>
-                                    <label className={labelCls()}>Language</label>
-                                    <input {...form.register(`languages.${index}.name`)} maxLength={30} className={inputCls()} placeholder="e.g. English" />
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-languages"
+                                checked={watchedValues.visibleSections?.includes('languages') ?? true}
+                                onChange={(e) => toggleSection('languages', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-languages" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('languages') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            {langFields.map((field, index) => (
+                                <div key={field.id} className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl mb-3">
+                                    <div>
+                                        <label className={labelCls()}>Language</label>
+                                        <input {...form.register(`languages.${index}.name`)} maxLength={30} className={inputCls()} placeholder="e.g. English" disabled={!(watchedValues.visibleSections?.includes('languages') ?? true)} />
+                                    </div>
+                                    <div>
+                                        <label className={labelCls()}>Level</label>
+                                        <select {...form.register(`languages.${index}.level`)} className={inputCls()} disabled={!(watchedValues.visibleSections?.includes('languages') ?? true)}>
+                                            <option value="">Select</option>
+                                            {LANGUAGE_PROFICIENCY_LEVELS.map((l) => <option key={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                    <button type="button" onClick={() => removeLang(index)} className="col-span-2 text-xs text-red-500 hover:underline text-right" disabled={!(watchedValues.visibleSections?.includes('languages') ?? true)}>Remove</button>
                                 </div>
-                                <div>
-                                    <label className={labelCls()}>Level</label>
-                                    <select {...form.register(`languages.${index}.level`)} className={inputCls()}>
-                                        <option value="">Select</option>
-                                        {LANGUAGE_PROFICIENCY_LEVELS.map((l) => <option key={l}>{l}</option>)}
-                                    </select>
-                                </div>
-                                <button type="button" onClick={() => removeLang(index)} className="col-span-2 text-xs text-red-500 hover:underline text-right">Remove</button>
-                            </div>
-                        ))}
-                        {langFields.length < LIM.maxLanguages ? (
-                            <button type="button" onClick={() => appendLang({ name: "", level: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                                + Add Language
-                            </button>
-                        ) : <p className="text-xs text-amber-600">Max {LIM.maxLanguages} languages reached.</p>}
+                            ))}
+                            {langFields.length < LIM.maxLanguages ? (
+                                <button type="button" onClick={() => appendLang({ name: "", level: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]" disabled={!(watchedValues.visibleSections?.includes('languages') ?? true)}>
+                                    + Add Language
+                                </button>
+                            ) : <p className="text-xs text-amber-600">Max {LIM.maxLanguages} languages reached.</p>}
+                        </div>
                     </CollapsibleSection>
 
                     {/* Hobbies */}
                     <CollapsibleSection title={`Hobbies & Interests (max ${LIM.maxHobbies})`}>
-                        <Controller
-                            control={form.control}
-                            name="hobbies"
-                            render={({ field }) => (
-                                <TagInput value={field.value} onChange={field.onChange} placeholder="Add a hobby (e.g. Reading, Photography)" maxLen={LIM.hobby} maxItems={LIM.maxHobbies} />
-                            )}
-                        />
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-hobbies"
+                                checked={watchedValues.visibleSections?.includes('hobbies') ?? true}
+                                onChange={(e) => toggleSection('hobbies', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-hobbies" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('hobbies') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            <Controller
+                                control={form.control}
+                                name="hobbies"
+                                render={({ field }) => (
+                                    <TagInput value={field.value} onChange={field.onChange} placeholder="Add a hobby (e.g. Reading, Photography)" maxLen={LIM.hobby} maxItems={LIM.maxHobbies} />
+                                )}
+                            />
+                        </div>
                     </CollapsibleSection>
 
                     {/* Work Experience */}
                     <CollapsibleSection title={`Work Experience (max ${LIM.weEntries})`}>
-                        {weFields.map((field, index) => (
-                            <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
-                                    <button type="button" onClick={() => removeWe(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-workExperience"
+                                checked={watchedValues.visibleSections?.includes('workExperience') ?? true}
+                                onChange={(e) => toggleSection('workExperience', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-workExperience" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('workExperience') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            {weFields.map((field, index) => (
+                                <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3 mb-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
+                                        <button type="button" onClick={() => removeWe(index)} className="text-xs text-red-500 hover:underline" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)}>Remove</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <FieldLabel label="Job Title" cur={watchedValues.workExperience?.[index]?.jobTitle?.length ?? 0} max={LIM.jobTitle} />
+                                            <input {...form.register(`workExperience.${index}.jobTitle`)} maxLength={LIM.jobTitle} className={inputCls()} placeholder="Sales Manager" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <FieldLabel label="Company" cur={watchedValues.workExperience?.[index]?.company?.length ?? 0} max={LIM.company} />
+                                            <input {...form.register(`workExperience.${index}.company`)} maxLength={LIM.company} className={inputCls()} placeholder="Company Name" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <FieldLabel label="Location" cur={watchedValues.workExperience?.[index]?.location?.length ?? 0} max={LIM.location} />
+                                            <input {...form.register(`workExperience.${index}.location`)} maxLength={LIM.location} className={inputCls()} placeholder="Dhaka, BD" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>Start Date</label>
+                                            <input {...form.register(`workExperience.${index}.startDate`)} maxLength={20} className={inputCls()} placeholder="Jan 2022" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>End Date</label>
+                                            <input {...form.register(`workExperience.${index}.endDate`)} maxLength={20} className={inputCls()} placeholder="Present" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)} />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <span className="text-sm font-semibold text-gray-700">Bullet Points (one per line)</span>
+                                            <span className="text-xs text-gray-400">max {LIM.bulletsPerEntry} lines · {LIM.bullet} chars each</span>
+                                        </div>
+                                        <Controller
+                                            control={form.control}
+                                            name={`workExperience.${index}.bullets`}
+                                            render={({ field }) => {
+                                                const limited = field.value.slice(0, LIM.bulletsPerEntry).map(b => b.slice(0, LIM.bullet));
+                                                return (
+                                                    <textarea
+                                                        className={inputCls("min-h-[70px] resize-none")}
+                                                        placeholder="Achieved 150% of sales target&#10;Managed a team of 5 people"
+                                                        value={limited.join("\n")}
+                                                        rows={LIM.bulletsPerEntry}
+                                                        disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)}
+                                                        onChange={(e) => {
+                                                            const lines = e.target.value.split("\n").slice(0, LIM.bulletsPerEntry).map(l => l.slice(0, LIM.bullet));
+                                                            field.onChange(lines);
+                                                        }}
+                                                    />
+                                                );
+                                            }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <FieldLabel label="Job Title" cur={watchedValues.workExperience?.[index]?.jobTitle?.length ?? 0} max={LIM.jobTitle} />
-                                        <input {...form.register(`workExperience.${index}.jobTitle`)} maxLength={LIM.jobTitle} className={inputCls()} placeholder="Sales Manager" />
-                                    </div>
-                                    <div>
-                                        <FieldLabel label="Company" cur={watchedValues.workExperience?.[index]?.company?.length ?? 0} max={LIM.company} />
-                                        <input {...form.register(`workExperience.${index}.company`)} maxLength={LIM.company} className={inputCls()} placeholder="Company Name" />
-                                    </div>
-                                    <div>
-                                        <FieldLabel label="Location" cur={watchedValues.workExperience?.[index]?.location?.length ?? 0} max={LIM.location} />
-                                        <input {...form.register(`workExperience.${index}.location`)} maxLength={LIM.location} className={inputCls()} placeholder="Dhaka, BD" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>Start Date</label>
-                                        <input {...form.register(`workExperience.${index}.startDate`)} maxLength={20} className={inputCls()} placeholder="Jan 2022" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>End Date</label>
-                                        <input {...form.register(`workExperience.${index}.endDate`)} maxLength={20} className={inputCls()} placeholder="Present" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1.5">
-                                        <span className="text-sm font-semibold text-gray-700">Bullet Points (one per line)</span>
-                                        <span className="text-xs text-gray-400">max {LIM.bulletsPerEntry} lines · {LIM.bullet} chars each</span>
-                                    </div>
-                                    <Controller
-                                        control={form.control}
-                                        name={`workExperience.${index}.bullets`}
-                                        render={({ field }) => {
-                                            const limited = field.value.slice(0, LIM.bulletsPerEntry).map(b => b.slice(0, LIM.bullet));
-                                            return (
-                                                <textarea
-                                                    className={inputCls("min-h-[70px] resize-none")}
-                                                    placeholder="Achieved 150% of sales target&#10;Managed a team of 5 people"
-                                                    value={limited.join("\n")}
-                                                    rows={LIM.bulletsPerEntry}
-                                                    onChange={(e) => {
-                                                        const lines = e.target.value.split("\n").slice(0, LIM.bulletsPerEntry).map(l => l.slice(0, LIM.bullet));
-                                                        field.onChange(lines);
-                                                    }}
-                                                />
-                                            );
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                        {weFields.length < LIM.weEntries ? (
-                            <button type="button" onClick={() => appendWe({ jobTitle: "", company: "", location: "", startDate: "", endDate: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                                + Add Work Experience
-                            </button>
-                        ) : <p className="text-xs text-amber-600">Max {LIM.weEntries} entries reached.</p>}
+                            ))}
+                            {weFields.length < LIM.weEntries ? (
+                                <button type="button" onClick={() => appendWe({ jobTitle: "", company: "", location: "", startDate: "", endDate: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]" disabled={!(watchedValues.visibleSections?.includes('workExperience') ?? true)}>
+                                    + Add Work Experience
+                                </button>
+                            ) : <p className="text-xs text-amber-600">Max {LIM.weEntries} entries reached.</p>}
+                        </div>
                     </CollapsibleSection>
 
                     {/* Training */}
                     <CollapsibleSection title={`Training (max ${LIM.trainingEntries})`}>
-                        {trainingFields.map((field, index) => (
-                            <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
-                                    <button type="button" onClick={() => removeTraining(index)} className="text-xs text-red-500 hover:underline">Remove</button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <FieldLabel label="Training Name" cur={watchedValues.training?.[index]?.trainingName?.length ?? 0} max={LIM.trainingName} />
-                                        <input {...form.register(`training.${index}.trainingName`)} maxLength={LIM.trainingName} className={inputCls()} placeholder="Digital Marketing" />
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-training"
+                                checked={watchedValues.visibleSections?.includes('training') ?? true}
+                                onChange={(e) => toggleSection('training', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-training" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('training') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            {trainingFields.map((field, index) => (
+                                <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3 mb-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
+                                        <button type="button" onClick={() => removeTraining(index)} className="text-xs text-red-500 hover:underline" disabled={!(watchedValues.visibleSections?.includes('training') ?? true)}>Remove</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <FieldLabel label="Training Name" cur={watchedValues.training?.[index]?.trainingName?.length ?? 0} max={LIM.trainingName} />
+                                            <input {...form.register(`training.${index}.trainingName`)} maxLength={LIM.trainingName} className={inputCls()} placeholder="Digital Marketing" disabled={!(watchedValues.visibleSections?.includes('training') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <FieldLabel label="Institute" cur={watchedValues.training?.[index]?.institute?.length ?? 0} max={LIM.institute} />
+                                            <input {...form.register(`training.${index}.institute`)} maxLength={LIM.institute} className={inputCls()} placeholder="Institute Name" disabled={!(watchedValues.visibleSections?.includes('training') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>Year</label>
+                                            <input {...form.register(`training.${index}.year`)} maxLength={4} className={inputCls()} placeholder="2023" disabled={!(watchedValues.visibleSections?.includes('training') ?? true)} />
+                                        </div>
                                     </div>
                                     <div>
-                                        <FieldLabel label="Institute" cur={watchedValues.training?.[index]?.institute?.length ?? 0} max={LIM.institute} />
-                                        <input {...form.register(`training.${index}.institute`)} maxLength={LIM.institute} className={inputCls()} placeholder="Institute Name" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>Year</label>
-                                        <input {...form.register(`training.${index}.year`)} maxLength={4} className={inputCls()} placeholder="2023" />
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <span className="text-sm font-semibold text-gray-700">Bullet Points (one per line)</span>
+                                            <span className="text-xs text-gray-400">max {LIM.bulletsPerEntry} lines · {LIM.bullet} chars each</span>
+                                        </div>
+                                        <Controller
+                                            control={form.control}
+                                            name={`training.${index}.bullets`}
+                                            render={({ field }) => {
+                                                const limited = field.value.slice(0, LIM.bulletsPerEntry).map(b => b.slice(0, LIM.bullet));
+                                                return (
+                                                    <textarea
+                                                        className={inputCls("resize-none")}
+                                                        placeholder="Learned Google Ads&#10;Completed certification"
+                                                        value={limited.join("\n")}
+                                                        rows={LIM.bulletsPerEntry}
+                                                        disabled={!(watchedValues.visibleSections?.includes('training') ?? true)}
+                                                        onChange={(e) => {
+                                                            const lines = e.target.value.split("\n").slice(0, LIM.bulletsPerEntry).map(l => l.slice(0, LIM.bullet));
+                                                            field.onChange(lines);
+                                                        }}
+                                                    />
+                                                );
+                                            }}
+                                        />
                                     </div>
                                 </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1.5">
-                                        <span className="text-sm font-semibold text-gray-700">Bullet Points (one per line)</span>
-                                        <span className="text-xs text-gray-400">max {LIM.bulletsPerEntry} lines · {LIM.bullet} chars each</span>
-                                    </div>
-                                    <Controller
-                                        control={form.control}
-                                        name={`training.${index}.bullets`}
-                                        render={({ field }) => {
-                                            const limited = field.value.slice(0, LIM.bulletsPerEntry).map(b => b.slice(0, LIM.bullet));
-                                            return (
-                                                <textarea
-                                                    className={inputCls("resize-none")}
-                                                    placeholder="Learned Google Ads&#10;Completed certification"
-                                                    value={limited.join("\n")}
-                                                    rows={LIM.bulletsPerEntry}
-                                                    onChange={(e) => {
-                                                        const lines = e.target.value.split("\n").slice(0, LIM.bulletsPerEntry).map(l => l.slice(0, LIM.bullet));
-                                                        field.onChange(lines);
-                                                    }}
-                                                />
-                                            );
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                        {trainingFields.length < LIM.trainingEntries ? (
-                            <button type="button" onClick={() => appendTraining({ trainingName: "", institute: "", year: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                                + Add Training
-                            </button>
-                        ) : <p className="text-xs text-amber-600">Max {LIM.trainingEntries} entries reached.</p>}
+                            ))}
+                            {trainingFields.length < LIM.trainingEntries ? (
+                                <button type="button" onClick={() => appendTraining({ trainingName: "", institute: "", year: "", bullets: [] })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]" disabled={!(watchedValues.visibleSections?.includes('training') ?? true)}>
+                                    + Add Training
+                                </button>
+                            ) : <p className="text-xs text-amber-600">Max {LIM.trainingEntries} entries reached.</p>}
+                        </div>
                     </CollapsibleSection>
 
                     {/* Education */}
                     <CollapsibleSection title={`Education (max ${LIM.eduEntries})`}>
-                        {eduFields.map((field, index) => (
-                            <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
-                                    <button type="button" onClick={() => removeEdu(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-education"
+                                checked={watchedValues.visibleSections?.includes('education') ?? true}
+                                onChange={(e) => toggleSection('education', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-education" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('education') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            {eduFields.map((field, index) => (
+                                <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3 mb-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-500">Entry {index + 1}</span>
+                                        <button type="button" onClick={() => removeEdu(index)} className="text-xs text-red-500 hover:underline" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)}>Remove</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <FieldLabel label="Degree" cur={watchedValues.education?.[index]?.degree?.length ?? 0} max={LIM.degree} />
+                                            <input {...form.register(`education.${index}.degree`)} maxLength={LIM.degree} className={inputCls()} placeholder="BBA, BSc in CS" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <FieldLabel label="Department" cur={watchedValues.education?.[index]?.department?.length ?? 0} max={LIM.department} />
+                                            <input {...form.register(`education.${index}.department`)} maxLength={LIM.department} className={inputCls()} placeholder="Marketing" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)} />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <FieldLabel label="Institution" cur={watchedValues.education?.[index]?.institution?.length ?? 0} max={LIM.institution} />
+                                            <input {...form.register(`education.${index}.institution`)} maxLength={LIM.institution} className={inputCls()} placeholder="University Name" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>GPA</label>
+                                            <input {...form.register(`education.${index}.gpa`)} maxLength={5} className={inputCls()} placeholder="3.80" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>Year</label>
+                                            <input {...form.register(`education.${index}.year`)} maxLength={4} className={inputCls()} placeholder="2022" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)} />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <FieldLabel label="Degree" cur={watchedValues.education?.[index]?.degree?.length ?? 0} max={LIM.degree} />
-                                        <input {...form.register(`education.${index}.degree`)} maxLength={LIM.degree} className={inputCls()} placeholder="BBA, BSc in CS" />
-                                    </div>
-                                    <div>
-                                        <FieldLabel label="Department" cur={watchedValues.education?.[index]?.department?.length ?? 0} max={LIM.department} />
-                                        <input {...form.register(`education.${index}.department`)} maxLength={LIM.department} className={inputCls()} placeholder="Marketing" />
-                                    </div>
-                                    <div className="col-span-2">
-                                        <FieldLabel label="Institution" cur={watchedValues.education?.[index]?.institution?.length ?? 0} max={LIM.institution} />
-                                        <input {...form.register(`education.${index}.institution`)} maxLength={LIM.institution} className={inputCls()} placeholder="University Name" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>GPA</label>
-                                        <input {...form.register(`education.${index}.gpa`)} maxLength={5} className={inputCls()} placeholder="3.80" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>Year</label>
-                                        <input {...form.register(`education.${index}.year`)} maxLength={4} className={inputCls()} placeholder="2022" />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {eduFields.length < LIM.eduEntries ? (
-                            <button type="button" onClick={() => appendEdu({ degree: "", department: "", institution: "", gpa: "", year: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                                + Add Education
-                            </button>
-                        ) : <p className="text-xs text-amber-600">Max {LIM.eduEntries} entries reached.</p>}
+                            ))}
+                            {eduFields.length < LIM.eduEntries ? (
+                                <button type="button" onClick={() => appendEdu({ degree: "", department: "", institution: "", gpa: "", year: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]" disabled={!(watchedValues.visibleSections?.includes('education') ?? true)}>
+                                    + Add Education
+                                </button>
+                            ) : <p className="text-xs text-amber-600">Max {LIM.eduEntries} entries reached.</p>}
+                        </div>
                     </CollapsibleSection>
 
                     {/* References */}
                     <CollapsibleSection title={`References (max ${LIM.refEntries})`}>
-                        {refFields.map((field, index) => (
-                            <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs font-bold text-gray-500">Ref {index + 1}</span>
-                                    <button type="button" onClick={() => removeRef(index)} className="text-xs text-red-500 hover:underline">Remove</button>
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-references"
+                                checked={watchedValues.visibleSections?.includes('references') ?? true}
+                                onChange={(e) => toggleSection('references', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-references" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
+                        </div>
+                        <div className={!(watchedValues.visibleSections?.includes('references') ?? true) ? "opacity-50 pointer-events-none" : ""}>
+                            {refFields.map((field, index) => (
+                                <div key={field.id} className="p-4 bg-gray-50 rounded-xl space-y-3 mb-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-500">Ref {index + 1}</span>
+                                        <button type="button" onClick={() => removeRef(index)} className="text-xs text-red-500 hover:underline" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)}>Remove</button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <FieldLabel label="Name" cur={watchedValues.references?.[index]?.name?.length ?? 0} max={LIM.refName} />
+                                            <input {...form.register(`references.${index}.name`)} maxLength={LIM.refName} className={inputCls()} placeholder="Dr. John Doe" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <FieldLabel label="Title / Designation" cur={watchedValues.references?.[index]?.title?.length ?? 0} max={LIM.refTitle} />
+                                            <input {...form.register(`references.${index}.title`)} maxLength={LIM.refTitle} className={inputCls()} placeholder="Professor" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <FieldLabel label="Organization" cur={watchedValues.references?.[index]?.organization?.length ?? 0} max={LIM.refOrg} />
+                                            <input {...form.register(`references.${index}.organization`)} maxLength={LIM.refOrg} className={inputCls()} placeholder="University Name" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>Phone</label>
+                                            <input {...form.register(`references.${index}.phone`)} maxLength={15} className={inputCls()} placeholder="01XXXXXXXXX" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)} />
+                                        </div>
+                                        <div>
+                                            <label className={labelCls()}>Email</label>
+                                            <input {...form.register(`references.${index}.email`)} maxLength={60} className={inputCls()} placeholder="ref@email.com" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)} />
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <FieldLabel label="Name" cur={watchedValues.references?.[index]?.name?.length ?? 0} max={LIM.refName} />
-                                        <input {...form.register(`references.${index}.name`)} maxLength={LIM.refName} className={inputCls()} placeholder="Dr. John Doe" />
-                                    </div>
-                                    <div>
-                                        <FieldLabel label="Title / Designation" cur={watchedValues.references?.[index]?.title?.length ?? 0} max={LIM.refTitle} />
-                                        <input {...form.register(`references.${index}.title`)} maxLength={LIM.refTitle} className={inputCls()} placeholder="Professor" />
-                                    </div>
-                                    <div>
-                                        <FieldLabel label="Organization" cur={watchedValues.references?.[index]?.organization?.length ?? 0} max={LIM.refOrg} />
-                                        <input {...form.register(`references.${index}.organization`)} maxLength={LIM.refOrg} className={inputCls()} placeholder="University Name" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>Phone</label>
-                                        <input {...form.register(`references.${index}.phone`)} maxLength={15} className={inputCls()} placeholder="01XXXXXXXXX" />
-                                    </div>
-                                    <div>
-                                        <label className={labelCls()}>Email</label>
-                                        <input {...form.register(`references.${index}.email`)} maxLength={60} className={inputCls()} placeholder="ref@email.com" />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {refFields.length < LIM.refEntries ? (
-                            <button type="button" onClick={() => appendRef({ name: "", phone: "", email: "", title: "", organization: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]">
-                                + Add Reference
-                            </button>
-                        ) : <p className="text-xs text-amber-600">Max {LIM.refEntries} references reached.</p>}
+                            ))}
+                            {refFields.length < LIM.refEntries ? (
+                                <button type="button" onClick={() => appendRef({ name: "", phone: "", email: "", title: "", organization: "" })} className="w-full py-2 border-2 border-dashed border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:border-[#059669] hover:text-[#059669]" disabled={!(watchedValues.visibleSections?.includes('references') ?? true)}>
+                                    + Add Reference
+                                </button>
+                            ) : <p className="text-xs text-amber-600">Max {LIM.refEntries} references reached.</p>}
+                        </div>
                     </CollapsibleSection>
 
                     {/* Declaration & Signature */}
                     <CollapsibleSection title="Declaration & Signature">
-                        <div>
-                            <FieldLabel label="Declaration" cur={watchedValues.declaration?.length ?? 0} max={LIM.declaration} />
-                            <textarea {...form.register("declaration")} maxLength={LIM.declaration} className={inputCls("min-h-[70px] resize-none")} rows={3} placeholder="I hereby declare that the information provided above is true and accurate to the best of my knowledge." />
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 mb-2">
+                            <input
+                                type="checkbox"
+                                id="toggle-declaration"
+                                checked={watchedValues.visibleSections?.includes('declaration') ?? true}
+                                onChange={(e) => toggleSection('declaration', e.target.checked)}
+                                className="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-gray-300 cursor-pointer"
+                            />
+                            <label htmlFor="toggle-declaration" className="text-xs font-bold text-gray-700 cursor-pointer select-none">Include this section in CV</label>
                         </div>
-                        <div>
-                            <FieldLabel label="Signature (name or text)" cur={watchedValues.signature?.length ?? 0} max={LIM.signature} />
-                            <input {...form.register("signature")} maxLength={LIM.signature} className={inputCls()} placeholder="Your name" />
+                        <div className={`space-y-4 ${!(watchedValues.visibleSections?.includes('declaration') ?? true) ? "opacity-50 pointer-events-none" : ""}`}>
+                            <div>
+                                <FieldLabel label="Declaration" cur={watchedValues.declaration?.length ?? 0} max={LIM.declaration} />
+                                <textarea {...form.register("declaration")} maxLength={LIM.declaration} className={inputCls("min-h-[70px] resize-none")} rows={3} placeholder="I hereby declare that the information provided above is true and accurate to the best of my knowledge." disabled={!(watchedValues.visibleSections?.includes('declaration') ?? true)} />
+                            </div>
+                            <div>
+                                <FieldLabel label="Signature (name or text)" cur={watchedValues.signature?.length ?? 0} max={LIM.signature} />
+                                <input {...form.register("signature")} maxLength={LIM.signature} className={inputCls()} placeholder="Your name" disabled={!(watchedValues.visibleSections?.includes('declaration') ?? true)} />
+                            </div>
                         </div>
                     </CollapsibleSection>
 
