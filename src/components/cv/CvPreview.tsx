@@ -147,7 +147,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 }}>
                     {config.showPhoto !== false && (
                         <div style={{ alignSelf: "center" }}>
-                            <div style={{ width: Math.round(64 * scale), height: Math.round(64 * scale), borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "6px", backgroundColor: "rgba(255,255,255,0.2)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                            <div style={{ width: Math.round(80 * scale), height: Math.round(80 * scale), borderRadius: (config.photoShape ?? "circle") !== "square" ? "50%" : "8px", backgroundColor: "rgba(255,255,255,0.2)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                                 {data.profilePhoto
                                     ? <img src={data.profilePhoto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     : <span style={{ fontWeight: 900, fontSize: sz(1.4), color: "#fff" }}>{initial}</span>}

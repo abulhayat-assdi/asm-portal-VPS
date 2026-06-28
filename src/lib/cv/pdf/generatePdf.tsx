@@ -37,9 +37,9 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         // Sidebar
         sidebar: { width: `${sidebarWidthPct}%`, backgroundColor: sidebarColor, paddingTop: sp(20), paddingLeft: sp(14), paddingRight: sp(14), paddingBottom: 36, flexDirection: 'column' },
         photoWrap: { alignSelf: 'center', marginBottom: sp(10) },
-        photoCircle: { width: sz(48), height: sz(48), borderRadius: sz(24), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-        photoSquare: { width: sz(48), height: sz(48), borderRadius: sz(4.5), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-        photoImg: { width: sz(48), height: sz(48), objectFit: 'cover' },
+        photoCircle: { width: sz(60), height: sz(60), borderRadius: sz(30), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+        photoSquare: { width: sz(60), height: sz(60), borderRadius: sz(5.5), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+        photoImg: { width: sz(60), height: sz(60), objectFit: 'cover' },
         photoInitial: { color: '#fff', fontSize: sz(16.8), fontFamily: 'Helvetica-Bold' },
         sidebarName: { color: '#fff', fontSize: sz(10), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(8), lineHeight: 1.3 },
 

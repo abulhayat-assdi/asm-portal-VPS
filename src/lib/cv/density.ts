@@ -299,7 +299,7 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
 
     // Photo
     if (showPhoto) {
-        H_sidebar += Math.round(64 * scale) + sp(10);
+        H_sidebar += Math.round(80 * scale) + sp(10);
     }
 
     // Full Name
