@@ -23,20 +23,50 @@ export interface CvDensityData {
     nationality?: string | null;
 }
 
+/**
+ * Simulates Helvetica word wrapping to count the exact number of text lines.
+ */
+function estimateWrappedLines(text: string, containerWidth: number, fontSize: number): number {
+    if (!text) return 0;
+    // Average Helvetica char width is ~0.48 of font size.
+    const avgCharWidth = fontSize * 0.48;
+    const spaceWidth = fontSize * 0.25;
+    const words = text.split(/\s+/);
+    let lines = 1;
+    let currentLineWidth = 0;
+
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        if (!word) continue;
+        const wordWidth = word.length * avgCharWidth;
+        if (currentLineWidth === 0) {
+            currentLineWidth = wordWidth;
+        } else if (currentLineWidth + spaceWidth + wordWidth <= containerWidth) {
+            currentLineWidth += spaceWidth + wordWidth;
+        } else {
+            lines++;
+            currentLineWidth = wordWidth;
+        }
+    }
+    return lines;
+}
+
 export function estimateHeights(data: CvDensityData, config: TemplateConfig | undefined, scale: number, spacingScale: number) {
     const sw = config?.sidebarWidth || 38;
     const showPhoto = config?.showPhoto !== false;
 
     // A4 dimensions at 96 dpi
     const PREVIEW_WIDTH = 794;
-    const W_main = PREVIEW_WIDTH * (1 - sw / 100) - 36 * spacingScale; // 18px left/right padding
-    const W_sidebar = PREVIEW_WIDTH * (sw / 100) - 28 * spacingScale; // 14px left/right padding
+    // main padding sp(18)*2 = 36 pt. In pixels: 36 * 1.3333 = 48 px.
+    const W_main = PREVIEW_WIDTH * (1 - sw / 100) - 48 * spacingScale;
+    // sidebar padding sp(14)*2 = 28 pt. In pixels: 28 * 1.3333 = 37.33 px.
+    const W_sidebar = PREVIEW_WIDTH * (sw / 100) - 37.33 * spacingScale;
 
     const sz = (baseRem: number) => baseRem * scale * 16;
     const sp = (basePx: number) => Math.max(1, Math.round(basePx * spacingScale));
 
-    // Section gap: 12px default
-    const gap = sp(12);
+    // Section gap: reduced to sp(8) from sp(12)
+    const gap = sp(8);
 
     // 1. Estimate Main Column Height
     let H_main = 0;
@@ -62,17 +92,16 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
             isSectionActive = true;
             // Header
             const fs_h = sz(0.78);
-            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(3) + sp(10);
+            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(2) + sp(6);
             // Paragraph
             const fs_p = sz(0.74);
-            const charsPerLine = Math.max(1, W_main / (0.47 * fs_p));
-            const lines = Math.max(1, Math.ceil(data.careerObjective.length / charsPerLine));
+            const lines = estimateWrappedLines(data.careerObjective, W_main, fs_p);
             sectionHeight = headingHeight + lines * fs_p * 1.6;
         } else if (key === "workExperience" && Array.isArray(data.workExperience) && data.workExperience.length > 0) {
             isSectionActive = true;
             // Header
             const fs_h = sz(0.78);
-            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(3) + sp(10);
+            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(2) + sp(6);
             
             let entriesHeight = 0;
             data.workExperience.forEach((item: any) => {
@@ -80,27 +109,29 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
                 let itemHeight = 0;
                 // Job Title
                 const fs_title = sz(0.78);
-                itemHeight += fs_title * 1.2;
-                // Company
+                itemHeight += estimateWrappedLines(item.jobTitle, W_main, fs_title) * fs_title * 1.2;
+                // Company & Location (subrow has marginTop: sz(1) pt = 1.33 * scale px)
                 const fs_comp = sz(0.72);
-                itemHeight += fs_comp * 1.2;
+                const subRowMargin = Math.round(1.33 * scale);
+                const compW = W_main - 80 * scale; // Subtract approximate date width
+                const compText = item.company + (item.location ? `, ${item.location}` : "");
+                itemHeight += subRowMargin + estimateWrappedLines(compText, compW, fs_comp) * fs_comp * 1.2;
                 // Bullets
                 const bullets = Array.isArray(item.bullets) ? item.bullets.filter(Boolean) : [];
                 bullets.forEach((b: string) => {
                     const fs_b = sz(0.70);
-                    const bulletW = W_main - sp(10); // padding-left: sp(10)
-                    const charsPerLine = Math.max(1, bulletW / (0.47 * fs_b));
-                    const lines = Math.max(1, Math.ceil(b.length / charsPerLine));
-                    itemHeight += lines * fs_b * 1.45 + sp(3);
+                    // marginLeft: sp(8) pt, bulletDot width: sz(8) pt. Total: 16 pt = 21.33 * scale px
+                    const bulletW = W_main - 21.33 * scale;
+                    itemHeight += estimateWrappedLines(b, bulletW, fs_b) * fs_b * 1.45 + sp(2); // marginTop: sp(2) pt
                 });
-                entriesHeight += itemHeight + sp(8); // marginBottom: sp(8)
+                entriesHeight += itemHeight + sp(5); // entryBlock marginBottom: sp(5)
             });
             sectionHeight = headingHeight + entriesHeight;
         } else if (key === "training" && Array.isArray(data.training) && data.training.length > 0) {
             isSectionActive = true;
             // Header
             const fs_h = sz(0.78);
-            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(3) + sp(10);
+            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(2) + sp(6);
 
             let entriesHeight = 0;
             data.training.forEach((item: any) => {
@@ -108,27 +139,27 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
                 let itemHeight = 0;
                 // Training Name
                 const fs_title = sz(0.78);
-                itemHeight += fs_title * 1.2;
+                itemHeight += estimateWrappedLines(item.trainingName, W_main, fs_title) * fs_title * 1.2;
                 // Institute
                 const fs_inst = sz(0.72);
-                itemHeight += fs_inst * 1.2;
+                const subRowMargin = Math.round(1.33 * scale);
+                const instW = W_main - 60 * scale; // Subtract year width
+                itemHeight += subRowMargin + estimateWrappedLines(item.institute, instW, fs_inst) * fs_inst * 1.2;
                 // Bullets
                 const bullets = Array.isArray(item.bullets) ? item.bullets.filter(Boolean) : [];
                 bullets.forEach((b: string) => {
                     const fs_b = sz(0.70);
-                    const bulletW = W_main - sp(10);
-                    const charsPerLine = Math.max(1, bulletW / (0.47 * fs_b));
-                    const lines = Math.max(1, Math.ceil(b.length / charsPerLine));
-                    itemHeight += lines * fs_b * 1.45 + sp(3);
+                    const bulletW = W_main - 21.33 * scale;
+                    itemHeight += estimateWrappedLines(b, bulletW, fs_b) * fs_b * 1.45 + sp(2);
                 });
-                entriesHeight += itemHeight + sp(8);
+                entriesHeight += itemHeight + sp(5);
             });
             sectionHeight = headingHeight + entriesHeight;
         } else if (key === "education" && Array.isArray(data.education) && data.education.length > 0) {
             isSectionActive = true;
             // Header
             const fs_h = sz(0.78);
-            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(3) + sp(10);
+            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(2) + sp(6);
 
             let entriesHeight = 0;
             data.education.forEach((item: any) => {
@@ -136,64 +167,83 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
                 let itemHeight = 0;
                 // Degree
                 const fs_deg = sz(0.78);
-                itemHeight += fs_deg * 1.2;
+                const degText = item.degree + (item.department ? ` — ${item.department}` : "");
+                itemHeight += estimateWrappedLines(degText, W_main, fs_deg) * fs_deg * 1.2;
                 // Institution
                 const fs_inst = sz(0.72);
-                itemHeight += fs_inst * 1.2;
+                const subRowMargin = Math.round(1.33 * scale);
+                const instW = W_main - 60 * scale;
+                itemHeight += subRowMargin + estimateWrappedLines(item.institution, instW, fs_inst) * fs_inst * 1.2;
                 // GPA (if present)
                 if (item.gpa) {
                     const fs_gpa = sz(0.70);
-                    itemHeight += fs_gpa * 1.2;
+                    itemHeight += 1 + fs_gpa * 1.2; // marginTop: 1pt
                 }
-                entriesHeight += itemHeight + sp(8);
+                entriesHeight += itemHeight + sp(5);
             });
             sectionHeight = headingHeight + entriesHeight;
         } else if (key === "references" && Array.isArray(data.references) && data.references.length > 0) {
             isSectionActive = true;
             // Header
             const fs_h = sz(0.78);
-            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(3) + sp(10);
+            const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1.5 * scale)) + sp(2) + sp(6);
 
-            // References render in 2-column grid. Column gap is sp(10).
-            const W_ref_col = (W_main - sp(10)) / 2;
+            // References render in 2-column grid. Column gap is Math.round(8 * scale) px.
+            const W_ref_col = W_main * 0.47;
             const refHeights = data.references.map((ref: any) => {
                 if (!ref) return 0;
                 let h = 0;
                 // Name
                 const fs_name = sz(0.76);
-                h += fs_name * 1.2;
+                h += estimateWrappedLines(ref.name, W_ref_col, fs_name) * fs_name * 1.2;
                 // Title
-                if (ref.title) h += sz(0.70) * 1.2;
+                if (ref.title) {
+                    const fs = sz(0.70);
+                    h += estimateWrappedLines(ref.title, W_ref_col, fs) * fs * 1.2;
+                }
                 // Org
-                if (ref.organization) h += sz(0.70) * 1.2;
+                if (ref.organization) {
+                    const fs = sz(0.70);
+                    h += estimateWrappedLines(ref.organization, W_ref_col, fs) * fs * 1.2;
+                }
                 // Phone
-                if (ref.phone) h += sz(0.68) * 1.2;
+                if (ref.phone) {
+                    const fs = sz(0.68);
+                    h += estimateWrappedLines(`Phone : ${ref.phone}`, W_ref_col, fs) * fs * 1.2;
+                }
                 // Email
-                if (ref.email) h += sz(0.68) * 1.2;
+                if (ref.email) {
+                    const fs = sz(0.68);
+                    h += estimateWrappedLines(`Email : ${ref.email}`, W_ref_col, fs) * fs * 1.2;
+                }
                 return h;
             });
 
             let gridHeight = 0;
+            const rowGap = sp(3) + Math.round(8 * scale); // refItem marginBottom + gap
             for (let i = 0; i < refHeights.length; i += 2) {
                 const h1 = refHeights[i] || 0;
                 const h2 = refHeights[i + 1] || 0;
-                gridHeight += Math.max(h1, h2) + sp(10); // row height + vertical gap
+                gridHeight += Math.max(h1, h2);
+                if (i + 2 < refHeights.length) {
+                    gridHeight += rowGap;
+                }
             }
             sectionHeight = headingHeight + gridHeight;
         } else if (key === "declaration" && data.declaration) {
             isSectionActive = true;
-            // Declaration wrapper has border-top: 1px, paddingTop: sp(10), marginTop: sp(4)
-            const wrapperOverhead = 1 + sp(10) + sp(4);
+            // Declaration wrapper has border-top: sz(0.5) pt, paddingTop: sp(8) pt, marginTop: sp(6) pt
+            const wrapperOverhead = sz(0.5) * 1.3333 + sp(8) + sp(6);
             // Declaration text
             const fs_dec = sz(0.70);
-            const charsPerLine = Math.max(1, W_main / (0.47 * fs_dec));
-            const lines = Math.max(1, Math.ceil(data.declaration.length / charsPerLine));
-            const decTextHeight = lines * fs_dec * 1.5;
+            const decLines = estimateWrappedLines(data.declaration, W_main, fs_dec);
+            const decTextHeight = decLines * fs_dec * 1.5;
             // Signature
             let sigHeight = 0;
             if (data.signature) {
                 const fs_sig = sz(0.76);
-                sigHeight = fs_sig * 1.2 + sp(6); // marginTop: sp(6)
+                const sigLines = estimateWrappedLines(data.signature, W_main, fs_sig);
+                sigHeight = sigLines * fs_sig * 1.2 + sp(6); // marginTop: sp(6)
             }
             sectionHeight = wrapperOverhead + decTextHeight + sigHeight;
         }
@@ -220,9 +270,8 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     // Full Name
     if (data.fullName) {
         const fs = sz(0.84);
-        const charsPerLine = Math.max(1, W_sidebar / (0.47 * fs));
-        const lines = Math.max(1, Math.ceil(data.fullName.length / charsPerLine));
-        H_sidebar += lines * fs * 1.3 + sp(12);
+        const lines = estimateWrappedLines(data.fullName, W_sidebar, fs);
+        H_sidebar += lines * fs * 1.3 + sp(8);
     }
 
     const hasContact = data.phone || data.email || data.address;
@@ -234,7 +283,7 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
 
     const addSidebarSection = (contentHeight: number) => {
         const fs_h = sz(0.65);
-        const headingHeight = fs_h * 1.2 + Math.max(1, Math.round(1 * scale)) + sp(3) + sp(8);
+        const headingHeight = fs_h * 1.2 + sz(0.5) * 1.3333 + sp(3) + sp(6);
         H_sidebar += headingHeight + contentHeight;
         sidebarSectionsCount++;
     };
@@ -242,20 +291,15 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     if (hasContact) {
         let contactH = 0;
         const fs = sz(0.70);
+        const textW = W_sidebar - 17.33 * scale;
         if (data.phone) {
-            const charsPerLine = Math.max(1, W_sidebar / (0.47 * fs));
-            const lines = Math.max(1, Math.ceil(data.phone.length / charsPerLine));
-            contactH += lines * fs * 1.3 + sp(3);
+            contactH += estimateWrappedLines(data.phone, textW, fs) * fs * 1.4 + sp(3);
         }
         if (data.email) {
-            const charsPerLine = Math.max(1, W_sidebar / (0.47 * fs));
-            const lines = Math.max(1, Math.ceil(data.email.length / charsPerLine));
-            contactH += lines * fs * 1.3 + sp(3);
+            contactH += estimateWrappedLines(data.email, textW, fs) * fs * 1.4 + sp(3);
         }
         if (data.address) {
-            const charsPerLine = Math.max(1, W_sidebar / (0.47 * fs));
-            const lines = Math.max(1, Math.ceil(data.address.length / charsPerLine));
-            contactH += lines * fs * 1.3;
+            contactH += estimateWrappedLines(data.address, textW, fs) * fs * 1.4;
         }
         addSidebarSection(contactH);
     }
@@ -263,21 +307,20 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     if (hasSkills) {
         let skillsH = 0;
         const fs = sz(0.70);
+        const textW = W_sidebar - 13.33 * scale;
         data.skills.forEach((sk: string) => {
             if (!sk) return;
-            const charsPerLine = Math.max(1, W_sidebar / (0.47 * fs));
-            const lines = Math.max(1, Math.ceil(sk.length / charsPerLine));
-            skillsH += lines * fs * 1.3 + sp(3);
+            skillsH += estimateWrappedLines(sk, textW, fs) * fs * 1.4 + sp(3);
         });
         addSidebarSection(skillsH);
     }
 
     if (hasLangs) {
         let langsH = 0;
-        const fs_name = sz(0.70);
+        const fs = sz(0.70);
         data.languages.forEach((l: any) => {
             if (!l) return;
-            langsH += fs_name * 1.3 + sp(3);
+            langsH += fs * 1.4 + sp(3);
         });
         addSidebarSection(langsH);
     }
@@ -285,25 +328,22 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     if (hasHobbies) {
         let hobbiesH = 0;
         const fs = sz(0.70);
+        const textW = W_sidebar - 13.33 * scale;
         data.hobbies.forEach((h: string) => {
             if (!h) return;
-            const charsPerLine = Math.max(1, W_sidebar / (0.47 * fs));
-            const lines = Math.max(1, Math.ceil(h.length / charsPerLine));
-            hobbiesH += lines * fs * 1.3 + sp(3);
+            hobbiesH += estimateWrappedLines(h, textW, fs) * fs * 1.4 + sp(3);
         });
         addSidebarSection(hobbiesH);
     }
 
     if (hasPersonal) {
         let personalH = 0;
-        const labelW = Math.round(75 * scale);
-        const colonW = Math.round(12 * scale);
-        const valW = W_sidebar - labelW - colonW;
         const fs = sz(0.66);
+        const labelW = sz(58) * 1.3333;
+        const colonW = sz(8) * 1.3333;
+        const valW = W_sidebar - labelW - colonW;
         personalFields.forEach((val: string) => {
-            const charsPerLine = Math.max(1, valW / (0.47 * fs));
-            const lines = Math.max(1, Math.ceil(val.length / charsPerLine));
-            personalH += lines * fs * 1.3 + sp(3);
+            personalH += estimateWrappedLines(val, valW, fs) * fs * 1.4 + sp(3);
         });
         addSidebarSection(personalH);
     }
@@ -330,7 +370,7 @@ export function getCvDensityScale(data: CvDensityData, config?: TemplateConfig) 
         showPhoto: true,
     };
 
-    // Candidates range: from scale 1.25 down to 0.60
+    // Candidates range: from scale 1.25 down to 0.45
     const steps = [
         { scale: 1.25, spacingScale: 1.60 },
         { scale: 1.20, spacingScale: 1.45 },
@@ -353,18 +393,22 @@ export function getCvDensityScale(data: CvDensityData, config?: TemplateConfig) 
         { scale: 0.67, spacingScale: 0.29 },
         { scale: 0.64, spacingScale: 0.25 },
         { scale: 0.60, spacingScale: 0.22 },
+        { scale: 0.57, spacingScale: 0.19 },
+        { scale: 0.54, spacingScale: 0.16 },
+        { scale: 0.50, spacingScale: 0.13 },
+        { scale: 0.45, spacingScale: 0.10 },
     ];
 
-    let bestScale = 0.60;
-    let bestSpacingScale = 0.22;
+    let bestScale = 0.45;
+    let bestSpacingScale = 0.10;
 
     for (const step of steps) {
         const { H_main, H_sidebar } = estimateHeights(data, templateConfig, step.scale, step.spacingScale);
         const topPadding = 20 * step.spacingScale;
-        // Total height must be within 1123px (including bottom padding 48px)
-        // We target a slightly safer threshold of 1118px to account for slight rounding variances
+        // Total height must be within 1115px (including bottom padding 48px)
+        // We target a safe threshold of 1115px (corresponding to 836pt) to enforce bottom safety zone.
         const totalHeight = Math.max(H_main, H_sidebar) + topPadding + 48;
-        if (totalHeight <= 1118) {
+        if (totalHeight <= 1115) {
             bestScale = step.scale;
             bestSpacingScale = step.spacingScale;
             break; // First candidate that fits is the largest one

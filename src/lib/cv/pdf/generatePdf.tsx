@@ -40,13 +40,13 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         photoSquare: { width: sz(48), height: sz(48), borderRadius: sz(4.5), overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
         photoImg: { width: sz(48), height: sz(48), objectFit: 'cover' },
         photoInitial: { color: '#fff', fontSize: sz(16.8), fontFamily: 'Helvetica-Bold' },
-        sidebarName: { color: '#fff', fontSize: sz(10), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(12), lineHeight: 1.3 },
+        sidebarName: { color: '#fff', fontSize: sz(10), fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: sp(8), lineHeight: 1.3 },
 
-        sidebarSection: { marginBottom: sp(12) },
+        sidebarSection: { marginBottom: sp(8) },
         sidebarHeading: {
             color: 'rgba(255,255,255,0.85)', fontSize: sz(7.8), fontFamily: 'Helvetica-Bold',
             letterSpacing: 1.2, textTransform: 'uppercase', borderBottom: `${sz(0.5)} solid rgba(255,255,255,0.35)`,
-            paddingBottom: sp(3), marginBottom: sp(8),
+            paddingBottom: sp(3), marginBottom: sp(6),
         },
         sidebarRow: { flexDirection: 'row', marginBottom: sp(3), alignItems: 'center' },
         sidebarIcon: { width: sz(8), height: sz(8), marginRight: sz(5), flexShrink: 0 },
@@ -71,15 +71,15 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         main: { width: `${main}%`, backgroundColor: '#ffffff', paddingTop: sp(20), paddingLeft: sp(18), paddingRight: sp(18), paddingBottom: 36, flexDirection: 'column' },
         mainName: { fontSize: sz(13.2), fontFamily: 'Helvetica-Bold', color: sidebarColor, marginBottom: sp(6), lineHeight: 1.2 },
 
-        mainSection: { marginBottom: sp(10) },
+        mainSection: { marginBottom: sp(8) },
         mainHeading: {
             fontSize: sz(9.4), fontFamily: 'Helvetica-Bold', color: sidebarColor,
             textTransform: 'uppercase', borderBottom: `${sz(1.1)} solid ${sidebarColor}`,
-            paddingBottom: sp(2), marginBottom: sp(10), letterSpacing: 0.5,
+            paddingBottom: sp(2), marginBottom: sp(6), letterSpacing: 0.5,
         },
         objectiveTxt: { fontSize: sz(8.9), color: '#333', lineHeight: 1.6, textAlign: 'justify' },
 
-        entryBlock: { marginBottom: sp(8) },
+        entryBlock: { marginBottom: sp(5) },
         entryTitle: { fontSize: sz(9.4), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
         entrySubRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: sz(1) },
         entryOrg: { fontSize: sz(8.6), color: '#555', fontFamily: 'Helvetica-Oblique', flex: 1 },
@@ -89,11 +89,11 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
         bulletMainText: { fontSize: sz(8.4), color: '#333', flex: 1, lineHeight: 1.45 },
 
         refGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: sz(6) },
-        refItem: { width: '47%', marginBottom: sp(4) },
+        refItem: { width: '47%', marginBottom: sp(3) },
         refName: { fontSize: sz(9.1), fontFamily: 'Helvetica-Bold', color: '#1a1a1a' },
         refDetail: { fontSize: sz(8.2), color: '#555', marginTop: sz(1), lineHeight: 1.3 },
 
-        declaration: { marginTop: sp(10), borderTop: `${sz(0.5)} solid #ddd`, paddingTop: sp(8) },
+        declaration: { marginTop: sp(6), borderTop: `${sz(0.5)} solid #ddd`, paddingTop: sp(8) },
         declarationTxt: { fontSize: sz(8.4), color: '#444', lineHeight: 1.5, fontFamily: 'Helvetica-Oblique' },
         signatureTxt: { fontSize: sz(9.1), color: '#222', marginTop: sp(6), fontFamily: 'Helvetica-Bold', textAlign: 'right' },
     });
@@ -103,7 +103,7 @@ function buildStyles(sidebarColor: string, sidebarWidthPct: number, scale: numbe
 
 function SSection({ title, s, children }: { title: string; s: ReturnType<typeof buildStyles>; children: React.ReactNode }) {
     return (
-        <View style={s.sidebarSection}>
+        <View style={s.sidebarSection} wrap={false}>
             <Text style={s.sidebarHeading}>{title}</Text>
             {children}
         </View>
@@ -114,7 +114,7 @@ function SSection({ title, s, children }: { title: string; s: ReturnType<typeof 
 
 function MSection({ title, s, children }: { title: string; s: ReturnType<typeof buildStyles>; children: React.ReactNode }) {
     return (
-        <View style={s.mainSection}>
+        <View style={s.mainSection} wrap={false}>
             <Text style={s.mainHeading}>{title}</Text>
             {children}
         </View>
@@ -366,7 +366,7 @@ export function CvDocument({ data }: { data: CvDraftFull }) {
                         }
                         if (key === 'declaration' && data.declaration) {
                             return (
-                                <View key="dec" style={s.declaration}>
+                                <View key="dec" style={s.declaration} wrap={false}>
                                     <Text style={s.declarationTxt}>{data.declaration}</Text>
                                     {data.signature && <Text style={s.signatureTxt}>{data.signature}</Text>}
                                 </View>

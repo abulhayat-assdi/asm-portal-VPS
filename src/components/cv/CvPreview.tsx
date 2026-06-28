@@ -27,12 +27,12 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
     const sSH: React.CSSProperties = {
         color: "rgba(255,255,255,0.75)", fontWeight: 700, fontSize: sz(0.65),
         textTransform: "uppercase", letterSpacing: "0.1em",
-        borderBottom: `${Math.max(1, Math.round(1 * scale))}px solid rgba(255,255,255,0.3)`, paddingBottom: sp(3), marginBottom: sp(8),
+        borderBottom: `${Math.max(1, Math.round(1 * scale))}px solid rgba(255,255,255,0.3)`, paddingBottom: sp(3), marginBottom: sp(6),
     };
     const mSH = (c: string): React.CSSProperties => ({
         fontWeight: 700, fontSize: sz(0.78), textTransform: "uppercase",
         letterSpacing: "0.07em", borderBottom: `${Math.max(1, Math.round(1.5 * scale))}px solid ${c}`,
-        paddingBottom: sp(3), marginBottom: sp(10), color: c,
+        paddingBottom: sp(3), marginBottom: sp(6), color: c,
     });
 
     const personalData = [
@@ -57,7 +57,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.workExperience}</h4>
                         {data.workExperience.map((item, i) => (
-                            <div key={i} style={{ marginBottom: sp(8) }}>
+                            <div key={i} style={{ marginBottom: sp(5) }}>
                                 <p style={{ fontWeight: 700, fontSize: sz(0.78), color: "#1a1a1a" }}>{item.jobTitle}</p>
                                 <p style={{ fontSize: sz(0.72), color: "#555", fontStyle: "italic" }}>{item.company}{item.location ? `, ${item.location}` : ""}</p>
                                 {item.bullets?.map((b, j) => b && <p key={j} style={{ fontSize: sz(0.70), color: "#444", paddingLeft: sp(10) }}>• {b}</p>)}
@@ -70,7 +70,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.training}</h4>
                         {data.training.map((item, i) => (
-                            <div key={i} style={{ marginBottom: sp(8) }}>
+                            <div key={i} style={{ marginBottom: sp(5) }}>
                                 <p style={{ fontWeight: 700, fontSize: sz(0.78), color: "#1a1a1a" }}>{item.trainingName}</p>
                                 <p style={{ fontSize: sz(0.72), color: "#555", fontStyle: "italic" }}>{item.institute}{item.year ? ` (${item.year})` : ""}</p>
                                 {item.bullets?.map((b, j) => b && <p key={j} style={{ fontSize: sz(0.70), color: "#444", paddingLeft: sp(10) }}>• {b}</p>)}
@@ -83,7 +83,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.education}</h4>
                         {data.education.map((item, i) => (
-                            <div key={i} style={{ marginBottom: sp(8) }}>
+                            <div key={i} style={{ marginBottom: sp(5) }}>
                                 <p style={{ fontWeight: 700, fontSize: sz(0.78), color: "#1a1a1a" }}>{item.degree}{item.department ? ` — ${item.department}` : ""}</p>
                                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                                     <p style={{ fontSize: sz(0.72), color: "#555", fontStyle: "italic" }}>{item.institution}</p>
@@ -98,9 +98,9 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 return data.references?.length ? (
                     <div>
                         <h4 style={mSH(color)}>{SECTION_LABELS.references}</h4>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: sp(10) }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: `${sp(3) + Math.round(6 * scale)}px ${Math.round(6 * scale)}px` }}>
                             {data.references.map((ref, i) => (
-                                <div key={i}>
+                                <div key={i} style={{ marginBottom: sp(3) }}>
                                     <p style={{ fontWeight: 700, fontSize: sz(0.76), color: "#1a1a1a" }}>{ref.name}</p>
                                     {ref.title && <p style={{ fontSize: sz(0.70), color: "#555" }}>{ref.title}</p>}
                                     {ref.organization && <p style={{ fontSize: sz(0.70), color: "#555" }}>{ref.organization}</p>}
@@ -113,7 +113,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                 ) : null;
             case "declaration":
                 return data.declaration ? (
-                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: sp(10), marginTop: sp(4) }}>
+                    <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: sp(8), marginTop: sp(6) }}>
                         <p style={{ fontSize: sz(0.70), color: "#444", lineHeight: 1.5, fontStyle: "italic" }}>{data.declaration}</p>
                         {data.signature && <p style={{ fontSize: sz(0.76), color: "#222", fontWeight: 700, textAlign: "right", marginTop: sp(6) }}>{data.signature}</p>}
                     </div>
@@ -138,7 +138,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     color: "#fff",
                     display: "flex",
                     flexDirection: "column",
-                    gap: sp(12),
+                    gap: sp(8),
                     boxSizing: "border-box"
                 }}>
                     {config.showPhoto !== false && (
@@ -229,7 +229,7 @@ export function CvPreview({ data, config, fillHeight = false }: { data: CvFormDa
                     paddingBottom: "48px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: sp(12),
+                    gap: sp(8),
                     boxSizing: "border-box"
                 }}>
                     {mainOrder.map(key => (
