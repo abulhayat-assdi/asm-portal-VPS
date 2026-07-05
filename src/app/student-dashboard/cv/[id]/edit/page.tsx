@@ -207,6 +207,7 @@ export default function CvEditorPage() {
     const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
     const [showVersions, setShowVersions] = useState(false);
     const [downloading, setDownloading] = useState(false);
+    const [downloadingDocx, setDownloadingDocx] = useState(false);
     const [showAdjustModal, setShowAdjustModal] = useState(false);
     const [rawImageSrc, setRawImageSrc] = useState<string>("");
     const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -381,6 +382,30 @@ export default function CvEditorPage() {
         }
     };
 
+    const handleDownloadDocx = async () => {
+        setDownloadingDocx(true);
+        try {
+            await handleManualSave();
+            const response = await fetch(`/api/cv/${id}/docx`);
+            if (!response.ok) throw new Error("Failed to generate Word file");
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${watchedValues.fullName || "CV"}_CV.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            await fetch(`/api/cv/${id}/download`, { method: "POST" }).catch(() => {});
+        } catch (err) {
+            console.error("[Word download error]", err);
+            toast.error("Failed to download Word file");
+        } finally {
+            setDownloadingDocx(false);
+        }
+    };
+
     // Profile photo upload
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -496,6 +521,17 @@ export default function CvEditorPage() {
                                 <><span className="animate-spin rounded-full h-3 w-3 border-b border-white inline-block" /> Generating...</>
                             ) : (
                                 <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> PDF</>
+                            )}
+                        </button>
+                        <button
+                            onClick={handleDownloadDocx}
+                            disabled={downloadingDocx}
+                            className="px-3 py-2 bg-[#059669] text-white text-xs font-bold rounded-xl hover:bg-[#047857] disabled:opacity-50 flex items-center gap-1"
+                        >
+                            {downloadingDocx ? (
+                                <><span className="animate-spin rounded-full h-3 w-3 border-b border-white inline-block" /> Generating...</>
+                            ) : (
+                                <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Word</>
                             )}
                         </button>
                     </div>

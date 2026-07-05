@@ -73,6 +73,37 @@ export default function CvListPage() {
         toast.success("Link copied to clipboard");
     };
 
+    const handleDownloadPdfDirectly = (id: string) => {
+        window.open(`/api/cv/${id}/pdf`, "_blank");
+        setDrafts((prev) =>
+            prev.map((d) => (d.id === id ? { ...d, downloadCount: d.downloadCount + 1 } : d))
+        );
+    };
+
+    const handleDownloadDocxDirectly = async (id: string, title: string) => {
+        const toastId = toast.loading("Generating Word file...");
+        try {
+            const response = await fetch(`/api/cv/${id}/docx`);
+            if (!response.ok) throw new Error("Failed to generate Word file");
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${title.replace(/[^a-zA-Z0-9 _-]/g, "_")}_CV.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success("Word file downloaded!", { id: toastId });
+            setDrafts((prev) =>
+                prev.map((d) => (d.id === id ? { ...d, downloadCount: d.downloadCount + 1 } : d))
+            );
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to download Word file", { id: toastId });
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
@@ -148,6 +179,23 @@ export default function CvListPage() {
                                         {draft.downloadCount} download{draft.downloadCount !== 1 ? "s" : ""}
                                     </span>
                                     <span>{new Date(draft.updatedAt).toLocaleDateString()}</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={() => handleDownloadPdfDirectly(draft.id)}
+                                        className="flex items-center justify-center gap-1.5 py-2 px-3 border border-gray-200 text-gray-700 hover:text-white hover:bg-[#1e3a5f] hover:border-[#1e3a5f] rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                        PDF
+                                    </button>
+                                    <button
+                                        onClick={() => handleDownloadDocxDirectly(draft.id, draft.title)}
+                                        className="flex items-center justify-center gap-1.5 py-2 px-3 border border-gray-200 text-gray-700 hover:text-white hover:bg-[#059669] hover:border-[#059669] rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                        Word
+                                    </button>
                                 </div>
 
                                 {/* Share link copy */}

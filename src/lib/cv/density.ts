@@ -91,7 +91,7 @@ export function estimateHeights(data: CvDensityData, config: TemplateConfig | un
     const W_sidebar = PREVIEW_WIDTH * (sw / 100) - 37.33 * spacingScale;
 
     const sz = (baseRem: number) => baseRem * scale * 16;
-    const sp = (basePx: number) => Math.max(1, Math.round(basePx * spacingScale));
+    const sp = (basePt: number) => Math.max(1, Math.round(basePt * spacingScale * 1.3333));
 
     // Section gap: reduced to sp(8) from sp(12)
     const gap = sp(8);
@@ -443,11 +443,11 @@ export function getCvDensityScale(data: CvDensityData, config?: TemplateConfig) 
 
     for (const step of steps) {
         const { H_main, H_sidebar } = estimateHeights(data, templateConfig, step.scale, step.spacingScale);
-        const topPadding = 20 * step.spacingScale;
-        // Total height must be within 1115px (including bottom padding 48px)
-        // We target a safe threshold of 1115px (corresponding to 836pt) to enforce bottom safety zone.
+        const topPadding = 20 * step.spacingScale * 1.3333;
+        // Total height must be within 1080px (including bottom padding 48px)
+        // We target a safe threshold of 1080px (corresponding to 810pt) to enforce bottom safety zone.
         const totalHeight = Math.max(H_main, H_sidebar) + topPadding + 48;
-        if (totalHeight <= 1115) {
+        if (totalHeight <= 1080) {
             bestScale = step.scale;
             bestSpacingScale = step.spacingScale;
             break; // First candidate that fits is the largest one

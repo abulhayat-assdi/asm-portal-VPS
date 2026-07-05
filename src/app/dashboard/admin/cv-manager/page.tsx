@@ -323,6 +323,32 @@ export default function CvManagerPage() {
         window.open(`/api/cv/${previewDraftId}/pdf`, "_blank");
     };
 
+    const handlePreviewDownloadDocx = async () => {
+        if (!previewDraftId) return;
+        const toastId = toast.loading("Generating Word file...");
+        try {
+            const response = await fetch(`/api/cv/${previewDraftId}/docx`);
+            if (!response.ok) throw new Error("Failed to generate Word file");
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const name = (previewStudentName || "CV").replace(/[^a-zA-Z0-9 _-]/g, "_");
+            a.download = `${name}_CV.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success("Word file downloaded!", { id: toastId });
+            setDrafts((prev) =>
+                prev.map((d) => (d.id === previewDraftId ? { ...d, downloadCount: d.downloadCount + 1 } : d))
+            );
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to download Word file", { id: toastId });
+        }
+    };
+
     const handleDeleteDraft = async (id: string) => {
         if (!confirm("Delete this CV permanently?")) return;
         const res = await fetch(`/api/cv/${id}`, { method: "DELETE" });
@@ -557,6 +583,13 @@ export default function CvManagerPage() {
                                     className="flex items-center gap-1.5 px-4 py-2 bg-[#1e3a5f] text-white text-sm font-bold rounded-xl hover:bg-[#152d4a] disabled:opacity-50"
                                 >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Download PDF
+                                </button>
+                                <button
+                                    onClick={handlePreviewDownloadDocx}
+                                    disabled={previewLoading}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-[#059669] text-white text-sm font-bold rounded-xl hover:bg-[#047857] disabled:opacity-50"
+                                >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Download Word
                                 </button>
                                 <button
                                     onClick={() => { setPreviewDraftId(null); setPreviewData(null); setPreviewConfig(null); }}
