@@ -60,8 +60,18 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { id, ...data } = body;
-        const item = await prisma.policy.update({ where: { id }, data });
+        const { id, type, ...data } = body;
+        
+        // Map 'type' to 'kind' in database (since Policy model uses 'kind')
+        const updateData: Record<string, any> = { ...data };
+        if (type !== undefined) {
+            updateData.kind = type;
+        }
+
+        const item = await prisma.policy.update({ 
+            where: { id }, 
+            data: updateData 
+        });
         return NextResponse.json(item);
     } catch (error) {
         console.error("[Policies PATCH]", error);
