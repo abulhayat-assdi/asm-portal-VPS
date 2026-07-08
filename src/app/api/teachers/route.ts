@@ -13,6 +13,15 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
     try {
+        // Ensure image_object_position column exists (idempotent patch)
+        try {
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE "teachers" ADD COLUMN IF NOT EXISTS "image_object_position" TEXT DEFAULT 'center'
+            `);
+        } catch (dbErr) {
+            console.warn("[Teachers GET] Warning adding image_object_position column:", dbErr);
+        }
+
         const teachers = await prisma.$queryRaw<any[]>`
             SELECT
                 id,
@@ -82,6 +91,7 @@ export async function PATCH(req: NextRequest) {
         if (data.isAdmin !== undefined) updateData.isAdmin = data.isAdmin;
         if (data.order !== undefined) updateData.order = data.order;
         if (data.leaveTrackingEnabled !== undefined) updateData.leaveTrackingEnabled = data.leaveTrackingEnabled;
+        if (data.imageObjectPosition !== undefined) updateData.imageObjectPosition = data.imageObjectPosition;
 
         if (Object.keys(updateData).length > 0) {
             await prisma.teacher.update({ where: { id }, data: updateData });

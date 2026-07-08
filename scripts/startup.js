@@ -33,6 +33,15 @@ async function applySchemaPatches() {
 
     try {
         await prisma.$executeRawUnsafe(`
+            ALTER TABLE teachers ADD COLUMN IF NOT EXISTS image_object_position TEXT DEFAULT 'center';
+        `);
+        console.log("[startup] ✓ teachers.image_object_position column OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (image_object_position):", err.message);
+    }
+
+    try {
+        await prisma.$executeRawUnsafe(`
             CREATE TABLE IF NOT EXISTS routine_configs (
                 id TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
                 batch TEXT NOT NULL,

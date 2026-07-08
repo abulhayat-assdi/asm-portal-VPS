@@ -179,6 +179,7 @@ model Teacher {
   email                String   @default("")
   loginEmail           String   @default("") @map("login_email")
   profileImageUrl      String?  @map("profile_image_url")
+  imageObjectPosition  String?  @default("center") @map("image_object_position")
   isAdmin              Boolean  @default(false) @map("is_admin")
   order                Int      @default(0)
   leaveTrackingEnabled Boolean  @default(false) @map("leave_tracking_enabled")
