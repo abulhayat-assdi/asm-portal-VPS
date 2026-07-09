@@ -31,8 +31,11 @@ export async function GET(req: NextRequest) {
         if (isPublic) where.isPublic = true;
 
         if (all) {
-            const students = await prisma.batchStudent.findMany({
-                orderBy: { batchName: "asc" }
+            const students = await prisma.batchStudent.findMany();
+            students.sort((a, b) => {
+                const batchCompare = a.batchName.localeCompare(b.batchName, undefined, { numeric: true, sensitivity: "base" });
+                if (batchCompare !== 0) return batchCompare;
+                return a.roll.localeCompare(b.roll, undefined, { numeric: true, sensitivity: "base" });
             });
             return NextResponse.json(students);
         }
@@ -47,9 +50,9 @@ export async function GET(req: NextRequest) {
         }
 
         const students = await prisma.batchStudent.findMany({
-            where,
-            orderBy: { roll: "asc" }
+            where
         });
+        students.sort((a, b) => a.roll.localeCompare(b.roll, undefined, { numeric: true, sensitivity: "base" }));
 
         return NextResponse.json(students);
     } catch (error) {

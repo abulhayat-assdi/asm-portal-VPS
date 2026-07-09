@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
 
     const students = await prisma.batchStudent.findMany({
         where: { batchName: { in: batchNames } },
-        orderBy: [{ batchName: "asc" }, { roll: "asc" }],
+    });
+
+    students.sort((a, b) => {
+        const batchCompare = a.batchName.localeCompare(b.batchName, undefined, { numeric: true, sensitivity: "base" });
+        if (batchCompare !== 0) return batchCompare;
+        return a.roll.localeCompare(b.roll, undefined, { numeric: true, sensitivity: "base" });
     });
 
     return NextResponse.json(students);

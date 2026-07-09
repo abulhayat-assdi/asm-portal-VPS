@@ -235,15 +235,23 @@ export default function AllBatchInfoPage() {
         { label: "Incomplete + Expelled", valueA: runningIncomplete.toString(), valueB: runningExpelled.toString(), labelA: "Incomplete", labelB: "Expelled", icon: XCircleIcon, iconB: NoSymbolIcon, color: "bg-orange-500", lightColor: "bg-orange-50", textColor: "text-orange-600", textColorB: "text-red-600", combined: true },
     ];
 
-    const searchResults = allStudents.filter(student => {
-        const query = studentSearchQuery.toLowerCase();
-        const matchesQuery = !query ||
-            (student.name?.toLowerCase().includes(query)) ||
-            (student.roll?.toLowerCase().includes(query)) ||
-            (student.phone?.toLowerCase().includes(query));
-        const matchesBatch = selectedSearchBatch === "all" || student.batchName === selectedSearchBatch;
-        return matchesQuery && matchesBatch;
-    });
+    const searchResults = useMemo(() => {
+        const filtered = allStudents.filter(student => {
+            const query = studentSearchQuery.toLowerCase();
+            const matchesQuery = !query ||
+                (student.name?.toLowerCase().includes(query)) ||
+                (student.roll?.toLowerCase().includes(query)) ||
+                (student.phone?.toLowerCase().includes(query));
+            const matchesBatch = selectedSearchBatch === "all" || student.batchName === selectedSearchBatch;
+            return matchesQuery && matchesBatch;
+        });
+
+        return filtered.sort((a, b) => {
+            const batchCompare = a.batchName.localeCompare(b.batchName, undefined, { numeric: true, sensitivity: "base" });
+            if (batchCompare !== 0) return batchCompare;
+            return (a.roll || "").localeCompare(b.roll || "", undefined, { numeric: true, sensitivity: "base" });
+        });
+    }, [allStudents, studentSearchQuery, selectedSearchBatch]);
 
     const isSearchActive = studentSearchQuery.trim() !== "" || selectedSearchBatch !== "all";
 
@@ -266,8 +274,8 @@ export default function AllBatchInfoPage() {
         return acc;
     }, {} as Record<string, BatchStatItem>);
 
-    const batchWiseData = Object.values(batchStatsMap).sort((a, b) => a.id.localeCompare(b.id));
-    const uniqueBatchesList = Array.from(new Set(allStudents.map(s => s.batchName))).sort();
+    const batchWiseData = Object.values(batchStatsMap).sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true, sensitivity: "base" }));
+    const uniqueBatchesList = Array.from(new Set(allStudents.map(s => s.batchName))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
 
     const handleSelectExistingBatch = (batchName: string) => {
         setNewBatchName(batchName);
@@ -275,6 +283,7 @@ export default function AllBatchInfoPage() {
 
         // Pre-fill grid data via React state
         const batchStudents = allStudents.filter(s => s.batchName === batchName);
+        batchStudents.sort((a, b) => (a.roll || "").localeCompare(b.roll || "", undefined, { numeric: true, sensitivity: "base" }));
         const wasRunning = batchStudents.length > 0 && batchStudents[0].batchType === "Running";
         setIsAddingRunningBatch(wasRunning);
 
