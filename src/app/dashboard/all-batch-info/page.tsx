@@ -575,7 +575,13 @@ export default function AllBatchInfoPage() {
 
             // 2. Student List Header
             sheetData.push(["Student List"]);
-            sheetData.push(["Batch", "Roll", "Name", "Phone", "Date of Birth", "Educational Degree", "Category", "Blood Group", "Total Paid TK", "Address", "Status", "Currently", "Company Name", "Business Name", "Salary"]);
+            sheetData.push([
+                "Batch", "Roll", "Name", "Phone", "Date of Birth", "Educational Degree", "Category", "Blood Group",
+                "Total Paid TK", "Address", "Email", "NID / Birth No", "Father Name", "Mother Name", "Permanent Address",
+                "Guardian Name", "Guardian Phone", "Last Institute", "Latest Degree", "GPA / Result",
+                "Current District", "Home District", "T-Shirt Size", "Course Goal",
+                "Status", "Currently", "Company Name", "Business Name", "Salary"
+            ]);
 
             // 3. Student Data
             currentExportStudents.forEach(s => {
@@ -590,6 +596,20 @@ export default function AllBatchInfoPage() {
                     s.bloodGroup || "-",
                     s.totalPaidTk || "-",
                     s.address || "-",
+                    s.email || "-",
+                    s.nidBirthNo || "-",
+                    s.fatherName || "-",
+                    s.motherName || "-",
+                    s.permanentAddress || "-",
+                    s.guardianName || "-",
+                    s.guardianPhone || "-",
+                    s.lastInstitute || "-",
+                    s.latestDegree || "-",
+                    s.gpaResult || "-",
+                    s.currentDistrict || "-",
+                    s.homeDistrict || "-",
+                    s.tShirtSize || "-",
+                    s.courseGoal || "-",
                     s.courseStatus || "-",
                     s.currentlyDoing === 'Nothing' ? 'Studying Further' : (s.currentlyDoing || "-"),
                     s.companyName || "-",
@@ -605,7 +625,26 @@ export default function AllBatchInfoPage() {
                 { wch: 15 }, // Roll / Value
                 { wch: 25 }, // Name
                 { wch: 15 }, // Phone
+                { wch: 14 }, // Date of Birth
+                { wch: 18 }, // Educational Degree
+                { wch: 12 }, // Category
+                { wch: 10 }, // Blood Group
+                { wch: 14 }, // Total Paid TK
                 { wch: 30 }, // Address
+                { wch: 26 }, // Email
+                { wch: 16 }, // NID / Birth No
+                { wch: 20 }, // Father Name
+                { wch: 20 }, // Mother Name
+                { wch: 30 }, // Permanent Address
+                { wch: 20 }, // Guardian Name
+                { wch: 15 }, // Guardian Phone
+                { wch: 22 }, // Last Institute
+                { wch: 16 }, // Latest Degree
+                { wch: 14 }, // GPA / Result
+                { wch: 16 }, // Current District
+                { wch: 16 }, // Home District
+                { wch: 10 }, // T-Shirt Size
+                { wch: 22 }, // Course Goal
                 { wch: 12 }, // Status
                 { wch: 18 }, // Currently
                 { wch: 20 }, // Company Name
