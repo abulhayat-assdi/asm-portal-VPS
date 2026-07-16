@@ -17,7 +17,6 @@ const loginSchema = z.object({
 const failedAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_CONCURRENT_SESSIONS = 100;
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days in seconds
 
 function isRateLimited(email: string): boolean {
@@ -82,24 +81,10 @@ export async function POST(req: NextRequest) {
         // Successful login — clear failed attempt counter
         clearFailedAttempts(normalizedEmail);
 
-        // Clean up expired sessions, then check concurrent session limit
+        // Clean up expired sessions (housekeeping only — no cap on concurrent logins)
         await prisma.activeSession.deleteMany({
             where: { expiresAt: { lt: new Date() } },
         });
-
-        const existingSession = await prisma.activeSession.findUnique({
-            where: { userId: user.id },
-        });
-
-        if (!existingSession) {
-            const totalSessions = await prisma.activeSession.count();
-            if (totalSessions >= MAX_CONCURRENT_SESSIONS) {
-                return NextResponse.json(
-                    { error: `সর্বোচ্চ ${MAX_CONCURRENT_SESSIONS} জন একযোগে লগইন করা আছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।` },
-                    { status: 429 }
-                );
-            }
-        }
 
         const sessionExpiry = new Date(Date.now() + SESSION_MAX_AGE * 1000);
         await prisma.activeSession.upsert({
