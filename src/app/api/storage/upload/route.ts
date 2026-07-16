@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         const ALLOWED_EXTENSIONS = new Set([
             ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp",
             ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx",
-            ".csv", ".txt", ".zip", ".mp4", ".mp3",
+            ".csv", ".txt", ".zip", ".mp4", ".mp3", ".html", ".htm",
         ]);
 
         const ext = path.extname(file.name).toLowerCase();

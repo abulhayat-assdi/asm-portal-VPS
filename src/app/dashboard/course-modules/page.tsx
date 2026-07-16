@@ -317,7 +317,7 @@ export default function CourseModulesPage() {
                                 <input
                                     ref={resourceFileInputRef}
                                     type="file"
-                                    accept=".pdf,.pptx,.ppt,.docx,.doc,.jpg,.jpeg,.png,.zip,.rar"
+                                    accept=".pdf,.pptx,.ppt,.docx,.doc,.jpg,.jpeg,.png,.zip,.rar,.html,.htm"
                                     className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-[#059669] file:text-white hover:file:bg-[#10b981] cursor-pointer"
                                 />
                                 {isSubmitting && resourceUploadProgress > 0 && (

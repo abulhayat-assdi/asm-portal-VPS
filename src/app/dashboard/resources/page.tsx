@@ -685,7 +685,7 @@ export default function ResourceManagementPage() {
                                     File {editingResource ? "(leave empty to keep existing)" : "*"}
                                 </label>
                                 <input ref={fileInputRef} type="file"
-                                    accept=".pdf,.pptx,.ppt,.docx,.doc,.jpg,.jpeg,.png"
+                                    accept=".pdf,.pptx,.ppt,.docx,.doc,.jpg,.jpeg,.png,.html,.htm"
                                     className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-[#1e3a5f] file:text-white hover:file:bg-[#162e4a] cursor-pointer" />
                                 {isUploading && uploadProgress > 0 && (
                                     <div className="mt-2">
