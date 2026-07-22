@@ -32,6 +32,8 @@
     color: var(--text-main);
     font-size: 16px;
     line-height: 1.6;
+    border-radius: 14px;
+    padding: 24px;
 }
 
 #tracker-app *,
@@ -609,10 +611,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     padding: 16px 20px;
     background: #6267e7;
     color: #fff;
-    gap: 10px;
+    gap: 8px 10px;
 }
 
 .report-captain {
@@ -623,11 +626,15 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .report-card-meta {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     flex-shrink: 0;
 }
@@ -987,6 +994,22 @@
 
     .item-label {
         font-size: 0.93rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #tracker-app {
+        padding: 16px;
+    }
+
+    .report-item {
+        flex-wrap: wrap;
+        row-gap: 10px;
+    }
+
+    .report-item-status {
+        margin-left: 44px;
+        width: auto;
     }
 }
 

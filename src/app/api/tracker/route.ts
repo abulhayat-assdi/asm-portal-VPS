@@ -6,15 +6,29 @@ import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
 
 /**
  * GET /api/tracker
- * Fetch unique batch names for the filter.
+ * Fetch batch names for the filter — only currently running (active) batches,
+ * not completed/archived ones.
  */
 export async function GET() {
     try {
-        const batches = await prisma.dailyTrackerReport.findMany({
+        const activeBatches = await prisma.batch.findMany({
+            where: { status: "active" },
+            select: { name: true },
+        });
+
+        // Fallback: batches not yet registered in the `batches` table but
+        // still marked as Running on their students.
+        const runningStudentBatches = await prisma.batchStudent.findMany({
+            where: { batchType: "Running" },
             select: { batchName: true },
             distinct: ["batchName"],
         });
-        const names = batches.map(b => b.batchName).filter(Boolean).sort();
+
+        const nameSet = new Set<string>();
+        activeBatches.forEach(b => nameSet.add(b.name));
+        runningStudentBatches.forEach(s => nameSet.add(s.batchName));
+
+        const names = Array.from(nameSet).filter(Boolean).sort();
         return NextResponse.json({ success: true, batches: names });
     } catch (err) {
         console.error("[Tracker API GET] Error:", err);

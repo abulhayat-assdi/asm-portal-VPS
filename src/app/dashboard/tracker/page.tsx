@@ -220,12 +220,7 @@ export default function TrackerDashboardPage() {
             </div>
 
             {/* ── Dashboard Section ── */}
-            <div id="tracker-app" style={{
-                background: '#f0f2ff',
-                borderRadius: '14px',
-                padding: '24px',
-                fontFamily: "'Hind Siliguri', 'Inter', sans-serif"
-            }}>
+            <div id="tracker-app">
 
                 {/* Dashboard Header */}
                 <div className="dashboard-header">

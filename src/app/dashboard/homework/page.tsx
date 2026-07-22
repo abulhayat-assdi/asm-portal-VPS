@@ -49,6 +49,9 @@ export default function HomeworkViewPage() {
     const [editDeadline, setEditDeadline] = useState("");
     const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+    // Search within folder
+    const [searchQuery, setSearchQuery] = useState("");
+
     const isAdmin = userProfile?.role === "admin" || userProfile?.role === "super_admin";
     const isTeacher = userProfile?.role === "teacher";
 
@@ -106,6 +109,11 @@ export default function HomeworkViewPage() {
             fetchData();
         }
     }, [authLoading, userProfile, fetchData]);
+
+    // Reset search when switching folders
+    useEffect(() => {
+        setSearchQuery("");
+    }, [selectedFolder]);
 
 
     // Handlers
@@ -221,12 +229,20 @@ export default function HomeworkViewPage() {
         });
     };
 
-    let activeSubmissionsList: HomeworkSubmission[] = [];
+    let folderSubmissionsList: HomeworkSubmission[] = [];
     if (selectedFolder === "other") {
-        activeSubmissionsList = getOtherSubmissions();
+        folderSubmissionsList = getOtherSubmissions();
     } else if (selectedFolder) {
-        activeSubmissionsList = getSubmissionsForAssignment(selectedFolder);
+        folderSubmissionsList = getSubmissionsForAssignment(selectedFolder);
     }
+
+    const searchQueryTrimmed = searchQuery.trim().toLowerCase();
+    const activeSubmissionsList = searchQueryTrimmed
+        ? folderSubmissionsList.filter(hw =>
+            hw.studentName?.toLowerCase().includes(searchQueryTrimmed) ||
+            hw.studentRoll?.toLowerCase().includes(searchQueryTrimmed)
+        )
+        : folderSubmissionsList;
 
     if (authLoading || loading) {
         return (
@@ -398,18 +414,52 @@ export default function HomeworkViewPage() {
                             )}
                             <div className="mt-4 flex items-center gap-2">
                                 <span className="px-3 py-1 bg-white text-emerald-800 font-bold rounded-lg text-sm shadow-sm">
-                                    {activeSubmissionsList.length} Submissions
+                                    {searchQueryTrimmed
+                                        ? `${activeSubmissionsList.length} / ${folderSubmissionsList.length} Submissions`
+                                        : `${folderSubmissionsList.length} Submissions`}
                                 </span>
                             </div>
                         </div>
                     </div>
 
+                    {/* Search Bar */}
+                    <div className="relative mb-6">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by student name or roll number..."
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#059669] focus:border-[#059669] transition-colors"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+
                     {/* Submissions List */}
                     {activeSubmissionsList.length === 0 ? (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center mt-6">
-                            <div className="text-5xl mb-3">✨</div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-1">Folder is Empty</h3>
-                            <p className="text-gray-500 text-sm">No submissions found in this folder.</p>
+                            <div className="text-5xl mb-3">{searchQueryTrimmed ? "🔍" : "✨"}</div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">
+                                {searchQueryTrimmed ? "No Matching Submissions" : "Folder is Empty"}
+                            </h3>
+                            <p className="text-gray-500 text-sm">
+                                {searchQueryTrimmed
+                                    ? `No student matches "${searchQuery}" in this folder.`
+                                    : "No submissions found in this folder."}
+                            </p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
