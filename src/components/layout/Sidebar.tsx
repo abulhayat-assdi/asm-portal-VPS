@@ -38,6 +38,7 @@ const teacherAdminNavItems: { href: string; label: string; icon: string; permiss
     { href: "/dashboard/admin/batch-forms",               label: "Batch Forms",        icon: "📝", permission: "admin_panel" },
     { href: "/dashboard/admin/access-management",        label: "Access Management",  icon: "🔑", permission: "access_management" },
     { href: "/dashboard/admin/cv-manager",               label: "CV Manager",         icon: "📄", permission: "admin_panel",        feature: "cv_builder" },
+    { href: "/dashboard/admin/deployments",              label: "Student Deployments",icon: "🚀", permission: "admin_deployments",  feature: "deployments" },
 ];
 
 const studentNavItems: { href: string; label: string; icon: string; permission: null; feature?: string }[] = [
@@ -47,6 +48,7 @@ const studentNavItems: { href: string; label: string; icon: string; permission: 
     { href: "/student-dashboard/course-outline",   label: "Course Outline",icon: "📋", permission: null, feature: "course_modules" },
     { href: "/student-dashboard/homework",         label: "Homework",      icon: "📝", permission: null, feature: "homework" },
     { href: "/student-dashboard/results",          label: "Results",       icon: "🎓", permission: null, feature: "exam_results" },
+    { href: "/student-dashboard/deployments",      label: "My Deployments",icon: "🚀", permission: null, feature: "deployments" },
     { href: "/student-dashboard/profile",          label: "Profile",       icon: "👤", permission: null },
     { href: "/student-dashboard/cv",               label: "My CV",         icon: "📄", permission: null, feature: "cv_builder" },
 ];

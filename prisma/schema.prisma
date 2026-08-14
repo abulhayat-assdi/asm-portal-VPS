@@ -111,26 +111,31 @@ enum ActorRole {
 // ============================================================
 
 model User {
-  id               String    @id @default(uuid())
-  email            String    @unique
-  passwordHash     String    @map("password_hash")
-  displayName      String    @map("display_name")
-  role             UserRole  @default(student)
-  teacherId        String?   @map("teacher_id")
-  studentBatchName String?   @map("student_batch_name")
-  studentRoll      String?   @map("student_roll")
-  profileImageUrl  String?   @map("profile_image_url")
-  permissions      Json      @default("[]")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-  lastLoginAt      DateTime? @map("last_login_at")
-  deletedAt        DateTime? @map("deleted_at")
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  passwordHash         String    @map("password_hash")
+  displayName          String    @map("display_name")
+  role                 UserRole  @default(student)
+  teacherId            String?   @map("teacher_id")
+  studentBatchName     String?   @map("student_batch_name")
+  studentRoll          String?   @map("student_roll")
+  profileImageUrl      String?   @map("profile_image_url")
+  permissions          Json      @default("[]")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  lastLoginAt          DateTime? @map("last_login_at")
+  deletedAt            DateTime? @map("deleted_at")
+
+  // ── Deployment (Mini-Netlify) fields ──────────────────────
+  deploymentLimit      Int       @default(5)    @map("deployment_limit")
+  isDeploymentFrozen   Boolean   @default(false) @map("is_deployment_frozen")
 
   passwordResetTokens PasswordResetToken[]
   activityLogs        ActivityLog[]
   chatMessages        ChatMessage[]
   cvDrafts            CvDraft[]
   activeSession       ActiveSession?
+  deployments         Deployment[]
 
   @@index([email])
   @@index([role])
@@ -1049,3 +1054,40 @@ model BatchClassCount {
   @@map("batch_class_counts")
 }
 
+// ============================================================
+// DEPLOYMENTS (Mini-Netlify Student Site Hosting)
+// ============================================================
+
+model Deployment {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  subdomain     String   @unique
+  displayName   String   @default("") @map("display_name")
+  folderPath    String   @map("folder_path")
+  liveUrl       String   @map("live_url")
+  totalVisitors Int      @default(0) @map("total_visitors")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visitorLogs VisitorLog[]
+
+  @@index([userId])
+  @@index([subdomain])
+  @@map("deployments")
+}
+
+model VisitorLog {
+  id           String   @id @default(uuid())
+  deploymentId String   @map("deployment_id")
+  visitorIp    String   @map("visitor_ip")   // SHA-256 hashed for privacy
+  userAgent    String?  @map("user_agent")
+  date         String                         // "YYYY-MM-DD" for daily bucketing
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  deployment Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+
+  @@index([deploymentId])
+  @@index([date])
+  @@map("visitor_logs")
+}

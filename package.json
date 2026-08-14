@@ -23,6 +23,7 @@
     "archiver": "^8.0.0",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
+    "cheerio": "^1.2.0",
     "docx": "^9.7.1",
     "firebase": "^12.10.0",
     "firebase-admin": "^10.3.0",
@@ -40,6 +41,7 @@
     "react-hook-form": "^7.77.0",
     "react-hot-toast": "^2.6.0",
     "server-only": "^0.0.1",
+    "unzipper": "^0.12.5",
     "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
@@ -51,6 +53,7 @@
     "@types/nodemailer": "^7.0.11",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/unzipper": "^0.10.11",
     "eslint": "^9",
     "eslint-config-next": "^15.0.0",
     "tailwindcss": "^4",
