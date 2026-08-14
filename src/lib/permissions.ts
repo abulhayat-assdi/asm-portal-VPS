@@ -28,7 +28,6 @@ export type PermissionKey =
     | "admin_success"
     | "admin_cms"
     | "admin_course_modules"
-    | "admin_deployments"
     | "access_management";
 
 export type PermissionGroup = "teacher" | "management" | "admin" | "system";
@@ -41,38 +40,37 @@ export interface PermissionMeta {
 }
 
 export const PERMISSION_META: Record<PermissionKey, PermissionMeta> = {
-    schedule:          { label: "Class Schedule",        path: "/dashboard/schedule",                        group: "teacher",    icon: "📅" },
-    routine:           { label: "Manage Routine",         path: "/dashboard/manage-routine",                  group: "teacher",    icon: "📆" },
-    batch_info:        { label: "All Batch Info",         path: "/dashboard/all-batch-info",                  group: "teacher",    icon: "📊" },
-    resources:         { label: "Resource Library",       path: "/dashboard/resources",                       group: "teacher",    icon: "🗂️" },
-    course_modules:    { label: "Course Modules",         path: "/dashboard/course-modules",                  group: "teacher",    icon: "📚" },
-    policies:          { label: "Policy & Minutes",       path: "/dashboard/policies",                        group: "teacher",    icon: "📋" },
-    feedback:          { label: "Feedback",               path: "/dashboard/feedback",                        group: "teacher",    icon: "💬" },
-    tracker:           { label: "Daily Tracker",          path: "/dashboard/tracker",                         group: "teacher",    icon: "📋" },
-    homework:          { label: "Homework",               path: "/dashboard/homework",                        group: "teacher",    icon: "📝" },
-    leave_tracking:    { label: "Leave Tracking",         path: "/dashboard/leave-tracking",                  group: "teacher",    icon: "🌴" },
-    teachers:          { label: "Teacher Directory",      path: "/dashboard/teachers",                        group: "management", icon: "👥" },
-    admin_panel:       { label: "Admin Panel",            path: "/dashboard/admin",                           group: "admin",      icon: "⚙️" },
-    admin_homework:    { label: "Manage Homework",        path: "/dashboard/admin/manage-homework",           group: "admin",      icon: "📁" },
-    admin_results:     { label: "Manage Results",         path: "/dashboard/admin/manage-results",            group: "admin",      icon: "📝" },
-    admin_leave:       { label: "Manage Leaves",          path: "/dashboard/admin/leave-management",          group: "admin",      icon: "🌴" },
-    admin_notices:     { label: "Student Notices",        path: "/dashboard/admin/student-updates",           group: "admin",      icon: "🔔" },
-    admin_contact:     { label: "Contact Messages",       path: "/dashboard/admin/contact-messages",          group: "admin",      icon: "📩" },
-    admin_resources:   { label: "Admin: Resources",       path: "/dashboard/admin/resource-management",       group: "admin",      icon: "🗂️" },
-    admin_blog:        { label: "Blog Management",        path: "/dashboard/admin/blog",                      group: "admin",      icon: "📝" },
-    admin_testimonials:{ label: "Video Testimonials",     path: "/dashboard/admin/home-video-testimonials",   group: "admin",      icon: "🎥" },
-    admin_success:     { label: "Success Stories",        path: "/dashboard/admin/success-stories",           group: "admin",      icon: "🎬" },
-    admin_cms:         { label: "CMS / Pages",            path: "/dashboard/admin/manage-pages",              group: "admin",      icon: "🖥️" },
-    admin_course_modules: { label: "Manage Course Modules", path: "/dashboard/admin/course-modules",          group: "admin",      icon: "📚" },
-    admin_deployments: { label: "Student Deployments",       path: "/dashboard/admin/deployments",             group: "admin",      icon: "🚀" },
-    access_management: { label: "Access Management",      path: "/dashboard/admin/access-management",         group: "system",     icon: "🔑" },
+    schedule: { label: "Class Schedule", path: "/dashboard/schedule", group: "teacher", icon: "📅" },
+    routine: { label: "Manage Routine", path: "/dashboard/manage-routine", group: "teacher", icon: "📆" },
+    batch_info: { label: "All Batch Info", path: "/dashboard/all-batch-info", group: "teacher", icon: "📊" },
+    resources: { label: "Resource Library", path: "/dashboard/resources", group: "teacher", icon: "🗂️" },
+    course_modules: { label: "Course Modules", path: "/dashboard/course-modules", group: "teacher", icon: "📚" },
+    policies: { label: "Policy & Minutes", path: "/dashboard/policies", group: "teacher", icon: "📋" },
+    feedback: { label: "Feedback", path: "/dashboard/feedback", group: "teacher", icon: "💬" },
+    tracker: { label: "Daily Tracker", path: "/dashboard/tracker", group: "teacher", icon: "📋" },
+    homework: { label: "Homework", path: "/dashboard/homework", group: "teacher", icon: "📝" },
+    leave_tracking: { label: "Leave Tracking", path: "/dashboard/leave-tracking", group: "teacher", icon: "🌴" },
+    teachers: { label: "Teacher Directory", path: "/dashboard/teachers", group: "management", icon: "👥" },
+    admin_panel: { label: "Admin Panel", path: "/dashboard/admin", group: "admin", icon: "⚙️" },
+    admin_homework: { label: "Manage Homework", path: "/dashboard/admin/manage-homework", group: "admin", icon: "📁" },
+    admin_results: { label: "Manage Results", path: "/dashboard/admin/manage-results", group: "admin", icon: "📝" },
+    admin_leave: { label: "Manage Leaves", path: "/dashboard/admin/leave-management", group: "admin", icon: "🌴" },
+    admin_notices: { label: "Student Notices", path: "/dashboard/admin/student-updates", group: "admin", icon: "🔔" },
+    admin_contact: { label: "Contact Messages", path: "/dashboard/admin/contact-messages", group: "admin", icon: "📩" },
+    admin_resources: { label: "Admin: Resources", path: "/dashboard/admin/resource-management", group: "admin", icon: "🗂️" },
+    admin_blog: { label: "Blog Management", path: "/dashboard/admin/blog", group: "admin", icon: "📝" },
+    admin_testimonials: { label: "Video Testimonials", path: "/dashboard/admin/home-video-testimonials", group: "admin", icon: "🎥" },
+    admin_success: { label: "Success Stories", path: "/dashboard/admin/success-stories", group: "admin", icon: "🎬" },
+    admin_cms: { label: "CMS / Pages", path: "/dashboard/admin/manage-pages", group: "admin", icon: "🖥️" },
+    admin_course_modules: { label: "Manage Course Modules", path: "/dashboard/admin/course-modules", group: "admin", icon: "📚" },
+    access_management: { label: "Access Management", path: "/dashboard/admin/access-management", group: "system", icon: "🔑" },
 };
 
 export const PERMISSION_GROUPS: { key: PermissionGroup; label: string }[] = [
-    { key: "teacher",    label: "Teacher Features" },
+    { key: "teacher", label: "Teacher Features" },
     { key: "management", label: "Management" },
-    { key: "admin",      label: "Admin Features" },
-    { key: "system",     label: "System" },
+    { key: "admin", label: "Admin Features" },
+    { key: "system", label: "System" },
 ];
 
 export const ALL_PERMISSION_KEYS = Object.keys(PERMISSION_META) as PermissionKey[];
@@ -94,7 +92,6 @@ export const DEFAULT_ADMIN_PERMISSIONS: PermissionKey[] = [
     "admin_panel", "admin_homework", "admin_results", "admin_leave",
     "admin_notices", "admin_contact", "admin_resources", "admin_blog",
     "admin_testimonials", "admin_success", "admin_cms", "admin_course_modules",
-    "admin_deployments",
 ];
 
 // Teacher-feature permissions added to admin when "Include teacher features" is checked

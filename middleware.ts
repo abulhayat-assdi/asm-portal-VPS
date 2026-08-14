@@ -14,7 +14,6 @@ const PUBLIC_API_ROUTES = [
     '/api/setup',
     '/api/cv/public/',
     '/api/cv/admin/templates',
-    '/api/deployments/pixel',  // analytics pixel — must be publicly accessible
 ];
 
 const isPublicAssetPath = (pathname: string) =>

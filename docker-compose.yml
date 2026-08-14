@@ -37,8 +37,6 @@ services:
       LOCAL_STORAGE_PATH: /app/storage
       NEXT_PUBLIC_BASE_DOMAIN: ${NEXT_PUBLIC_BASE_DOMAIN:-tasm-skill.asf.bd}
       SAAS_OWNER_EMAIL: ${SAAS_OWNER_EMAIL}
-      STUDENT_SITES_PATH: ${STUDENT_SITES_PATH:-/var/www/student-sites}
-      MAX_DEPLOY_SIZE_MB: ${MAX_DEPLOY_SIZE_MB:-50}
     depends_on:
       db:
         condition: service_started
@@ -48,7 +46,6 @@ services:
       - "3000:3000"
     volumes:
       - storage_data:/app/storage
-      - /var/www/student-sites:/var/www/student-sites   # Student site hosting (bind mount)
 
 volumes:
   postgres_data:

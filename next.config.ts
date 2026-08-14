@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     output: 'standalone',
     // Prevent these packages from being bundled for server-side rendering
-    serverExternalPackages: ['firebase-admin', '@prisma/client', '@react-pdf/renderer', 'sharp', 'unzipper', 'cheerio'],
+    serverExternalPackages: ['firebase-admin', '@prisma/client', '@react-pdf/renderer', 'sharp'],
     experimental: {
         serverActions: {
             allowedOrigins: ['tasm-skill.asf.bd', 'www.tasm-skill.asf.bd', '*.tasm-skill.asf.bd', 'localhost:3000'],
