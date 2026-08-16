@@ -1049,3 +1049,33 @@ model BatchClassCount {
   @@map("batch_class_counts")
 }
 
+// ============================================================
+// STUDENT LEAVE REQUESTS
+// ============================================================
+
+enum StudentLeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model StudentLeaveRequest {
+  id               String             @id @default(uuid())
+  studentUid       String             @map("student_uid")
+  studentName      String             @map("student_name")
+  studentRoll      String             @map("student_roll")
+  studentBatchName String             @map("student_batch_name")
+  startDate        String             @map("start_date")
+  endDate          String             @map("end_date")
+  reason           String
+  status           StudentLeaveStatus @default(PENDING)
+  reviewedBy       String?            @map("reviewed_by")
+  reviewNote       String?            @map("review_note")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  @@index([studentUid])
+  @@index([studentBatchName])
+  @@index([status])
+  @@map("student_leave_requests")
+}

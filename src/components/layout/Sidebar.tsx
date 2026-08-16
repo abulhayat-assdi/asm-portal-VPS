@@ -27,6 +27,7 @@ const teacherAdminNavItems: { href: string; label: string; icon: string; permiss
     { href: "/dashboard/admin/leave-management", label: "Manage Leaves", icon: "🌴", permission: "admin_leave", feature: "leave_tracking" },
     { href: "/dashboard/admin/manage-results", label: "Manage Results", icon: "📝", permission: "admin_results", feature: "exam_results" },
     { href: "/dashboard/admin/student-updates", label: "Student Updates", icon: "🔔", permission: "admin_notices" },
+    { href: "/dashboard/student-leaves", label: "Student Leaves", icon: "🏖️", permission: "admin_leave" },
     { href: "/dashboard/admin/contact-messages", label: "Contact Messages", icon: "📩", permission: "admin_contact" },
     { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", permission: "admin_resources", feature: "resources" },
     { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", permission: "admin_blog", feature: "blog" },
@@ -48,6 +49,7 @@ const studentNavItems: { href: string; label: string; icon: string; permission: 
     { href: "/student-dashboard/homework", label: "Homework", icon: "📝", permission: null, feature: "homework" },
     { href: "/student-dashboard/results", label: "Results", icon: "🎓", permission: null, feature: "exam_results" },
     { href: "/student-dashboard/profile", label: "Profile", icon: "👤", permission: null },
+    { href: "/student-dashboard/leave", label: "Leave Request", icon: "🏖️", permission: null },
     { href: "/student-dashboard/cv", label: "My CV", icon: "📄", permission: null, feature: "cv_builder" },
 ];
 
