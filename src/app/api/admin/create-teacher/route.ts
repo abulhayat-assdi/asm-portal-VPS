@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin } from "@/lib/auth";
+import { getSessionUser, isAdmin, hasRequiredPermission } from "@/lib/auth";
 import { AUTH_ROLES } from "@/lib/constants";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     try {
         // 1. Auth check — only admins/super_admins can create teachers
         const caller = await getSessionUser(req);
-        if (!caller || !isAdmin(caller)) {
+        if (!caller || !(isAdmin(caller) || hasRequiredPermission(caller, "teachers"))) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 

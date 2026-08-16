@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin } from "@/lib/auth";
+import { getSessionUser, isAdmin, hasRequiredPermission } from "@/lib/auth";
 import { PORTAL_OWNER_EMAIL } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
     try {
         const caller = await getSessionUser(req);
-        if (!caller || !isAdmin(caller)) {
+        if (!caller || !(isAdmin(caller) || hasRequiredPermission(caller, "teachers"))) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 
@@ -121,7 +121,7 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
     try {
         const caller = await getSessionUser(req);
-        if (!caller || !isAdmin(caller)) {
+        if (!caller || !(isAdmin(caller) || hasRequiredPermission(caller, "teachers"))) {
             return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
         }
 

@@ -165,7 +165,7 @@ export default function ContactManagementPage() {
     // ─────────────────────────────────────────────────────────────
     // Thread List Panel
     // ─────────────────────────────────────────────────────────────
-    const ListPanel = () => (
+    const renderListPanel = () => (
         <div className="flex flex-col h-full bg-white overflow-hidden">
             {/* Header */}
             <div className="px-4 py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
@@ -242,7 +242,7 @@ export default function ContactManagementPage() {
     // ─────────────────────────────────────────────────────────────
     // Chat Panel
     // ─────────────────────────────────────────────────────────────
-    const ChatPanel = ({ withBack }: { withBack: boolean }) => (
+    const renderChatPanel = (withBack: boolean) => (
         <div className="flex flex-col h-full bg-white overflow-hidden">
             {/* Header */}
             <div className="h-14 border-b border-gray-200 flex items-center justify-between px-3 bg-white shrink-0">
@@ -371,7 +371,7 @@ export default function ContactManagementPage() {
     // ─────────────────────────────────────────────────────────────
     // Empty state (desktop, no thread selected)
     // ─────────────────────────────────────────────────────────────
-    const EmptyState = () => (
+    const renderEmptyState = () => (
         <div className="flex-1 h-full flex flex-col items-center justify-center text-center opacity-40 bg-gray-50">
             <div className="text-6xl mb-4">💬</div>
             <h3 className="font-bold text-gray-700 text-lg">Select a chat</h3>
@@ -400,10 +400,10 @@ export default function ContactManagementPage() {
             {isMobile && (
                 <div className="flex-1 min-h-0 rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white">
                     {!showChat
-                        ? <ListPanel />
+                        ? renderListPanel()
                         : selectedThread
-                            ? <ChatPanel withBack={true} />
-                            : <ListPanel />
+                            ? renderChatPanel(true)
+                            : renderListPanel()
                     }
                 </div>
             )}
@@ -413,11 +413,11 @@ export default function ContactManagementPage() {
                 <div className="flex-1 min-h-0 flex rounded-2xl border border-gray-200 shadow-sm overflow-hidden bg-white">
                     {/* Sidebar */}
                     <div className="w-80 shrink-0 border-r border-gray-200 overflow-hidden flex flex-col">
-                        <ListPanel />
+                        {renderListPanel()}
                     </div>
                     {/* Chat or empty */}
                     <div className="flex-1 overflow-hidden flex flex-col">
-                        {selectedThread ? <ChatPanel withBack={false} /> : <EmptyState />}
+                        {selectedThread ? renderChatPanel(false) : renderEmptyState()}
                     </div>
                 </div>
             )}

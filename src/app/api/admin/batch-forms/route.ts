@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getSessionUser, isAdmin } from "@/lib/auth";
+import { getSessionUser, isAdmin, hasRequiredPermission } from "@/lib/auth";
 import { randomUUID } from "crypto";
 
 function slugify(text: string) {
@@ -38,7 +38,7 @@ type PendingCount = { batch_name: string; cnt: bigint };
 export async function GET(req: NextRequest) {
   try {
     const user = await getSessionUser(req);
-    if (!user || !isAdmin(user)) {
+    if (!user || !(isAdmin(user) || hasRequiredPermission(user, "admin_panel"))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getSessionUser(req);
-    if (!user || !isAdmin(user)) {
+    if (!user || !(isAdmin(user) || hasRequiredPermission(user, "admin_panel"))) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

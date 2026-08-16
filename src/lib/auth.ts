@@ -2,6 +2,8 @@ import { SignJWT, jwtVerify } from 'jose';
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { COOKIES } from './constants';
+import { prisma } from './db';
+import { getEffectivePermissions, PermissionKey } from './permissions';
 
 
 export interface JWTPayload {
@@ -12,6 +14,7 @@ export interface JWTPayload {
     teacherId?: string;
     studentBatchName?: string;
     studentRoll?: string;
+    permissions?: string[];
 }
 
 function getJWTSecret(): Uint8Array {
@@ -44,7 +47,19 @@ export async function getSessionUser(request: NextRequest): Promise<JWTPayload |
     try {
         const token = request.cookies.get(COOKIES.SESSION)?.value;
         if (!token) return null;
-        return await verifyJWT(token);
+        const payload = await verifyJWT(token);
+        
+        const dbUser = await prisma.user.findUnique({
+            where: { id: payload.id },
+            select: { role: true, permissions: true }
+        });
+        
+        if (dbUser) {
+            payload.role = dbUser.role;
+            payload.permissions = getEffectivePermissions(dbUser.role, dbUser.permissions as string[]);
+        }
+        
+        return payload;
     } catch {
         return null;
     }
@@ -55,7 +70,19 @@ export async function getServerSessionUser(): Promise<JWTPayload | null> {
         const cookieStore = await cookies();
         const token = cookieStore.get(COOKIES.SESSION)?.value;
         if (!token) return null;
-        return await verifyJWT(token);
+        const payload = await verifyJWT(token);
+        
+        const dbUser = await prisma.user.findUnique({
+            where: { id: payload.id },
+            select: { role: true, permissions: true }
+        });
+        
+        if (dbUser) {
+            payload.role = dbUser.role;
+            payload.permissions = getEffectivePermissions(dbUser.role, dbUser.permissions as string[]);
+        }
+        
+        return payload;
     } catch {
         return null;
     }
@@ -63,15 +90,29 @@ export async function getServerSessionUser(): Promise<JWTPayload | null> {
 
 export async function getSessionUserFromRequestOrBearer(request: NextRequest): Promise<JWTPayload | null> {
     try {
+        let payload: JWTPayload | null = null;
         const cookieToken = request.cookies.get(COOKIES.SESSION)?.value;
+        
         if (cookieToken) {
-            return await verifyJWT(cookieToken);
+            payload = await verifyJWT(cookieToken);
+        } else {
+            const authHeader = request.headers.get('Authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                const bearerToken = authHeader.substring(7);
+                payload = await verifyJWT(bearerToken);
+            }
         }
-
-        const authHeader = request.headers.get('Authorization');
-        if (authHeader?.startsWith('Bearer ')) {
-            const bearerToken = authHeader.substring(7);
-            return await verifyJWT(bearerToken);
+        
+        if (payload) {
+            const dbUser = await prisma.user.findUnique({
+                where: { id: payload.id },
+                select: { role: true, permissions: true }
+            });
+            if (dbUser) {
+                payload.role = dbUser.role;
+                payload.permissions = getEffectivePermissions(dbUser.role, dbUser.permissions as string[]);
+            }
+            return payload;
         }
 
         return null;
@@ -88,3 +129,9 @@ export const isSuperAdmin = (user: JWTPayload) =>
 
 export const isTeacherOrAdmin = (user: JWTPayload) =>
     user.role === 'teacher' || user.role === 'admin' || user.role === 'super_admin';
+
+export const hasRequiredPermission = (user: JWTPayload, permission: PermissionKey) => {
+    if (user.role === 'super_admin') return true;
+    if (!user.permissions) return false;
+    return user.permissions.includes(permission);
+};
