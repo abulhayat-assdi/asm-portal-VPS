@@ -95,6 +95,53 @@ async function applySchemaPatches() {
         console.error("[startup] Schema patch error (active_sessions):", err.message);
     }
 
+    // ── Student Leave Requests ──────────────────────────────────────
+    try {
+        await prisma.$executeRawUnsafe(`
+            DO $$ BEGIN
+                CREATE TYPE "StudentLeaveStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+            EXCEPTION
+                WHEN duplicate_object THEN null;
+            END $$;
+        `);
+        console.log("[startup] ✓ StudentLeaveStatus enum OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (StudentLeaveStatus):", err.message);
+    }
+
+    try {
+        await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS student_leave_requests (
+                id TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+                student_uid TEXT NOT NULL,
+                student_name TEXT NOT NULL,
+                student_roll TEXT NOT NULL,
+                student_batch_name TEXT NOT NULL,
+                start_date TEXT NOT NULL,
+                end_date TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                status "StudentLeaveStatus" NOT NULL DEFAULT 'PENDING',
+                reviewed_by TEXT,
+                review_note TEXT,
+                created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT student_leave_requests_pkey PRIMARY KEY (id)
+            );
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS student_leave_requests_student_uid_idx ON student_leave_requests(student_uid);
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS student_leave_requests_student_batch_name_idx ON student_leave_requests(student_batch_name);
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS student_leave_requests_status_idx ON student_leave_requests(status);
+        `);
+        console.log("[startup] ✓ student_leave_requests table OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (student_leave_requests):", err.message);
+    }
+
     // ── Remove tenant system (idempotent cleanup) ───────────────
 
     const tablesWithTenantId = [
