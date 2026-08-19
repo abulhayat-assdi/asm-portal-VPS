@@ -3,9 +3,13 @@ export const getImageUrl = (imagePath: string) => {
         return '';
     }
 
-    // If it's already a full external URL (e.g. old Firebase link), return as-is
-    if (imagePath.startsWith('http')) {
+    // If it's already a full external URL (e.g. old Firebase link), data URL, or API route path, return as-is
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('/api/')) {
         return imagePath;
+    }
+
+    if (imagePath.startsWith('api/')) {
+        return `/${imagePath}`;
     }
 
     // Normalize path (remove leading slash if present)
@@ -19,3 +23,4 @@ export const getImageUrl = (imagePath: string) => {
     // Return local static path from Next.js public/images/ folder
     return `/images/${cleanPath}`;
 };
+

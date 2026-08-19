@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
+import fs from "fs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,7 +25,14 @@ export async function GET(req: NextRequest) {
 
   // Resolve from the same process.cwd()/public as the upload API
   const publicDir = path.join(process.cwd(), "public");
-  const filePath  = path.resolve(publicDir, p);
+
+  // Clean prefix if p has leading / or api/uploads/ or uploads/
+  const cleanP = p.replace(/^\/?(api\/uploads\/|uploads\/)/, "");
+  let filePath = path.resolve(publicDir, cleanP);
+
+  if (!fs.existsSync(filePath)) {
+    filePath = path.resolve(publicDir, p.startsWith("/") ? p.slice(1) : p);
+  }
 
   // Security: prevent directory traversal
   if (!filePath.startsWith(publicDir + path.sep) && filePath !== publicDir) {

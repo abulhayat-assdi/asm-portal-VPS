@@ -118,16 +118,16 @@ export default function TeacherCard({ teacher, onEdit, onDelete, isAdmin, onPhot
 
     const getImageUrl = (url: string) => {
         if (!url) return url;
+        if (url.startsWith("http") || url.startsWith("data:") || url.startsWith("/api/") || url.startsWith("api/")) {
+            return url.startsWith("api/") ? `/${url}` : url;
+        }
         if (url.includes("drive.google.com") && url.includes("/d/")) {
             const id = url.split("/d/")[1].split("/")[0];
             return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
         }
         // Local upload: serve via API route (same process.cwd() as upload API)
-        if (!url.startsWith("http") && !url.startsWith("data:")) {
-            const p = url.startsWith("/") ? url.slice(1) : url;
-            return `/api/serve-image?p=${encodeURIComponent(p)}`;
-        }
-        return url;
+        const p = url.startsWith("/") ? url.slice(1) : url;
+        return `/api/serve-image?p=${encodeURIComponent(p)}`;
     };
 
     return (

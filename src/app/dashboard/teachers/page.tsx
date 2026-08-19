@@ -6,6 +6,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { getAllTeachers, getTeachersPaginated, updateTeacher, deleteTeacher, Teacher } from "@/services/teacherService";
 import { useAuth } from "@/contexts/AuthContext";
+import { getImageUrl } from "@/lib/getImageUrl";
 
 export default function TeachersPage() {
     const { user, userProfile } = useAuth();
@@ -763,7 +764,7 @@ export default function TeachersPage() {
                                         <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#059669] flex-shrink-0">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img
-                                                src={imagePreview}
+                                                src={getImageUrl(imagePreview)}
                                                 alt="Preview"
                                                 className="w-full h-full object-cover"
                                             />
