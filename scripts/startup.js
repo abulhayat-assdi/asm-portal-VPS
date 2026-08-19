@@ -231,6 +231,17 @@ async function applySchemaPatches() {
         console.error("[startup] Schema patch error (visitor_logs):", err.message);
     }
 
+    try {
+        await prisma.$executeRawUnsafe(`
+            UPDATE deployments
+            SET live_url = CONCAT('https://tasm-skill.asf.bd/site/', subdomain)
+            WHERE live_url LIKE 'https://%.tasm-skill.asf.bd';
+        `);
+        console.log("[startup] ✓ deployments.live_url updated to path format OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (update live_url):", err.message);
+    }
+
     // ── Remove tenant system (idempotent cleanup) ───────────────
 
     const tablesWithTenantId = [

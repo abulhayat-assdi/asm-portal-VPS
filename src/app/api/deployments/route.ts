@@ -40,7 +40,8 @@ function validateSubdomain(subdomain: string): { ok: boolean; error?: string } {
 }
 
 function buildLiveUrl(subdomain: string): string {
-    return `https://${subdomain}.${BASE_DOMAIN}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${BASE_DOMAIN}`;
+    return `${appUrl}/site/${subdomain}`;
 }
 
 function safePath(baseDir: string, subdomain: string): string {
