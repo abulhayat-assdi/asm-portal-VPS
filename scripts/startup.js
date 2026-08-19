@@ -142,6 +142,95 @@ async function applySchemaPatches() {
         console.error("[startup] Schema patch error (student_leave_requests):", err.message);
     }
 
+    // ── Mini-Netlify Deployments ────────────────────────────────────
+    try {
+        await prisma.$executeRawUnsafe(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS deployment_limit INT NOT NULL DEFAULT 5;
+        `);
+        await prisma.$executeRawUnsafe(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS is_deployment_frozen BOOLEAN NOT NULL DEFAULT FALSE;
+        `);
+        console.log("[startup] ✓ users.deployment_limit & is_deployment_frozen columns OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (user deployment fields):", err.message);
+    }
+
+    try {
+        await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS deployments (
+                id TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+                user_id TEXT NOT NULL,
+                subdomain TEXT NOT NULL,
+                display_name TEXT NOT NULL DEFAULT '',
+                folder_path TEXT NOT NULL,
+                live_url TEXT NOT NULL,
+                total_visitors INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT deployments_pkey PRIMARY KEY (id)
+            );
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE UNIQUE INDEX IF NOT EXISTS deployments_subdomain_key ON deployments(subdomain);
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS deployments_user_id_idx ON deployments(user_id);
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS deployments_subdomain_idx ON deployments(subdomain);
+        `);
+        await prisma.$executeRawUnsafe(`
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'deployments_user_id_fkey'
+                ) THEN
+                    ALTER TABLE deployments
+                    ADD CONSTRAINT deployments_user_id_fkey
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE;
+                END IF;
+            END $$;
+        `);
+        console.log("[startup] ✓ deployments table OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (deployments):", err.message);
+    }
+
+    try {
+        await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS visitor_logs (
+                id TEXT NOT NULL DEFAULT gen_random_uuid()::TEXT,
+                deployment_id TEXT NOT NULL,
+                visitor_ip TEXT NOT NULL,
+                user_agent TEXT,
+                date TEXT NOT NULL,
+                created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT visitor_logs_pkey PRIMARY KEY (id)
+            );
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS visitor_logs_deployment_id_idx ON visitor_logs(deployment_id);
+        `);
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS visitor_logs_date_idx ON visitor_logs(date);
+        `);
+        await prisma.$executeRawUnsafe(`
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'visitor_logs_deployment_id_fkey'
+                ) THEN
+                    ALTER TABLE visitor_logs
+                    ADD CONSTRAINT visitor_logs_deployment_id_fkey
+                    FOREIGN KEY (deployment_id) REFERENCES deployments(id) ON DELETE CASCADE ON UPDATE CASCADE;
+                END IF;
+            END $$;
+        `);
+        console.log("[startup] ✓ visitor_logs table OK");
+    } catch (err) {
+        console.error("[startup] Schema patch error (visitor_logs):", err.message);
+    }
+
     // ── Remove tenant system (idempotent cleanup) ───────────────
 
     const tablesWithTenantId = [
