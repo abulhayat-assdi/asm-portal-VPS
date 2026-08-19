@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSessionUser, isTeacherOrAdmin } from "@/lib/auth";
+import { ensureStudentLeaveTableColumns, safeCreateStudentLeaveRequest } from "@/lib/studentLeaveDb";
 import fs from "fs";
 import path from "path";
 
@@ -13,6 +14,8 @@ export async function GET(req: Request) {
         if (!session || !isTeacherOrAdmin(session)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        await ensureStudentLeaveTableColumns();
 
         const leaveRequests = await prisma.studentLeaveRequest.findMany({
             orderBy: {
@@ -74,19 +77,17 @@ export async function POST(req: Request) {
             }
         }
 
-        const newLeaveRequest = await prisma.studentLeaveRequest.create({
-            data: {
-                studentUid: userAccount?.id || bStudent.id,
-                studentName: bStudent.name,
-                studentRoll: bStudent.roll,
-                studentPhone: bStudent.phone || null,
-                studentBatchName: bStudent.batchName,
-                startDate: String(startDate).trim(),
-                endDate: String(endDate).trim(),
-                reason: String(reason).trim(),
-                status: validStatus,
-                reviewedBy: session.id || null,
-            },
+        const newLeaveRequest = await safeCreateStudentLeaveRequest({
+            studentUid: userAccount?.id || bStudent.id,
+            studentName: bStudent.name,
+            studentRoll: bStudent.roll,
+            studentPhone: bStudent.phone || null,
+            studentBatchName: bStudent.batchName,
+            startDate: String(startDate).trim(),
+            endDate: String(endDate).trim(),
+            reason: String(reason).trim(),
+            status: validStatus,
+            reviewedBy: session.id || null,
         });
 
         return NextResponse.json(newLeaveRequest, { status: 201 });

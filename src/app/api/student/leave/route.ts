@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSessionUser } from "@/lib/auth";
+import { ensureStudentLeaveTableColumns, safeCreateStudentLeaveRequest } from "@/lib/studentLeaveDb";
 
 export async function GET() {
     try {
@@ -11,6 +12,8 @@ export async function GET() {
         if (!session || session.role !== "student") {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        await ensureStudentLeaveTableColumns();
 
         // Fetch user profile from DB for accurate batch & roll info
         const user = await prisma.user.findUnique({
@@ -155,20 +158,18 @@ export async function POST(req: Request) {
             }
         }
 
-        const newLeaveRequest = await prisma.studentLeaveRequest.create({
-            data: {
-                studentUid: session.id,
-                studentName: studentName,
-                studentRoll: roll || "N/A",
-                studentPhone: studentPhone || null,
-                studentBatchName: batchName || "N/A",
-                startDate: String(startDate).trim(),
-                endDate: String(endDate).trim(),
-                reason: String(reason).trim(),
-                attachmentUrl: attachmentUrl || null,
-                attachmentName: attachmentName || null,
-                status: "PENDING",
-            },
+        const newLeaveRequest = await safeCreateStudentLeaveRequest({
+            studentUid: session.id,
+            studentName: studentName,
+            studentRoll: roll || "N/A",
+            studentPhone: studentPhone || null,
+            studentBatchName: batchName || "N/A",
+            startDate: String(startDate).trim(),
+            endDate: String(endDate).trim(),
+            reason: String(reason).trim(),
+            attachmentUrl: attachmentUrl || null,
+            attachmentName: attachmentName || null,
+            status: "PENDING",
         });
 
         return NextResponse.json(newLeaveRequest, { status: 201 });
