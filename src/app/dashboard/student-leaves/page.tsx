@@ -162,8 +162,17 @@ export default function AdminStudentLeavesPage() {
         }
     };
 
+    const formatDateSafe = (dateStr: string) => {
+        if (!dateStr) return "";
+        const [y, m, d] = dateStr.split("-").map(Number);
+        if (y && m && d) {
+            return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+        }
+        return new Date(dateStr).toLocaleDateString();
+    };
+
     const runningBatchesList = useMemo(() => {
-        const runningStudents = allBatchStudents.filter(s => s.batchType === "Running");
+        const runningStudents = allBatchStudents.filter(s => s.batchType !== "Completed");
         const set = new Set(runningStudents.map(s => s.batchName).filter(Boolean));
         return Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
     }, [allBatchStudents]);
@@ -171,7 +180,7 @@ export default function AdminStudentLeavesPage() {
     const studentsForSelectedAddBatch = useMemo(() => {
         if (!addBatchName) return [];
         return allBatchStudents
-            .filter(s => s.batchName === addBatchName && s.batchType === "Running")
+            .filter(s => s.batchName === addBatchName && s.batchType !== "Completed")
             .sort((a, b) => a.roll.localeCompare(b.roll, undefined, { numeric: true, sensitivity: "base" }));
     }, [allBatchStudents, addBatchName]);
 
@@ -347,8 +356,8 @@ export default function AdminStudentLeavesPage() {
                     req.studentRoll || "-",
                     req.studentPhone || "-",
                     req.studentBatchName || "-",
-                    new Date(req.startDate).toLocaleDateString(),
-                    new Date(req.endDate).toLocaleDateString(),
+                    formatDateSafe(req.startDate),
+                    formatDateSafe(req.endDate),
                     days,
                     req.status,
                     req.reason || "-",
@@ -505,9 +514,9 @@ export default function AdminStudentLeavesPage() {
                                                 </td>
                                                 <td className="p-4 align-top text-center">
                                                     <div className="text-xs text-slate-700 whitespace-nowrap font-medium">
-                                                        {new Date(req.startDate).toLocaleDateString()} <br />
+                                                        {formatDateSafe(req.startDate)} <br />
                                                         <span className="text-slate-400 font-normal">to</span> <br />
-                                                        {new Date(req.endDate).toLocaleDateString()}
+                                                        {formatDateSafe(req.endDate)}
                                                     </div>
                                                     <div className="mt-1 inline-block text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
                                                         {leaveDays} {leaveDays === 1 ? "Day" : "Days"}

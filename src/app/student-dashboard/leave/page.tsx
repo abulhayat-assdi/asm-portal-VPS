@@ -17,6 +17,15 @@ type LeaveRequest = {
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+const formatDateSafe = (dateStr: string) => {
+    if (!dateStr) return "";
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (y && m && d) {
+        return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    }
+    return new Date(dateStr).toLocaleDateString();
+};
+
 export default function StudentLeavePage() {
     const { userProfile, loading: authLoading } = useAuth();
     const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -280,7 +289,7 @@ export default function StudentLeavePage() {
                                                         {new Date(req.createdAt).toLocaleDateString()}
                                                     </div>
                                                     <div className="font-medium text-slate-800">
-                                                        {new Date(req.startDate).toLocaleDateString()} to {new Date(req.endDate).toLocaleDateString()}
+                                                        {formatDateSafe(req.startDate)} to {formatDateSafe(req.endDate)}
                                                     </div>
                                                 </div>
                                                 <span className={`px-3 py-1 text-xs font-semibold rounded-full ${

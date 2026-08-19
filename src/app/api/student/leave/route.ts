@@ -12,16 +12,7 @@ export async function GET() {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const leaveRequests = await prisma.studentLeaveRequest.findMany({
-            where: {
-                studentUid: session.id,
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
-
-        // Fetch user profile from DB as fallback for batch & roll info
+        // Fetch user profile from DB for accurate batch & roll info
         const user = await prisma.user.findUnique({
             where: { id: session.id },
             select: { displayName: true, studentBatchName: true, studentRoll: true }
@@ -29,6 +20,24 @@ export async function GET() {
 
         const batchName = user?.studentBatchName || session.studentBatchName || "";
         const roll = user?.studentRoll || session.studentRoll || "";
+
+        // Query leave requests by studentUid OR by matching batchName & roll
+        const whereConditions: any[] = [{ studentUid: session.id }];
+        if (batchName && roll) {
+            whereConditions.push({
+                studentBatchName: batchName,
+                studentRoll: roll,
+            });
+        }
+
+        const leaveRequests = await prisma.studentLeaveRequest.findMany({
+            where: {
+                OR: whereConditions,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
 
         // Check student batch status to see if leave application is allowed
         let canApply = true;
@@ -69,7 +78,9 @@ export async function GET() {
         });
     } catch (error) {
         console.error("Error fetching student leave requests:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : "Internal server error" 
+        }, { status: 500 });
     }
 }
 
@@ -83,12 +94,12 @@ export async function POST(req: Request) {
         // Fetch fresh user profile from DB to get accurate student details
         const user = await prisma.user.findUnique({
             where: { id: session.id },
-            select: { displayName: true, studentBatchName: true, studentRoll: true }
+            select: { displayName: true, studentBatchName: true, studentRoll: true, email: true }
         });
 
         const batchName = user?.studentBatchName || session.studentBatchName || "";
         const roll = user?.studentRoll || session.studentRoll || "";
-        const studentName = user?.displayName || session.displayName || "Unknown";
+        let studentName = user?.displayName || session.displayName || "Unknown Student";
 
         // Check if student batch is completed (archived)
         if (batchName) {
@@ -119,12 +130,12 @@ export async function POST(req: Request) {
         const { startDate, endDate, reason, attachmentUrl, attachmentName, studentPhone: reqPhone } = await req.json();
 
         if (!startDate || !endDate || !reason) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+            return NextResponse.json({ error: "Missing required fields (Start Date, End Date, Reason)" }, { status: 400 });
         }
 
         // Fetch student phone number if available
         let studentPhone = reqPhone || "";
-        if (!studentPhone && batchName && roll) {
+        if (batchName && roll) {
             try {
                 const bStudent = await prisma.batchStudent.findUnique({
                     where: {
@@ -133,10 +144,11 @@ export async function POST(req: Request) {
                             roll: roll,
                         },
                     },
-                    select: { phone: true },
+                    select: { phone: true, name: true },
                 });
-                if (bStudent && bStudent.phone) {
-                    studentPhone = bStudent.phone;
+                if (bStudent) {
+                    if (bStudent.phone) studentPhone = bStudent.phone;
+                    if (bStudent.name && studentName === "Unknown Student") studentName = bStudent.name;
                 }
             } catch (err) {
                 console.warn("[StudentLeavePost] Warning querying phone from batchStudent:", err);
@@ -147,12 +159,12 @@ export async function POST(req: Request) {
             data: {
                 studentUid: session.id,
                 studentName: studentName,
-                studentRoll: roll,
+                studentRoll: roll || "N/A",
                 studentPhone: studentPhone || null,
-                studentBatchName: batchName,
-                startDate,
-                endDate,
-                reason,
+                studentBatchName: batchName || "N/A",
+                startDate: String(startDate).trim(),
+                endDate: String(endDate).trim(),
+                reason: String(reason).trim(),
                 attachmentUrl: attachmentUrl || null,
                 attachmentName: attachmentName || null,
                 status: "PENDING",
@@ -162,6 +174,8 @@ export async function POST(req: Request) {
         return NextResponse.json(newLeaveRequest, { status: 201 });
     } catch (error) {
         console.error("Error creating student leave request:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : "Internal server error" 
+        }, { status: 500 });
     }
 }

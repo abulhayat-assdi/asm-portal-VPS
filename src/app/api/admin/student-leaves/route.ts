@@ -23,7 +23,9 @@ export async function GET(req: Request) {
         return NextResponse.json(leaveRequests);
     } catch (error) {
         console.error("Error fetching student leave requests:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : "Internal server error" 
+        }, { status: 500 });
     }
 }
 
@@ -44,24 +46,33 @@ export async function POST(req: Request) {
         const bStudent = await prisma.batchStudent.findUnique({
             where: {
                 batchName_roll: {
-                    batchName,
-                    roll: studentRoll,
+                    batchName: String(batchName).trim(),
+                    roll: String(studentRoll).trim(),
                 },
             },
         });
 
         if (!bStudent) {
-            return NextResponse.json({ error: "Student record not found for the selected batch and roll." }, { status: 404 });
+            return NextResponse.json({ error: `Student record not found for batch "${batchName}" and roll "${studentRoll}".` }, { status: 404 });
         }
 
         // Check if student has a registered User account
         const userAccount = await prisma.user.findFirst({
             where: {
-                studentBatchName: batchName,
-                studentRoll: studentRoll,
+                studentBatchName: String(batchName).trim(),
+                studentRoll: String(studentRoll).trim(),
             },
             select: { id: true },
         });
+
+        // Normalize status enum
+        let validStatus: "PENDING" | "APPROVED" | "REJECTED" = "APPROVED";
+        if (status && typeof status === "string") {
+            const upper = status.toUpperCase();
+            if (upper === "PENDING" || upper === "APPROVED" || upper === "REJECTED") {
+                validStatus = upper;
+            }
+        }
 
         const newLeaveRequest = await prisma.studentLeaveRequest.create({
             data: {
@@ -70,18 +81,20 @@ export async function POST(req: Request) {
                 studentRoll: bStudent.roll,
                 studentPhone: bStudent.phone || null,
                 studentBatchName: bStudent.batchName,
-                startDate,
-                endDate,
-                reason,
-                status: status || "APPROVED",
-                reviewedBy: session.id,
+                startDate: String(startDate).trim(),
+                endDate: String(endDate).trim(),
+                reason: String(reason).trim(),
+                status: validStatus,
+                reviewedBy: session.id || null,
             },
         });
 
         return NextResponse.json(newLeaveRequest, { status: 201 });
     } catch (error) {
         console.error("Error creating student leave request by admin:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : "Internal server error" 
+        }, { status: 500 });
     }
 }
 
@@ -95,22 +108,33 @@ export async function PATCH(req: Request) {
         const { id, status, reviewNote } = await req.json();
 
         if (!id || !status) {
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+            return NextResponse.json({ error: "Missing required fields (id, status)" }, { status: 400 });
+        }
+
+        // Normalize status enum
+        let validStatus: "PENDING" | "APPROVED" | "REJECTED" = "APPROVED";
+        if (typeof status === "string") {
+            const upper = status.toUpperCase();
+            if (upper === "PENDING" || upper === "APPROVED" || upper === "REJECTED") {
+                validStatus = upper;
+            }
         }
 
         const updatedLeaveRequest = await prisma.studentLeaveRequest.update({
             where: { id },
             data: {
-                status,
-                reviewNote,
-                reviewedBy: session.id, // Storing ID of admin/teacher
+                status: validStatus,
+                reviewNote: reviewNote !== undefined ? String(reviewNote).trim() : undefined,
+                reviewedBy: session.id || null,
             },
         });
 
         return NextResponse.json(updatedLeaveRequest);
     } catch (error) {
         console.error("Error updating student leave request:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : "Internal server error" 
+        }, { status: 500 });
     }
 }
 
@@ -159,6 +183,8 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error deleting student leave request:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return NextResponse.json({ 
+            error: error instanceof Error ? error.message : "Internal server error" 
+        }, { status: 500 });
     }
 }
