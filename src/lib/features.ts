@@ -17,6 +17,7 @@ export const ALL_FEATURES: FeatureDefinition[] = [
     { key: 'policies', label: 'Policy & Minutes', description: 'Policy documents ও meeting minutes' },
     { key: 'leave_tracking', label: 'Leave Tracking', description: 'শিক্ষকের ছুটি ম্যানেজমেন্ট' },
     { key: 'chat', label: 'Chat System', description: 'ছাত্র-admin chat সিস্টেম' },
+    { key: 'deployments', label: 'Student Deployments', description: 'Mini-Netlify — ছাত্রদের সাইট হোস্টিং ফিচার' },
 ];
 
 export type FeatureKey = string;
