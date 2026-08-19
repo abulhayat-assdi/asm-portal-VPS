@@ -51,12 +51,15 @@ export async function getSessionUser(request: NextRequest): Promise<JWTPayload |
         
         const dbUser = await prisma.user.findUnique({
             where: { id: payload.id },
-            select: { role: true, permissions: true }
+            select: { role: true, permissions: true, displayName: true, studentBatchName: true, studentRoll: true }
         });
         
         if (dbUser) {
             payload.role = dbUser.role;
             payload.permissions = getEffectivePermissions(dbUser.role, dbUser.permissions as string[]);
+            if (dbUser.displayName) payload.displayName = dbUser.displayName;
+            if (dbUser.studentBatchName) payload.studentBatchName = dbUser.studentBatchName;
+            if (dbUser.studentRoll) payload.studentRoll = dbUser.studentRoll;
         }
         
         return payload;
@@ -74,12 +77,15 @@ export async function getServerSessionUser(): Promise<JWTPayload | null> {
         
         const dbUser = await prisma.user.findUnique({
             where: { id: payload.id },
-            select: { role: true, permissions: true }
+            select: { role: true, permissions: true, displayName: true, studentBatchName: true, studentRoll: true }
         });
         
         if (dbUser) {
             payload.role = dbUser.role;
             payload.permissions = getEffectivePermissions(dbUser.role, dbUser.permissions as string[]);
+            if (dbUser.displayName) payload.displayName = dbUser.displayName;
+            if (dbUser.studentBatchName) payload.studentBatchName = dbUser.studentBatchName;
+            if (dbUser.studentRoll) payload.studentRoll = dbUser.studentRoll;
         }
         
         return payload;
@@ -106,11 +112,14 @@ export async function getSessionUserFromRequestOrBearer(request: NextRequest): P
         if (payload) {
             const dbUser = await prisma.user.findUnique({
                 where: { id: payload.id },
-                select: { role: true, permissions: true }
+                select: { role: true, permissions: true, displayName: true, studentBatchName: true, studentRoll: true }
             });
             if (dbUser) {
                 payload.role = dbUser.role;
                 payload.permissions = getEffectivePermissions(dbUser.role, dbUser.permissions as string[]);
+                if (dbUser.displayName) payload.displayName = dbUser.displayName;
+                if (dbUser.studentBatchName) payload.studentBatchName = dbUser.studentBatchName;
+                if (dbUser.studentRoll) payload.studentRoll = dbUser.studentRoll;
             }
             return payload;
         }
