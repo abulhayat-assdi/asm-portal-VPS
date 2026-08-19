@@ -1064,10 +1064,13 @@ model StudentLeaveRequest {
   studentUid       String             @map("student_uid")
   studentName      String             @map("student_name")
   studentRoll      String             @map("student_roll")
+  studentPhone     String?            @map("student_phone")
   studentBatchName String             @map("student_batch_name")
   startDate        String             @map("start_date")
   endDate          String             @map("end_date")
   reason           String
+  attachmentUrl    String?            @map("attachment_url")
+  attachmentName   String?            @map("attachment_name")
   status           StudentLeaveStatus @default(PENDING)
   reviewedBy       String?            @map("reviewed_by")
   reviewNote       String?            @map("review_note")
@@ -1076,6 +1079,8 @@ model StudentLeaveRequest {
 
   @@index([studentUid])
   @@index([studentBatchName])
+  @@index([studentRoll])
+  @@index([studentPhone])
   @@index([status])
   @@map("student_leave_requests")
 }

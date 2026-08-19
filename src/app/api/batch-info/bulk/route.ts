@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
 import { BatchType, CourseStatus, CurrentlyDoing, StudentCategory } from "@prisma/client";
+import { cleanupBatchLeaveAttachments } from "@/lib/leaveCleanup";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -69,6 +70,11 @@ export async function POST(req: NextRequest) {
                 where: { id: batch.id },
                 data: { status: expectedStatus },
             });
+        }
+
+        // If batch is set to Completed, trigger automatic cleanup of leave request attachment files
+        if (batchType === "Completed") {
+            await cleanupBatchLeaveAttachments(batchName);
         }
 
         const mapCurrentlyDoing = (value: string | undefined): CurrentlyDoing | null => {

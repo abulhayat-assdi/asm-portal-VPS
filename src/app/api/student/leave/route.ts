@@ -21,7 +21,43 @@ export async function GET() {
             },
         });
 
-        return NextResponse.json(leaveRequests);
+        // Check student batch status to see if leave application is allowed
+        let canApply = true;
+        let batchStatus = "Running";
+
+        if (session.studentBatchName) {
+            const batch = await prisma.batch.findUnique({
+                where: { name: session.studentBatchName },
+                select: { status: true },
+            });
+            if (batch && batch.status === "archived") {
+                canApply = false;
+                batchStatus = "Completed";
+            }
+
+            if (canApply && session.studentRoll) {
+                const studentInfo = await prisma.batchStudent.findUnique({
+                    where: {
+                        batchName_roll: {
+                            batchName: session.studentBatchName,
+                            roll: session.studentRoll,
+                        },
+                    },
+                    select: { batchType: true },
+                });
+                if (studentInfo && studentInfo.batchType === "Completed") {
+                    canApply = false;
+                    batchStatus = "Completed";
+                }
+            }
+        }
+
+        return NextResponse.json({
+            requests: leaveRequests,
+            canApply,
+            batchStatus,
+            batchName: session.studentBatchName || "",
+        });
     } catch (error) {
         console.error("Error fetching student leave requests:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -35,10 +71,53 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { startDate, endDate, reason } = await req.json();
+        // Check if student batch is completed (archived)
+        if (session.studentBatchName) {
+            const batch = await prisma.batch.findUnique({
+                where: { name: session.studentBatchName },
+                select: { status: true },
+            });
+            if (batch && batch.status === "archived") {
+                return NextResponse.json({ error: "Leave requests are closed because your batch has been completed." }, { status: 403 });
+            }
+
+            if (session.studentRoll) {
+                const studentInfo = await prisma.batchStudent.findUnique({
+                    where: {
+                        batchName_roll: {
+                            batchName: session.studentBatchName,
+                            roll: session.studentRoll,
+                        },
+                    },
+                    select: { batchType: true, phone: true },
+                });
+                if (studentInfo && studentInfo.batchType === "Completed") {
+                    return NextResponse.json({ error: "Leave requests are closed because your batch has been completed." }, { status: 403 });
+                }
+            }
+        }
+
+        const { startDate, endDate, reason, attachmentUrl, attachmentName, studentPhone: reqPhone } = await req.json();
 
         if (!startDate || !endDate || !reason) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+        }
+
+        // Fetch student phone number if available
+        let studentPhone = reqPhone || "";
+        if (!studentPhone && session.studentBatchName && session.studentRoll) {
+            const bStudent = await prisma.batchStudent.findUnique({
+                where: {
+                    batchName_roll: {
+                        batchName: session.studentBatchName,
+                        roll: session.studentRoll,
+                    },
+                },
+                select: { phone: true },
+            });
+            if (bStudent && bStudent.phone) {
+                studentPhone = bStudent.phone;
+            }
         }
 
         const newLeaveRequest = await prisma.studentLeaveRequest.create({
@@ -46,10 +125,13 @@ export async function POST(req: Request) {
                 studentUid: session.id,
                 studentName: session.displayName || "Unknown",
                 studentRoll: session.studentRoll || "",
+                studentPhone: studentPhone || null,
                 studentBatchName: session.studentBatchName || "",
                 startDate,
                 endDate,
                 reason,
+                attachmentUrl: attachmentUrl || null,
+                attachmentName: attachmentName || null,
                 status: "PENDING",
             },
         });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 type LeaveRequest = {
@@ -8,22 +8,31 @@ type LeaveRequest = {
     startDate: string;
     endDate: string;
     reason: string;
+    attachmentUrl?: string | null;
+    attachmentName?: string | null;
     status: "PENDING" | "APPROVED" | "REJECTED";
     createdAt: string;
     reviewNote?: string;
 };
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 export default function StudentLeavePage() {
     const { userProfile, loading: authLoading } = useAuth();
     const [requests, setRequests] = useState<LeaveRequest[]>([]);
+    const [canApply, setCanApply] = useState(true);
+    const [batchName, setBatchName] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [reason, setReason] = useState("");
+    const [file, setFile] = useState<File | null>(null);
+    const [fileError, setFileError] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const fetchLeaves = async () => {
@@ -31,7 +40,13 @@ export default function StudentLeavePage() {
                 const res = await fetch("/api/student/leave");
                 if (res.ok) {
                     const data = await res.json();
-                    setRequests(data);
+                    if (Array.isArray(data)) {
+                        setRequests(data);
+                    } else if (data && data.requests) {
+                        setRequests(data.requests);
+                        if (data.canApply !== undefined) setCanApply(data.canApply);
+                        if (data.batchName) setBatchName(data.batchName);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch leaves", err);
@@ -45,22 +60,76 @@ export default function StudentLeavePage() {
         }
     }, [authLoading, userProfile]);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFileError("");
+        const selectedFile = e.target.files?.[0];
+        if (!selectedFile) {
+            setFile(null);
+            return;
+        }
+
+        if (selectedFile.size > MAX_FILE_SIZE) {
+            setFileError("File size exceeds 10MB limit. Please select a smaller file.");
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            setFile(null);
+            return;
+        }
+
+        setFile(selectedFile);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
         setSuccess("");
 
         if (!startDate || !endDate || !reason) {
-            setError("All fields are required");
+            setError("All required fields must be filled out.");
+            return;
+        }
+
+        if (file && file.size > MAX_FILE_SIZE) {
+            setError("File size exceeds 10MB limit.");
             return;
         }
 
         setSubmitting(true);
         try {
+            let attachmentUrl: string | null = null;
+            let attachmentName: string | null = null;
+
+            if (file) {
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", file);
+                uploadFormData.append("folder", "student-leaves");
+
+                const uploadRes = await fetch("/api/upload", {
+                    method: "POST",
+                    body: uploadFormData,
+                });
+
+                if (!uploadRes.ok) {
+                    const errData = await uploadRes.json();
+                    setError(errData.error || "Failed to upload attachment.");
+                    setSubmitting(false);
+                    return;
+                }
+
+                const uploadData = await uploadRes.json();
+                attachmentUrl = uploadData.url;
+                attachmentName = file.name;
+            }
+
             const res = await fetch("/api/student/leave", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ startDate, endDate, reason }),
+                body: JSON.stringify({
+                    startDate,
+                    endDate,
+                    reason,
+                    attachmentUrl,
+                    attachmentName,
+                }),
             });
 
             if (res.ok) {
@@ -70,6 +139,8 @@ export default function StudentLeavePage() {
                 setStartDate("");
                 setEndDate("");
                 setReason("");
+                setFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
             } else {
                 const data = await res.json();
                 setError(data.error || "Failed to submit leave request");
@@ -107,49 +178,80 @@ export default function StudentLeavePage() {
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-6">
                             <h2 className="text-lg font-semibold text-slate-800 mb-6">New Request</h2>
                             
-                            {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{error}</div>}
-                            {success && <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100">{success}</div>}
-                            
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
-                                        required
-                                    />
+                            {!canApply ? (
+                                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-800">
+                                    <div className="flex items-center gap-2 font-semibold text-sm mb-1">
+                                        <span>🔒</span> Leave Applications Closed
+                                    </div>
+                                    <p className="text-xs text-amber-700 leading-relaxed">
+                                        Leave applications are closed for completed batches {batchName ? `(${batchName})` : ""}. You can view your previous leave history on the right.
+                                    </p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Reason</label>
-                                    <textarea
-                                        value={reason}
-                                        onChange={(e) => setReason(e.target.value)}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors"
-                                        rows={4}
-                                        placeholder="Briefly explain your reason for leave..."
-                                        required
-                                    ></textarea>
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                                >
-                                    {submitting ? "Submitting..." : "Submit Request"}
-                                </button>
-                            </form>
+                            ) : (
+                                <>
+                                    {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">{error}</div>}
+                                    {success && <div className="mb-4 p-3 bg-green-50 text-green-600 text-sm rounded-lg border border-green-100">{success}</div>}
+                                    
+                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Start Date *</label>
+                                            <input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">End Date *</label>
+                                            <input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-sm"
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Reason *</label>
+                                            <textarea
+                                                value={reason}
+                                                onChange={(e) => setReason(e.target.value)}
+                                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-colors text-sm"
+                                                rows={4}
+                                                placeholder="Briefly explain your reason for leave..."
+                                                required
+                                            ></textarea>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                                                Attachment <span className="text-slate-400 font-normal">(Optional, PDF/Image max 10MB)</span>
+                                            </label>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={handleFileChange}
+                                                className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-lg bg-slate-50 p-1"
+                                            />
+                                            {fileError && <p className="text-xs text-red-500 mt-1">{fileError}</p>}
+                                            {file && (
+                                                <p className="text-xs text-slate-500 mt-1">
+                                                    Selected: <span className="font-medium text-slate-700">{file.name}</span> ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                                                </p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={submitting}
+                                            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed text-sm"
+                                        >
+                                            {submitting ? "Submitting..." : "Submit Request"}
+                                        </button>
+                                    </form>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -189,7 +291,20 @@ export default function StudentLeavePage() {
                                                     {req.status}
                                                 </span>
                                             </div>
-                                            <p className="text-slate-600 text-sm mb-3 bg-white p-3 rounded-lg border border-slate-100">{req.reason}</p>
+                                            <p className="text-slate-600 text-sm mb-3 bg-white p-3 rounded-lg border border-slate-100 whitespace-pre-wrap">{req.reason}</p>
+                                            {req.attachmentUrl && (
+                                                <div className="mb-3">
+                                                    <a
+                                                        href={req.attachmentUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-white p-2 rounded-lg border border-slate-200 font-medium transition-colors break-all"
+                                                    >
+                                                        <span>📎</span>
+                                                        <span className="truncate max-w-[250px]">{req.attachmentName || "View Attachment"}</span>
+                                                    </a>
+                                                </div>
+                                            )}
                                             {req.reviewNote && (
                                                 <div className="text-sm bg-blue-50 text-blue-800 p-3 rounded-lg border border-blue-100">
                                                     <strong>Admin Note:</strong> {req.reviewNote}
