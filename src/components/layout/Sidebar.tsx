@@ -9,40 +9,93 @@ import BrandLogo from "@/components/ui/BrandLogo";
 import { useSidebarNotifications } from "@/hooks/useSidebarNotifications";
 import { PermissionKey } from "@/lib/permissions";
 
-const teacherAdminNavItems: { href: string; label: string; icon: string; permission: PermissionKey | null; feature?: string }[] = [
+interface NavItem {
+    href: string;
+    label: string;
+    icon: string;
+    permission: PermissionKey | null;
+    feature?: string;
+}
+
+interface NavSection {
+    id: string;
+    title: string;
+    icon: string;
+    items: NavItem[];
+}
+
+const teacherAdminTopNavItems: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: "🏠", permission: null },
-    { href: "/dashboard/teachers", label: "Teacher Directory", icon: "👥", permission: "teachers" },
-    { href: "/dashboard/schedule", label: "Class Schedule", icon: "📅", permission: "schedule" },
-    { href: "/dashboard/manage-routine", label: "Manage Routine", icon: "📆", permission: "routine" },
     { href: "/dashboard/all-batch-info", label: "All Batch Info", icon: "📊", permission: "batch_info" },
-    { href: "/dashboard/resources", label: "Resource Library", icon: "🗂️", permission: "resources", feature: "resources" },
     { href: "/dashboard/course-modules", label: "Course Modules", icon: "📚", permission: "course_modules", feature: "course_modules" },
-    { href: "/dashboard/policies", label: "Policy & Minutes", icon: "📋", permission: "policies", feature: "policies" },
-    { href: "/dashboard/feedback", label: "Feedback", icon: "💬", permission: "feedback" },
-    { href: "/dashboard/tracker", label: "Daily Tracker", icon: "📋", permission: "tracker", feature: "daily_tracker" },
     { href: "/dashboard/homework", label: "Homework", icon: "📝", permission: "homework", feature: "homework" },
     { href: "/dashboard/leave-tracking", label: "Leave Tracking", icon: "🌴", permission: "leave_tracking", feature: "leave_tracking" },
-    { href: "/dashboard/admin", label: "Admin Panel", icon: "⚙️", permission: "admin_panel" },
-    { href: "/dashboard/admin/manage-homework", label: "Manage Homework", icon: "📁", permission: "admin_homework", feature: "homework" },
-    { href: "/dashboard/admin/leave-management", label: "Manage Leaves", icon: "🌴", permission: "admin_leave", feature: "leave_tracking" },
-    { href: "/dashboard/admin/manage-results", label: "Manage Results", icon: "📝", permission: "admin_results", feature: "exam_results" },
-    { href: "/dashboard/admin/student-updates", label: "Student Updates", icon: "🔔", permission: "admin_notices" },
     { href: "/dashboard/student-leaves", label: "Student Leaves", icon: "🏖️", permission: "admin_leave" },
-    { href: "/dashboard/admin/contact-messages", label: "Contact Messages", icon: "📩", permission: "admin_contact" },
-    { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", permission: "admin_resources", feature: "resources" },
-    { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", permission: "admin_blog", feature: "blog" },
-    { href: "/dashboard/admin/home-video-testimonials", label: "Home Videos", icon: "🎥", permission: "admin_testimonials", feature: "video_testimonials" },
-    { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", permission: "admin_success", feature: "success_stories" },
-    { href: "/dashboard/admin/course-modules", label: "Course Modules Mgr", icon: "📚", permission: "admin_course_modules", feature: "course_modules" },
-    { href: "/dashboard/admin/manage-pages", label: "Manage Pages", icon: "🌐", permission: "admin_cms" },
-    { href: "/dashboard/admin/hero-images", label: "Hero Images", icon: "🖼️", permission: "admin_cms" },
-    { href: "/dashboard/admin/batch-forms", label: "Batch Forms", icon: "📝", permission: "admin_panel" },
-    { href: "/dashboard/admin/access-management", label: "Access Management", icon: "🔑", permission: "access_management" },
-    { href: "/dashboard/admin/cv-manager", label: "CV Manager", icon: "📄", permission: "admin_panel", feature: "cv_builder" },
-    { href: "/dashboard/admin/deployments", label: "Student Deployments", icon: "🚀", permission: "admin_deployments", feature: "deployments" },
 ];
 
-const studentNavItems: { href: string; label: string; icon: string; permission: null; feature?: string }[] = [
+const teacherAdminNavSections: NavSection[] = [
+    {
+        id: "academic_classes",
+        title: "Academic & Classes",
+        icon: "🎓",
+        items: [
+            { href: "/dashboard/teachers", label: "Teacher Directory", icon: "👥", permission: "teachers" },
+            { href: "/dashboard/schedule", label: "Class Schedule", icon: "📅", permission: "schedule" },
+            { href: "/dashboard/manage-routine", label: "Manage Routine", icon: "📆", permission: "routine" },
+            { href: "/dashboard/admin/course-modules", label: "Course Modules Mgr", icon: "📚", permission: "admin_course_modules", feature: "course_modules" },
+            { href: "/dashboard/admin/manage-homework", label: "Manage Homework", icon: "📁", permission: "admin_homework", feature: "homework" },
+            { href: "/dashboard/admin/manage-results", label: "Manage Results", icon: "📝", permission: "admin_results", feature: "exam_results" },
+        ]
+    },
+    {
+        id: "student_mgmt",
+        title: "Student Management",
+        icon: "👨‍🎓",
+        items: [
+            { href: "/dashboard/admin/deployments", label: "Student Deployments", icon: "🚀", permission: "admin_deployments", feature: "deployments" },
+            { href: "/dashboard/admin/cv-manager", label: "CV Manager", icon: "📄", permission: "admin_panel", feature: "cv_builder" },
+            { href: "/dashboard/admin/student-updates", label: "Student Updates", icon: "🔔", permission: "admin_notices" },
+        ]
+    },
+    {
+        id: "cms_website",
+        title: "CMS & Website",
+        icon: "🌐",
+        items: [
+            { href: "/dashboard/admin/manage-pages", label: "Manage Pages", icon: "🌐", permission: "admin_cms" },
+            { href: "/dashboard/admin/hero-images", label: "Hero Images", icon: "🖼️", permission: "admin_cms" },
+            { href: "/dashboard/admin/blog", label: "Blog Management", icon: "📝", permission: "admin_blog", feature: "blog" },
+            { href: "/dashboard/admin/home-video-testimonials", label: "Home Videos", icon: "🎥", permission: "admin_testimonials", feature: "video_testimonials" },
+            { href: "/dashboard/admin/success-stories", label: "Success Stories", icon: "🎬", permission: "admin_success", feature: "success_stories" },
+        ]
+    },
+    {
+        id: "resources_activities",
+        title: "Resources & Activities",
+        icon: "📑",
+        items: [
+            { href: "/dashboard/resources", label: "Resource Library", icon: "🗂️", permission: "resources", feature: "resources" },
+            { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", permission: "admin_resources", feature: "resources" },
+            { href: "/dashboard/tracker", label: "Daily Tracker", icon: "📋", permission: "tracker", feature: "daily_tracker" },
+            { href: "/dashboard/policies", label: "Policy & Minutes", icon: "📋", permission: "policies", feature: "policies" },
+            { href: "/dashboard/feedback", label: "Feedback", icon: "💬", permission: "feedback" },
+        ]
+    },
+    {
+        id: "system_admin",
+        title: "System Admin",
+        icon: "⚙️",
+        items: [
+            { href: "/dashboard/admin", label: "Admin Panel", icon: "⚙️", permission: "admin_panel" },
+            { href: "/dashboard/admin/access-management", label: "Access Management", icon: "🔑", permission: "access_management" },
+            { href: "/dashboard/admin/contact-messages", label: "Contact Messages", icon: "📩", permission: "admin_contact" },
+            { href: "/dashboard/admin/batch-forms", label: "Batch Forms", icon: "📝", permission: "admin_panel" },
+            { href: "/dashboard/admin/leave-management", label: "Manage Leaves", icon: "🌴", permission: "admin_leave", feature: "leave_tracking" },
+        ]
+    }
+];
+
+const studentNavItems: NavItem[] = [
     { href: "/student-dashboard", label: "Dashboard", icon: "🏠", permission: null },
     { href: "/student-dashboard/routine", label: "Class Routine", icon: "🗓️", permission: null },
     { href: "/student-dashboard/resource", label: "Resource", icon: "📚", permission: null, feature: "resources" },
@@ -63,6 +116,7 @@ export default function Sidebar() {
     const [siteLogoUrl, setSiteLogoUrl] = useState<string | null>(null);
     const [siteName, setSiteName] = useState<string | null>(null);
     const [features, setFeatures] = useState<Record<string, boolean>>({});
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
     // Notifications hook
     const { counts, markPageAsVisited } = useSidebarNotifications();
@@ -100,19 +154,44 @@ export default function Sidebar() {
     }, [pathname, loading, markPageAsVisited]);
 
     const isStudent = userProfile?.role === "student";
-    const activeNavItems = isStudent ? studentNavItems : teacherAdminNavItems;
 
-    // Filter nav items by permission + feature flags
-    const filteredNavItems = activeNavItems.filter(item => {
+    const toggleSection = (id: string) => {
+        setOpenSections(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    // Filter helper function
+    const isNavItemAllowed = (item: NavItem) => {
         if (loading) return true; // show all while loading
-        // Feature gate: feature explicitly disabled হলে hide করো
         if (item.feature && Object.keys(features).length > 0) {
             if (features[item.feature] === false) return false;
         }
         if (isStudent) return true;
         if (!item.permission) return true; // dashboard — always visible
         return hasPermission(item.permission);
-    });
+    };
+
+    // Filter top nav items
+    const filteredTopNavItems = (isStudent ? studentNavItems : teacherAdminTopNavItems).filter(isNavItemAllowed);
+
+    // Filter sections for teacher/admin
+    const filteredSections = isStudent ? [] : teacherAdminNavSections.map(section => {
+        const allowedItems = section.items.filter(isNavItemAllowed);
+        return {
+            ...section,
+            items: allowedItems
+        };
+    }).filter(section => section.items.length > 0);
+
+    // Auto expand active section if current pathname matches a child link
+    useEffect(() => {
+        if (!pathname || isStudent) return;
+        teacherAdminNavSections.forEach(section => {
+            const hasActiveChild = section.items.some(item => item.href === pathname);
+            if (hasActiveChild) {
+                setOpenSections(prev => ({ ...prev, [section.id]: true }));
+            }
+        });
+    }, [pathname, isStudent]);
 
     // Handle logout: clear Firebase session and redirect to login
     const handleLogout = async () => {
@@ -182,9 +261,10 @@ export default function Sidebar() {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 overflow-y-auto">
-                    <ul className="space-y-2">
-                        {filteredNavItems.map((item) => {
+                <nav className="flex-1 p-4 overflow-y-auto space-y-3">
+                    {/* Top / Direct Nav Items */}
+                    <ul className="space-y-1">
+                        {filteredTopNavItems.map((item) => {
                             const isActive = pathname === item.href;
                             const badgeCount = counts[item.href] || 0;
                             return (
@@ -197,14 +277,14 @@ export default function Sidebar() {
                                             markPageAsVisited(item.href);
                                         }}
                                         className={cn(
-                                            "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200",
+                                            "flex items-center gap-3 px-4 py-2.5 rounded-full transition-all duration-200",
                                             isActive
-                                                ? "bg-[#059669] text-white font-medium rounded-full"
-                                                : "text-[#6b7280] hover:bg-[#d1fae5] hover:text-[#1f2937] rounded-full"
+                                                ? "bg-[#059669] text-white font-medium shadow-xs"
+                                                : "text-[#4b5563] hover:bg-[#d1fae5] hover:text-[#1f2937]"
                                         )}
                                     >
-                                        <span className="text-xl">{item.icon}</span>
-                                        <span className="text-sm font-semibold">{item.label}</span>
+                                        <span className="text-xl flex-shrink-0">{item.icon}</span>
+                                        <span className="text-sm font-semibold truncate">{item.label}</span>
                                         {badgeCount > 0 && (
                                             <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-in fade-in zoom-in">
                                                 {badgeCount > 99 ? '99+' : badgeCount}
@@ -215,6 +295,92 @@ export default function Sidebar() {
                             );
                         })}
                     </ul>
+
+                    {/* Accordion Nav Sections for Admin/Teacher */}
+                    {!isStudent && filteredSections.length > 0 && (
+                        <div className="pt-2 border-t border-[#e5e7eb] space-y-1.5">
+                            {filteredSections.map((section) => {
+                                const isOpen = !!openSections[section.id];
+                                const sectionBadgeCount = section.items.reduce((acc, item) => acc + (counts[item.href] || 0), 0);
+                                const hasActiveChild = section.items.some(item => item.href === pathname);
+
+                                return (
+                                    <div key={section.id} className="rounded-xl overflow-hidden">
+                                        {/* Section Header Button */}
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleSection(section.id)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between px-3 py-2 rounded-xl transition-colors duration-200 text-left font-bold text-xs uppercase tracking-wider cursor-pointer",
+                                                hasActiveChild
+                                                    ? "bg-[#ecfdf5] text-[#047857]"
+                                                    : "text-[#6b7280] hover:bg-[#f3f4f6] hover:text-[#1f2937]"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-base flex-shrink-0">{section.icon}</span>
+                                                <span className="truncate">{section.title}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                {!isOpen && sectionBadgeCount > 0 && (
+                                                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                                        {sectionBadgeCount > 99 ? '99+' : sectionBadgeCount}
+                                                    </span>
+                                                )}
+                                                <svg
+                                                    className={cn(
+                                                        "w-4 h-4 transition-transform duration-200 text-gray-400",
+                                                        isOpen ? "rotate-180" : "rotate-0"
+                                                    )}
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </button>
+
+                                        {/* Section Items */}
+                                        {isOpen && (
+                                            <ul className="mt-1 ml-2 space-y-1 border-l-2 border-[#10b981]/20 pl-2 py-0.5">
+                                                {section.items.map((item) => {
+                                                    const isActive = pathname === item.href;
+                                                    const badgeCount = counts[item.href] || 0;
+                                                    return (
+                                                        <li key={item.href}>
+                                                            <Link
+                                                                href={item.href}
+                                                                prefetch={true}
+                                                                onClick={() => {
+                                                                    setIsMobileMenuOpen(false);
+                                                                    markPageAsVisited(item.href);
+                                                                }}
+                                                                className={cn(
+                                                                    "flex items-center gap-2 px-3 py-2 rounded-full transition-colors duration-200",
+                                                                    isActive
+                                                                        ? "bg-[#059669] text-white font-medium shadow-xs"
+                                                                        : "text-[#4b5563] hover:bg-[#d1fae5] hover:text-[#1f2937]"
+                                                                )}
+                                                            >
+                                                                <span className="text-lg flex-shrink-0">{item.icon}</span>
+                                                                <span className="text-xs font-semibold truncate">{item.label}</span>
+                                                                {badgeCount > 0 && (
+                                                                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                                                        {badgeCount > 99 ? '99+' : badgeCount}
+                                                                    </span>
+                                                                )}
+                                                            </Link>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </nav>
 
                 {/* Bottom Actions */}
