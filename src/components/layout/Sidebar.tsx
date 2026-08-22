@@ -74,6 +74,7 @@ const teacherAdminNavSections: NavSection[] = [
         title: "Resources & Activities",
         icon: "📑",
         items: [
+            { href: "/dashboard/competitions", label: "Competitions (Forms)", icon: "🏆", permission: "admin_panel" },
             { href: "/dashboard/resources", label: "Resource Library", icon: "🗂️", permission: "resources", feature: "resources" },
             { href: "/dashboard/admin/resource-management", label: "Admin: Resources", icon: "🗂️", permission: "admin_resources", feature: "resources" },
             { href: "/dashboard/tracker", label: "Daily Tracker", icon: "📋", permission: "tracker", feature: "daily_tracker" },
