@@ -6,7 +6,7 @@ import { toast } from "react-hot-toast";
 
 type FieldType = "short_text" | "long_text" | "dropdown" | "mcq" | "multi_select" | "date" | "rating" | "repeater";
 type ValidationType = "none" | "number" | "bd_mobile";
-type MappingType = "none" | "team_name" | "day_number" | "sales" | "profit" | "cups_sold" | "pieces_sold" | "packets_sold" | "packet_revenue";
+type MappingType = "none" | "team_name" | "day_number" | "sales" | "profit" | "cups_sold" | "cup_revenue" | "packets_sold" | "packet_revenue";
 
 interface FormField {
   id: string;
@@ -472,7 +472,7 @@ export default function CreateCompetitionPage() {
                     <option value="sales">Total Sales (Tk)</option>
                     <option value="profit">Total Profit (Tk)</option>
                     <option value="cups_sold">Cups Sold</option>
-                    <option value="pieces_sold">Pieces Sold</option>
+                    <option value="cup_revenue">Cup Revenue</option>
                     <option value="packets_sold">Packets Sold</option>
                     <option value="packet_revenue">Packet Revenue</option>
                   </select>
