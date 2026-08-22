@@ -37,7 +37,7 @@ export async function PUT(
     try {
         const { id } = await context.params;
         const user = await getSessionUser(req);
-        if (!user || !isAdmin(user)) {
+        if (!user || !isTeacherOrAdmin(user)) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
@@ -70,7 +70,7 @@ export async function DELETE(
     try {
         const { id } = await context.params;
         const user = await getSessionUser(req);
-        if (!user || !isAdmin(user)) {
+        if (!user || !isTeacherOrAdmin(user)) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 

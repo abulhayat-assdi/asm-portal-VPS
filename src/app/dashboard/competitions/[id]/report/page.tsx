@@ -39,7 +39,7 @@ export default function CompetitionReportPage() {
     if (!competition) return null;
     
     // Schema mapping info
-    let salesField = "", profitField = "", cupsField = "", piecesField = "", packetsField = "", revenueField = "";
+    let salesField = "", profitField = "", cupsField = "", piecesField = "", packetsField = "", revenueField = "", dayField = "";
     
     competition.schema.forEach((f: any) => {
       if (f.mapping === 'sales') salesField = f.id;
@@ -48,6 +48,7 @@ export default function CompetitionReportPage() {
       if (f.mapping === 'pieces_sold') piecesField = f.id;
       if (f.mapping === 'packets_sold') packetsField = f.id;
       if (f.mapping === 'packet_revenue') revenueField = f.id;
+      if (f.mapping === 'day_number') dayField = f.id;
     });
 
     let submissions = competition.submissions || [];

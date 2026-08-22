@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getServerSessionUser } from "@/lib/auth";
+import { getServerSessionUser, isTeacherOrAdmin } from "@/lib/auth";
 
 export async function POST(
   req: Request,
@@ -10,7 +10,7 @@ export async function POST(
     const { id } = await params;
     const decoded = await getServerSessionUser();
     
-    if (!decoded || (decoded.role !== "admin" && decoded.role !== "teacher")) {
+    if (!decoded || !isTeacherOrAdmin(decoded)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

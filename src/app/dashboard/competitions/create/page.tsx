@@ -6,7 +6,7 @@ import { toast } from "react-hot-toast";
 
 type FieldType = "short_text" | "long_text" | "dropdown" | "mcq" | "multi_select" | "date" | "rating" | "repeater";
 type ValidationType = "none" | "number" | "bd_mobile";
-type MappingType = "none" | "team_name" | "sales" | "profit" | "cups_sold" | "pieces_sold" | "packets_sold" | "packet_revenue";
+type MappingType = "none" | "team_name" | "day_number" | "sales" | "profit" | "cups_sold" | "pieces_sold" | "packets_sold" | "packet_revenue";
 
 interface FormField {
   id: string;
@@ -55,7 +55,7 @@ export default function CreateCompetitionPage() {
       name: "🏆 Default: Battle of Cups",
       schema: [
         { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
-        { id: "field_day", type: "short_text", label: "Day Number", required: true, options: [], validation: "number", mapping: "none" },
+        { id: "field_day", type: "short_text", label: "Day Number", required: true, options: [], validation: "number", mapping: "day_number" },
         { id: "field_cups", type: "short_text", label: "Total Cups Sold", required: true, options: [], validation: "number", mapping: "cups_sold" },
         { id: "field_cup_rev", type: "short_text", label: "Cup Revenue (Tk)", required: true, options: [], validation: "number", mapping: "none" },
         { id: "field_packets", type: "short_text", label: "Total Packets Sold", required: true, options: [], validation: "number", mapping: "packets_sold" },
@@ -160,16 +160,24 @@ export default function CreateCompetitionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !batchName) return toast.error("Title and Batch are required");
+    if (!title.trim() || !batchName.trim()) return toast.error("Title and Batch are required");
+    if (fields.length === 0) return toast.error("Please add at least one question or apply a template");
+
+    // Ensure all fields have labels
+    for (let i = 0; i < fields.length; i++) {
+      if (!fields[i].label || !fields[i].label.trim()) {
+        return toast.error(`Question #${i + 1} requires a question label.`);
+      }
+    }
     
     try {
       const res = await fetch("/api/competitions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
-          description,
-          batchName,
+          title: title.trim(),
+          description: description.trim(),
+          batchName: batchName.trim(),
           schema: fields,
           isActive: true
         })
@@ -179,10 +187,11 @@ export default function CreateCompetitionPage() {
         toast.success("Competition created successfully!");
         router.push("/dashboard/competitions");
       } else {
-        toast.error("Failed to create");
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.error || "Failed to create competition");
       }
     } catch (error) {
-      toast.error("Error submitting");
+      toast.error("Error submitting competition");
     }
   };
 
@@ -205,6 +214,7 @@ export default function CreateCompetitionPage() {
           </select>
         </div>
         <button 
+          type="button"
           onClick={handleApplyTemplate}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
           disabled={!selectedTemplateId}
@@ -424,6 +434,7 @@ export default function CreateCompetitionPage() {
                   >
                     <option value="none">None</option>
                     <option value="team_name">Team Name</option>
+                    <option value="day_number">Day Number</option>
                     <option value="sales">Total Sales (Tk)</option>
                     <option value="profit">Total Profit (Tk)</option>
                     <option value="cups_sold">Cups Sold</option>
