@@ -382,7 +382,7 @@ export default function CompetitionReportPage() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <RechartsTooltip formatter={(val: number) => `৳${val.toLocaleString()}`} />
+                <RechartsTooltip formatter={(val: any) => `৳${Number(val).toLocaleString()}`} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
