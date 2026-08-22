@@ -1128,3 +1128,51 @@ model VisitorLog {
   @@map("visitor_logs")
 }
 
+// ============================================================
+// COMPETITIONS (Battle of Cups, etc.)
+// ============================================================
+
+model CompetitionFormTemplate {
+  id          String   @id @default(uuid())
+  name        String   // e.g., "Default Form 1"
+  schema      Json     // Array of predefined questions
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("competition_form_templates")
+}
+
+model Competition {
+  id          String   @id @default(uuid())
+  title       String   // e.g., "Battle of Cups"
+  description String?
+  batchName   String   @map("batch_name")
+  schema      Json     // Form schema (questions, types, validations)
+  isActive    Boolean  @default(true) @map("is_active")
+  startDate   DateTime @default(now()) @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  submissions CompetitionSubmission[]
+
+  @@index([batchName])
+  @@map("competitions")
+}
+
+model CompetitionSubmission {
+  id          String   @id @default(uuid())
+  competitionId String @map("competition_id")
+  type        String   // "team" or "individual"
+  teamName    String?  @map("team_name")
+  rollNumber  String   @map("roll_number")
+  studentName String   @map("student_name")
+  data        Json     // The answers provided (e.g., cups sold, profit, etc.)
+  submittedAt DateTime @default(now()) @map("submitted_at")
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+
+  @@index([competitionId])
+  @@index([type])
+  @@map("competition_submissions")
+}
