@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
-import { adminAuth } from "@/lib/firebase-admin";
-import { cookies } from "next/headers";
+import { getServerSessionUser } from "@/lib/auth";
 
 export async function POST(
   req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const sessionCookie = cookies().get("session")?.value;
-    if (!sessionCookie) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
-    if (decoded.role !== "admin" && decoded.role !== "teacher") {
+    const decoded = await getServerSessionUser();
+    
+    if (!decoded || (decoded.role !== "admin" && decoded.role !== "teacher")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
