@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSessionUser, isTeacherOrAdmin } from "@/lib/auth";
+import { ensureCompetitionsTablesExist } from "@/lib/competitionsDb";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureCompetitionsTablesExist();
     const { id } = await params;
     const decoded = await getServerSessionUser();
     

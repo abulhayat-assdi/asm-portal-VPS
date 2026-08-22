@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
+import { ensureCompetitionsTablesExist } from "@/lib/competitionsDb";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
+        await ensureCompetitionsTablesExist();
         const { id } = await context.params;
         const user = await getSessionUser(req);
         if (!user || !isTeacherOrAdmin(user)) {

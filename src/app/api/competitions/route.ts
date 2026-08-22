@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSessionUser, isTeacherOrAdmin } from "@/lib/auth";
+import { ensureCompetitionsTablesExist } from "@/lib/competitionsDb";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
     try {
+        await ensureCompetitionsTablesExist();
         const user = await getSessionUser(req);
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,6 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        await ensureCompetitionsTablesExist();
         const user = await getSessionUser(req);
         if (!user || !isTeacherOrAdmin(user)) {
             return NextResponse.json({ error: "Forbidden: Only Teachers and Admins can create competitions." }, { status: 403 });

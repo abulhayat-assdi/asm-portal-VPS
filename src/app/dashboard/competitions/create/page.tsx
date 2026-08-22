@@ -214,7 +214,8 @@ export default function CreateCompetitionPage() {
 
       if (res.ok) {
         toast.success("Competition created successfully!");
-        router.push("/dashboard/competitions");
+        window.location.href = "/dashboard/competitions";
+        return;
       } else {
         const errorData = await res.json().catch(() => ({}));
         toast.error(errorData.error || `Failed to create competition (${res.status})`);
