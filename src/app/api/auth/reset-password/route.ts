@@ -19,13 +19,22 @@ const resetSchema = z.object({
 const TOKEN_EXPIRY_HOURS = 2;
 
 function getTransporter() {
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const user = process.env.SMTP_USER || '';
+    const rawPass = process.env.SMTP_PASS || '';
+    const pass = rawPass.replace(/\s+/g, '');
+
     return nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_PORT === '465',
+        host,
+        port,
+        secure: port === 465,
         auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            user,
+            pass,
+        },
+        tls: {
+            rejectUnauthorized: false,
         },
     });
 }
@@ -79,9 +88,18 @@ export async function POST(req: NextRequest) {
 
         // Send email
         const transporter = getTransporter();
+        const smtpUser = process.env.SMTP_USER || '';
+        const defaultFrom = `"ASM Portal" <${smtpUser}>`;
+        let fromAddress = process.env.SMTP_FROM || defaultFrom;
+        
+        // Gmail SMTP requires the sender address to match the authenticated user
+        if (process.env.SMTP_HOST?.includes('gmail.com') && smtpUser && !fromAddress.includes(smtpUser)) {
+            fromAddress = defaultFrom;
+        }
+
         try {
             await transporter.sendMail({
-                from: process.env.SMTP_FROM || `"ASM Portal" <${process.env.SMTP_USER}>`,
+                from: fromAddress,
                 to: user.email,
                 subject: 'Reset Your ASM Portal Password',
                 html: `
@@ -107,8 +125,8 @@ export async function POST(req: NextRequest) {
                     </div>
                 `,
             });
-        } catch (smtpError) {
-            console.error('[Reset Password] SMTP send failed:', smtpError);
+        } catch (smtpError: any) {
+            console.error('[Reset Password] SMTP send failed:', smtpError?.message || smtpError);
             // Log reset URL to server console so admin can manually share it
             console.warn(`[Reset Password] MANUAL RESET URL for ${user.email}:\n${resetUrl}`);
             return NextResponse.json(
