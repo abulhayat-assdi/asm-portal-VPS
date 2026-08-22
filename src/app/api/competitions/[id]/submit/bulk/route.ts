@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { getServerSessionUser } from "@/lib/auth";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const decoded = await getServerSessionUser();
     
     if (!decoded || (decoded.role !== "admin" && decoded.role !== "teacher")) {
@@ -20,7 +21,7 @@ export async function POST(
       return NextResponse.json({ error: "No submissions provided" }, { status: 400 });
     }
 
-    const compId = params.id;
+    const compId = id;
     const competition = await prisma.competition.findUnique({ where: { id: compId } });
     
     if (!competition) return NextResponse.json({ error: "Competition not found" }, { status: 404 });
