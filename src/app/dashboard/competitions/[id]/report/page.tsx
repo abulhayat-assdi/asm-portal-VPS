@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
 import * as XLSX from "xlsx";
+import BulkDataGrid from "@/components/competitions/BulkDataGrid";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#ffc658'];
 
@@ -15,6 +16,7 @@ export default function CompetitionReportPage() {
   const [loading, setLoading] = useState(true);
   const [viewType, setViewType] = useState<"current" | "total">("total");
   const [currentDays, setCurrentDays] = useState(3);
+  const [showBulkEntry, setShowBulkEntry] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -235,6 +237,9 @@ export default function CompetitionReportPage() {
               min={1}
             />
           )}
+          <button onClick={() => setShowBulkEntry(true)} className="bg-emerald-600 text-white px-4 py-2 rounded shadow hover:bg-emerald-700 transition">
+            📋 Bulk Entry
+          </button>
           <button onClick={handleDownloadExcel} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">
             📥 Export Excel
           </button>
@@ -409,6 +414,16 @@ export default function CompetitionReportPage() {
 
       </div>
 
+      {showBulkEntry && (
+        <BulkDataGrid 
+          competition={competition} 
+          onClose={() => setShowBulkEntry(false)}
+          onSuccess={() => {
+            setShowBulkEntry(false);
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

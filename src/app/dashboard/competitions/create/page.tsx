@@ -29,66 +29,83 @@ export default function CreateCompetitionPage() {
   const [templates, setTemplates] = useState<{ id: string, name: string, schema: any }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
+  const [batches, setBatches] = useState<{ id: string; batchName: string }[]>([]);
+
   useEffect(() => {
     fetchTemplates();
+    fetchBatches();
   }, []);
 
+  const fetchBatches = async () => {
+    try {
+      const res = await fetch("/api/batch-info?all=true");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) setBatches(data);
+        else if (data.data && Array.isArray(data.data)) setBatches(data.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const fetchTemplates = async () => {
+    const defaultBattleOfCupsTemplate = {
+      id: "default-battle-of-cups",
+      name: "🏆 Default: Battle of Cups",
+      schema: [
+        { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
+        { id: "field_day", type: "short_text", label: "Day Number", required: true, options: [], validation: "number", mapping: "none" },
+        { id: "field_cups", type: "short_text", label: "Total Cups Sold", required: true, options: [], validation: "number", mapping: "cups_sold" },
+        { id: "field_cup_rev", type: "short_text", label: "Cup Revenue (Tk)", required: true, options: [], validation: "number", mapping: "none" },
+        { id: "field_packets", type: "short_text", label: "Total Packets Sold", required: true, options: [], validation: "number", mapping: "packets_sold" },
+        { id: "field_revenue", type: "short_text", label: "Packet Revenue (Tk)", required: true, options: [], validation: "number", mapping: "packet_revenue" },
+        { id: "field_sales", type: "short_text", label: "Total Sales (Tk)", required: true, options: [], validation: "number", mapping: "sales" },
+        { id: "field_profit", type: "short_text", label: "Total Profit (Tk)", required: true, options: [], validation: "number", mapping: "profit" },
+        { id: "field_rating", type: "rating", label: "Overall Team Performance", required: true, options: [], validation: "none", mapping: "none" },
+        { id: "field_summary", type: "long_text", label: "Brief summary of today's learning/experience", required: false, options: [], validation: "none", mapping: "none" }
+      ]
+    };
+
+    const defaultCorporateSalesTemplate = {
+      id: "default-corporate-sales",
+      name: "💼 Default: Corporate Sales",
+      schema: [
+        { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
+        { id: "field_companies_visited", type: "short_text", label: "Total Company Visited", required: true, options: [], validation: "number", mapping: "none" },
+        { id: "field_conf_rev", type: "short_text", label: "Total Confirmed Revenue", required: true, options: [], validation: "number", mapping: "sales" },
+        { id: "field_rating", type: "rating", label: "Overall Team Performance", required: true, options: [], validation: "none", mapping: "none" },
+        { id: "field_sector", type: "dropdown", label: "Which sector showed the highest interest today?", required: true, options: ["Retail", "Manufacturing", "IT/Software", "Education", "Healthcare", "Finance", "Small Business"], validation: "none", mapping: "none" },
+        { id: "field_summary", type: "long_text", label: "Brief summary of today's experience", required: true, options: [], validation: "none", mapping: "none" },
+        { 
+          id: "field_company_details", 
+          type: "repeater", 
+          label: "Company Details Visited", 
+          required: true, 
+          options: [], 
+          validation: "none", 
+          mapping: "none",
+          subFields: [
+            { id: "sub_name", type: "short_text", label: "Company Name", required: true, options: [], validation: "none", mapping: "none" },
+            { id: "sub_person", type: "short_text", label: "Contact Person Name", required: true, options: [], validation: "none", mapping: "none" },
+            { id: "sub_desig", type: "short_text", label: "Designation", required: true, options: [], validation: "none", mapping: "none" },
+            { id: "sub_mobile", type: "short_text", label: "Mobile Number", required: true, options: [], validation: "bd_mobile", mapping: "none" },
+          ]
+        }
+      ]
+    };
+
     try {
       const res = await fetch("/api/competitions/templates");
       if (res.ok) {
         const data = await res.json();
-        
-        // Add hardcoded default template for Battle of Cups
-        const defaultBattleOfCupsTemplate = {
-          id: "default-battle-of-cups",
-          name: "🏆 Default: Battle of Cups",
-          schema: [
-            { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "field_day", type: "short_text", label: "Day Number", required: true, options: [], validation: "number", mapping: "none" },
-            { id: "field_cups", type: "short_text", label: "Total Cups Sold", required: true, options: [], validation: "number", mapping: "cups_sold" },
-            { id: "field_cup_rev", type: "short_text", label: "Cup Revenue (Tk)", required: true, options: [], validation: "number", mapping: "none" },
-            { id: "field_packets", type: "short_text", label: "Total Packets Sold", required: true, options: [], validation: "number", mapping: "packets_sold" },
-            { id: "field_revenue", type: "short_text", label: "Packet Revenue (Tk)", required: true, options: [], validation: "number", mapping: "packet_revenue" },
-            { id: "field_sales", type: "short_text", label: "Total Sales (Tk)", required: true, options: [], validation: "number", mapping: "sales" },
-            { id: "field_profit", type: "short_text", label: "Total Profit (Tk)", required: true, options: [], validation: "number", mapping: "profit" },
-            { id: "field_rating", type: "rating", label: "Overall Team Performance", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "field_summary", type: "long_text", label: "Brief summary of today's learning/experience", required: false, options: [], validation: "none", mapping: "none" }
-          ]
-        };
-
-        const defaultCorporateSalesTemplate = {
-          id: "default-corporate-sales",
-          name: "💼 Default: Corporate Sales",
-          schema: [
-            { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "field_companies_visited", type: "short_text", label: "Total Company Visited", required: true, options: [], validation: "number", mapping: "none" },
-            { id: "field_conf_rev", type: "short_text", label: "Total Confirmed Revenue", required: true, options: [], validation: "number", mapping: "sales" },
-            { id: "field_rating", type: "rating", label: "Overall Team Performance", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "field_sector", type: "dropdown", label: "Which sector showed the highest interest today?", required: true, options: ["Retail", "Manufacturing", "IT/Software", "Education", "Healthcare", "Finance", "Small Business"], validation: "none", mapping: "none" },
-            { id: "field_summary", type: "long_text", label: "Brief summary of today's experience", required: true, options: [], validation: "none", mapping: "none" },
-            { 
-              id: "field_company_details", 
-              type: "repeater", 
-              label: "Company Details Visited", 
-              required: true, 
-              options: [], 
-              validation: "none", 
-              mapping: "none",
-              subFields: [
-                { id: "sub_name", type: "short_text", label: "Company Name", required: true, options: [], validation: "none", mapping: "none" },
-                { id: "sub_person", type: "short_text", label: "Contact Person Name", required: true, options: [], validation: "none", mapping: "none" },
-                { id: "sub_desig", type: "short_text", label: "Designation", required: true, options: [], validation: "none", mapping: "none" },
-                { id: "sub_mobile", type: "short_text", label: "Mobile Number", required: true, options: [], validation: "bd_mobile", mapping: "none" },
-              ]
-            }
-          ]
-        };
-        
         setTemplates([defaultBattleOfCupsTemplate, defaultCorporateSalesTemplate, ...data]);
+      } else {
+        setTemplates([defaultBattleOfCupsTemplate, defaultCorporateSalesTemplate]);
       }
     } catch (e) {
       console.error(e);
+      setTemplates([defaultBattleOfCupsTemplate, defaultCorporateSalesTemplate]);
     }
   };
 
@@ -210,13 +227,17 @@ export default function CreateCompetitionPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Batch Name</label>
-            <input 
+            <select 
               required 
-              type="text" 
-              className="w-full border rounded-md p-2"
-              value={batchName} onChange={(e) => setBatchName(e.target.value)}
-              placeholder="e.g. B-01"
-            />
+              className="w-full border rounded-md p-2 bg-white"
+              value={batchName} 
+              onChange={(e) => setBatchName(e.target.value)}
+            >
+              <option value="">-- Select Batch --</option>
+              {batches.map(b => (
+                <option key={b.id || b.batchName} value={b.batchName}>{b.batchName}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Description (Optional)</label>
