@@ -21,15 +21,19 @@ interface FormField {
 
 export default function CreateCompetitionPage() {
   const router = useRouter();
+  const titleInputRef = React.useRef<HTMLInputElement>(null);
+  const batchSelectRef = React.useRef<HTMLSelectElement>(null);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [batchName, setBatchName] = useState("");
   const [fields, setFields] = useState<FormField[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [templates, setTemplates] = useState<{ id: string, name: string, schema: any }[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
 
-  const [batches, setBatches] = useState<{ id: string; batchName: string }[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
 
   useEffect(() => {
     fetchTemplates();
@@ -41,8 +45,10 @@ export default function CreateCompetitionPage() {
       const res = await fetch("/api/batch-info?all=true");
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data)) setBatches(data);
-        else if (data.data && Array.isArray(data.data)) setBatches(data.data);
+        const rawList = Array.isArray(data) ? data : (data.data || []);
+        const uniqueNames = Array.from(new Set(rawList.map((b: any) => b.batchName))).filter(Boolean) as string[];
+        uniqueNames.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+        setBatches(uniqueNames);
       }
     } catch (e) {
       console.error(e);
@@ -113,6 +119,10 @@ export default function CreateCompetitionPage() {
     const t = templates.find(x => x.id === selectedTemplateId);
     if (t) {
       setFields(t.schema as FormField[]);
+      if (!title.trim()) {
+        const cleanName = t.name.replace(/^[^\w\s]+/, '').trim();
+        setTitle(cleanName);
+      }
       toast.success(`Applied template: ${t.name}`);
     }
   };
@@ -160,16 +170,35 @@ export default function CreateCompetitionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !batchName.trim()) return toast.error("Title and Batch are required");
-    if (fields.length === 0) return toast.error("Please add at least one question or apply a template");
+    
+    if (!title.trim()) {
+      toast.error("Competition Title is required!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      titleInputRef.current?.focus();
+      return;
+    }
+
+    if (!batchName.trim()) {
+      toast.error("Please select a Batch Name!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      batchSelectRef.current?.focus();
+      return;
+    }
+
+    if (fields.length === 0) {
+      toast.error("Please add at least one question or apply a template");
+      return;
+    }
 
     // Ensure all fields have labels
     for (let i = 0; i < fields.length; i++) {
       if (!fields[i].label || !fields[i].label.trim()) {
-        return toast.error(`Question #${i + 1} requires a question label.`);
+        toast.error(`Question #${i + 1} requires a question label.`);
+        return;
       }
     }
     
+    setIsSubmitting(true);
     try {
       const res = await fetch("/api/competitions", {
         method: "POST",
@@ -188,10 +217,12 @@ export default function CreateCompetitionPage() {
         router.push("/dashboard/competitions");
       } else {
         const errorData = await res.json().catch(() => ({}));
-        toast.error(errorData.error || "Failed to create competition");
+        toast.error(errorData.error || `Failed to create competition (${res.status})`);
       }
     } catch (error) {
       toast.error("Error submitting competition");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -223,36 +254,38 @@ export default function CreateCompetitionPage() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} noValidate className="space-y-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Competition Title</label>
+            <label className="block text-sm font-medium mb-1">Competition Title <span className="text-red-500">*</span></label>
             <input 
+              ref={titleInputRef}
               required 
               type="text" 
-              className="w-full border rounded-md p-2"
+              className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
               value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Battle of Cups"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Batch Name</label>
+            <label className="block text-sm font-medium mb-1">Batch Name <span className="text-red-500">*</span></label>
             <select 
+              ref={batchSelectRef}
               required 
-              className="w-full border rounded-md p-2 bg-white"
+              className="w-full border rounded-md p-2 bg-white focus:ring-2 focus:ring-blue-500 outline-none"
               value={batchName} 
               onChange={(e) => setBatchName(e.target.value)}
             >
               <option value="">-- Select Batch --</option>
               {batches.map(b => (
-                <option key={b.id || b.batchName} value={b.batchName}>{b.batchName}</option>
+                <option key={b} value={b}>{b}</option>
               ))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Description (Optional)</label>
             <textarea 
-              className="w-full border rounded-md p-2"
+              className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
               value={description} onChange={(e) => setDescription(e.target.value)}
             />
           </div>
@@ -459,9 +492,17 @@ export default function CreateCompetitionPage() {
         <div className="flex justify-end pt-6 border-t">
           <button 
             type="submit" 
-            className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg transition"
+            disabled={isSubmitting}
+            className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold shadow-lg transition flex items-center gap-2"
           >
-            Create Competition
+            {isSubmitting ? (
+              <>
+                <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></span>
+                Creating Competition...
+              </>
+            ) : (
+              "Create Competition"
+            )}
           </button>
         </div>
       </form>
