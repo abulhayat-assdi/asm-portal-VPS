@@ -1,6 +1,6 @@
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -9,6 +9,7 @@ RUN NODE_ENV=development npm ci
 
 # Stage 2: Build the application
 FROM node:20-alpine AS builder
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -16,6 +17,7 @@ COPY . .
 # Set necessary env vars for build time
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PRISMA_CLIENT_ENGINE_TYPE=library
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 # Use a dummy DB URL during build to satisfy Prisma validation
 ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
@@ -45,8 +47,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 RUN npm install -g prisma@6
 
-# Install su-exec for privilege dropping in the entrypoint
-RUN apk add --no-cache su-exec
+# Install su-exec and native compatibility libs for privilege dropping and Prisma engine
+RUN apk add --no-cache su-exec libc6-compat openssl
 
 # Entrypoint: fixes /app/storage ownership then drops to nextjs user
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

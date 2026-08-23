@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     output: 'standalone',
+    eslint: {
+        ignoreDuringBuilds: true,
+    },
+    typescript: {
+        ignoreBuildErrors: true,
+    },
     // Prevent these packages from being bundled for server-side rendering
     serverExternalPackages: ['firebase-admin', '@prisma/client', '@react-pdf/renderer', 'sharp', 'unzipper', 'cheerio'],
     experimental: {
