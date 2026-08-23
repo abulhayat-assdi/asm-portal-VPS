@@ -12,6 +12,7 @@ interface FormField {
   id: string;
   type: FieldType;
   label: string;
+  placeholder?: string;
   required: boolean;
   options: string[];
   validation: ValidationType;
@@ -61,15 +62,15 @@ export default function CreateCompetitionPage() {
       name: "🏆 Default: Battle of Cups",
       schema: [
         { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
-        { id: "field_day", type: "short_text", label: "Day Number", required: true, options: [], validation: "number", mapping: "day_number" },
-        { id: "field_cups", type: "short_text", label: "Total Cups Sold", required: true, options: [], validation: "number", mapping: "cups_sold" },
-        { id: "field_cup_rev", type: "short_text", label: "Cup Revenue (Tk)", required: true, options: [], validation: "number", mapping: "none" },
-        { id: "field_packets", type: "short_text", label: "Total Packets Sold", required: true, options: [], validation: "number", mapping: "packets_sold" },
-        { id: "field_revenue", type: "short_text", label: "Packet Revenue (Tk)", required: true, options: [], validation: "number", mapping: "packet_revenue" },
-        { id: "field_sales", type: "short_text", label: "Total Sales (Tk)", required: true, options: [], validation: "number", mapping: "sales" },
-        { id: "field_profit", type: "short_text", label: "Total Profit (Tk)", required: true, options: [], validation: "number", mapping: "profit" },
+        { id: "field_day", type: "short_text", label: "Day Number", placeholder: "আজকে কততম দিন চলছে (যেমন: 1, 2...)", required: true, options: [], validation: "number", mapping: "day_number" },
+        { id: "field_cups", type: "short_text", label: "Total Cups Sold", placeholder: "আজকে কত কাপ সেল হয়েছে?", required: true, options: [], validation: "number", mapping: "cups_sold" },
+        { id: "field_cup_rev", type: "short_text", label: "Cup Revenue (Tk)", placeholder: "আজকে কত টাকার কাপ সেল করেছেন?", required: true, options: [], validation: "number", mapping: "none" },
+        { id: "field_packets", type: "short_text", label: "Total Packets Sold", placeholder: "আজকে কত প্যাকেট সেল হয়েছে?", required: true, options: [], validation: "number", mapping: "packets_sold" },
+        { id: "field_revenue", type: "short_text", label: "Packet Revenue (Tk)", placeholder: "আজকে কত টাকার প্যাকেট সেল করেছেন?", required: true, options: [], validation: "number", mapping: "packet_revenue" },
+        { id: "field_sales", type: "short_text", label: "Total Sales (Tk)", placeholder: "আজকের মোট সেল (টাকা)", required: true, options: [], validation: "number", mapping: "sales" },
+        { id: "field_profit", type: "short_text", label: "Total Profit (Tk)", placeholder: "আজকের মোট প্রফিট (টাকা)", required: true, options: [], validation: "number", mapping: "profit" },
         { id: "field_rating", type: "rating", label: "Overall Team Performance", required: true, options: [], validation: "none", mapping: "none" },
-        { id: "field_summary", type: "long_text", label: "Brief summary of today's learning/experience", required: false, options: [], validation: "none", mapping: "none" }
+        { id: "field_summary", type: "long_text", label: "Brief summary of today's learning/experience", placeholder: "আজকের কাজের অভিজ্ঞতা সংক্ষেপে লিখুন...", required: false, options: [], validation: "none", mapping: "none" }
       ]
     };
 
@@ -78,11 +79,11 @@ export default function CreateCompetitionPage() {
       name: "💼 Default: Corporate Sales",
       schema: [
         { id: "field_date", type: "date", label: "Date", required: true, options: [], validation: "none", mapping: "none" },
-        { id: "field_companies_visited", type: "short_text", label: "Total Company Visited", required: true, options: [], validation: "number", mapping: "none" },
-        { id: "field_conf_rev", type: "short_text", label: "Total Confirmed Revenue", required: true, options: [], validation: "number", mapping: "sales" },
+        { id: "field_companies_visited", type: "short_text", label: "Total Company Visited", placeholder: "আজকে কতটি কোম্পানি ভিজিট করেছেন?", required: true, options: [], validation: "number", mapping: "none" },
+        { id: "field_conf_rev", type: "short_text", label: "Total Confirmed Revenue", placeholder: "আজকে মোট কত কনফার্মড রেভিনিউ এসেছে?", required: true, options: [], validation: "number", mapping: "sales" },
         { id: "field_rating", type: "rating", label: "Overall Team Performance", required: true, options: [], validation: "none", mapping: "none" },
         { id: "field_sector", type: "dropdown", label: "Which sector showed the highest interest today?", required: true, options: ["Retail", "Manufacturing", "IT/Software", "Education", "Healthcare", "Finance", "Small Business"], validation: "none", mapping: "none" },
-        { id: "field_summary", type: "long_text", label: "Brief summary of today's experience", required: true, options: [], validation: "none", mapping: "none" },
+        { id: "field_summary", type: "long_text", label: "Brief summary of today's experience", placeholder: "আজকের অভিজ্ঞতা সংক্ষেপে লিখুন...", required: true, options: [], validation: "none", mapping: "none" },
         { 
           id: "field_company_details", 
           type: "repeater", 
@@ -92,10 +93,10 @@ export default function CreateCompetitionPage() {
           validation: "none", 
           mapping: "none",
           subFields: [
-            { id: "sub_name", type: "short_text", label: "Company Name", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "sub_person", type: "short_text", label: "Contact Person Name", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "sub_desig", type: "short_text", label: "Designation", required: true, options: [], validation: "none", mapping: "none" },
-            { id: "sub_mobile", type: "short_text", label: "Mobile Number", required: true, options: [], validation: "bd_mobile", mapping: "none" },
+            { id: "sub_name", type: "short_text", label: "Company Name", placeholder: "কোম্পানির নাম", required: true, options: [], validation: "none", mapping: "none" },
+            { id: "sub_person", type: "short_text", label: "Contact Person Name", placeholder: "যোগাযোগকারীর নাম", required: true, options: [], validation: "none", mapping: "none" },
+            { id: "sub_desig", type: "short_text", label: "Designation", placeholder: "পদবি", required: true, options: [], validation: "none", mapping: "none" },
+            { id: "sub_mobile", type: "short_text", label: "Mobile Number", placeholder: "মোবাইল নম্বর", required: true, options: [], validation: "bd_mobile", mapping: "none" },
           ]
         }
       ]
@@ -134,6 +135,7 @@ export default function CreateCompetitionPage() {
         id: Math.random().toString(36).substring(2, 9),
         type: "short_text",
         label: "",
+        placeholder: "",
         required: true,
         options: [],
         validation: "none",
@@ -312,20 +314,30 @@ export default function CreateCompetitionPage() {
                 Delete
               </button>
               
-              <div className="grid grid-cols-2 gap-4 mb-4 pr-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 pr-12">
                 <div>
                   <label className="block text-sm font-medium mb-1">Question Label</label>
                   <input 
                     type="text" 
-                    className="w-full border rounded-md p-2"
+                    className="w-full border rounded-md p-2 text-sm"
                     value={field.label}
                     onChange={(e) => updateField(field.id, { label: e.target.value })}
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium mb-1">Placeholder Text</label>
+                  <input 
+                    type="text" 
+                    className="w-full border rounded-md p-2 text-sm"
+                    placeholder="e.g. আজকে কত কাপ সেল হয়েছে?"
+                    value={field.placeholder || ''}
+                    onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium mb-1">Type</label>
                   <select 
-                    className="w-full border rounded-md p-2"
+                    className="w-full border rounded-md p-2 text-sm"
                     value={field.type}
                     onChange={(e) => updateField(field.id, { type: e.target.value as FieldType })}
                   >
@@ -360,7 +372,7 @@ export default function CreateCompetitionPage() {
                   </div>
                   {field.subFields?.map((subField, subIndex) => (
                     <div key={subField.id} className="grid grid-cols-12 gap-2 mb-2 items-center">
-                      <div className="col-span-5">
+                      <div className="col-span-4">
                         <input 
                           type="text" 
                           placeholder="Label" 
@@ -374,6 +386,19 @@ export default function CreateCompetitionPage() {
                         />
                       </div>
                       <div className="col-span-3">
+                        <input 
+                          type="text" 
+                          placeholder="Placeholder" 
+                          className="w-full border rounded p-1 text-sm"
+                          value={subField.placeholder || ''}
+                          onChange={(e) => {
+                            const newSub = [...(field.subFields || [])];
+                            newSub[subIndex].placeholder = e.target.value;
+                            updateField(field.id, { subFields: newSub });
+                          }}
+                        />
+                      </div>
+                      <div className="col-span-2">
                         <select 
                           className="w-full border rounded p-1 text-sm"
                           value={subField.type}
@@ -387,7 +412,7 @@ export default function CreateCompetitionPage() {
                           <option value="dropdown">Dropdown</option>
                         </select>
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <select 
                           className="w-full border rounded p-1 text-sm"
                           value={subField.validation}

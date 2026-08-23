@@ -5,17 +5,15 @@ import { useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from "recharts";
 import * as XLSX from "xlsx";
-import BulkDataGrid from "@/components/competitions/BulkDataGrid";
 
 const COLORS = ['#10B981', '#06B6D4', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
-export default function CompetitionReportPage() {
+export default function PublicCompetitionReportPage() {
   const params = useParams();
   const id = params.id as string;
   const [competition, setCompetition] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [viewType, setViewType] = useState<"current" | "total">("total");
-  const [showBulkEntry, setShowBulkEntry] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -23,12 +21,12 @@ export default function CompetitionReportPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch(`/api/competitions/${id}/report`);
+      const res = await fetch(`/api/competitions/${id}/report?public=true`);
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       setCompetition(data);
     } catch (e) {
-      toast.error("Error loading report");
+      toast.error("Error loading competition report");
     } finally {
       setLoading(false);
     }
@@ -60,7 +58,6 @@ export default function CompetitionReportPage() {
     const allDates: string[] = Array.from(new Set<string>(submissions.map((s: any) => new Date(s.submittedAt).toDateString()))).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
     if (viewType === "current") {
-      // Filter for strictly yesterday's data
       submissions = submissions.filter((s: any) => new Date(s.submittedAt).toDateString() === yesterdayStr);
     }
 
@@ -69,7 +66,6 @@ export default function CompetitionReportPage() {
     const teamMap: Record<string, any> = {};
     const individualMap: Record<string, any> = {};
 
-    // First, initialize teams and individuals from ALL submissions
     const allSubmissions = competition.submissions || [];
     allSubmissions.forEach((sub: any) => {
       const tName = sub.teamName || "Unknown Team";
@@ -102,7 +98,6 @@ export default function CompetitionReportPage() {
       }
     });
 
-    // Determine missing dates for each team and individual
     Object.values(teamMap).forEach(t => {
       t.missingDates = allDates.filter(d => !t.submittedDates.has(d)).map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
       t.daysActive = t.submittedDates.size;
@@ -112,7 +107,6 @@ export default function CompetitionReportPage() {
       i.missingDates = allDates.filter(d => !i.submittedDates.has(d)).map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }));
     });
 
-    // Calculate metrics based on filtered submissions
     submissions.forEach((sub: any) => {
       const sales = Number(sub.data[salesField] || 0);
       const profit = Number(sub.data[profitField] || 0);
@@ -145,7 +139,6 @@ export default function CompetitionReportPage() {
       }
     });
 
-    // Score calculation logic
     Object.values(teamMap).forEach(t => { t.score = t.sales + t.profit; });
     Object.values(individualMap).forEach(i => { i.score = i.cups + i.packets; });
 
@@ -156,7 +149,6 @@ export default function CompetitionReportPage() {
     const totalTeams = Object.keys(teamMap).length;
     const totalStudents = new Set(allSubmissions.map((s:any) => s.rollNumber)).size;
 
-    // Daily Sales Chart Data
     const dateMap: Record<string, { date: string, dailySales: number }> = {};
     allSubmissions.forEach((sub: any) => {
       const d = new Date(sub.submittedAt).toLocaleDateString();
@@ -182,7 +174,6 @@ export default function CompetitionReportPage() {
 
     const wb = XLSX.utils.book_new();
 
-    // 1. Raw Submissions
     const rawData = competition.submissions.map((sub: any) => {
       const row: any = {
         "Submitted At": new Date(sub.submittedAt).toLocaleString(),
@@ -211,7 +202,6 @@ export default function CompetitionReportPage() {
     const wsRaw = XLSX.utils.json_to_sheet(rawData);
     XLSX.utils.book_append_sheet(wb, wsRaw, "Raw Submissions");
 
-    // 2. Team Leaderboard
     const teamData = reportData.teamLeaderboard.map((team: any, idx: number) => ({
       "Rank": idx + 1,
       "Team Name": team.name,
@@ -229,7 +219,6 @@ export default function CompetitionReportPage() {
     const wsTeams = XLSX.utils.json_to_sheet(teamData);
     XLSX.utils.book_append_sheet(wb, wsTeams, "Team Leaderboard");
 
-    // 3. Individual Leaderboard
     const indData = reportData.individualLeaderboard.map((ind: any, idx: number) => ({
       "Rank": idx + 1,
       "Roll Number": ind.roll,
@@ -250,7 +239,7 @@ export default function CompetitionReportPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center text-slate-800 p-6">
         <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-slate-600 font-medium tracking-wide text-sm">Loading Competition Dashboard...</p>
+        <p className="text-slate-600 font-medium tracking-wide text-sm">Loading Live Report...</p>
       </div>
     );
   }
@@ -259,8 +248,8 @@ export default function CompetitionReportPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex justify-center items-center text-slate-700 p-6">
         <div className="bg-white border border-slate-200 p-8 rounded-2xl text-center max-w-md shadow-md">
-          <p className="text-xl font-bold text-slate-800">Data not available</p>
-          <p className="text-sm text-slate-500 mt-2">The competition report could not be loaded or has no active data.</p>
+          <p className="text-xl font-bold text-slate-800">Report Not Found</p>
+          <p className="text-sm text-slate-500 mt-2">The requested competition report could not be found or is inactive.</p>
         </div>
       </div>
     );
@@ -269,11 +258,11 @@ export default function CompetitionReportPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 p-4 sm:p-6 md:p-8 font-sans">
       
-      {/* Top Header Banner (Default Portal Light Theme) */}
+      {/* Top Header Banner */}
       <div className="bg-white border border-slate-200 p-5 sm:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold tracking-wider uppercase mb-2">
-            <span>🏆 Live Leaderboard</span>
+            <span>🌐 Public Live Leaderboard</span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
             {competition.title}
@@ -281,7 +270,7 @@ export default function CompetitionReportPage() {
           <p className="text-slate-500 text-xs sm:text-sm mt-1.5 flex flex-wrap items-center gap-3">
             <span className="bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 text-slate-700 font-semibold">Batch: {competition.batchName}</span>
             <span className="text-slate-400">·</span>
-            <span>Last updated: <strong className="text-slate-700 font-semibold">{new Date().toLocaleTimeString()}</strong></span>
+            <span>Live update: <strong className="text-slate-700 font-semibold">{new Date().toLocaleTimeString()}</strong></span>
           </p>
         </div>
         
@@ -295,13 +284,6 @@ export default function CompetitionReportPage() {
             <option value="total">Full Report</option>
             <option value="current">Current Report (Yesterday)</option>
           </select>
-
-          <button 
-            onClick={() => setShowBulkEntry(true)} 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
-          >
-            <span>📋</span> Bulk Entry
-          </button>
 
           <button 
             onClick={handleDownloadExcel} 
@@ -319,14 +301,14 @@ export default function CompetitionReportPage() {
         </div>
       </div>
 
-      {/* Stat Cards - Responsive Grid (2 cols mobile, 3 tablet, 5 desktop) */}
+      {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 mb-8">
         {[
-          { label: "Total Sales", value: `৳${reportData.totalSales.toLocaleString()}`, icon: "💰", accent: "bg-emerald-50 text-emerald-800 border-emerald-200" },
-          { label: "Total Profit", value: `৳${reportData.totalProfit.toLocaleString()}`, icon: "📈", accent: "bg-teal-50 text-teal-800 border-teal-200" },
-          { label: "Top Team", value: reportData.topTeam, icon: "🏆", accent: "bg-amber-50 text-amber-800 border-amber-200" },
-          { label: "Total Teams", value: reportData.totalTeams, icon: "👥", accent: "bg-purple-50 text-purple-800 border-purple-200" },
-          { label: "Total Students", value: reportData.totalStudents, icon: "🎓", accent: "bg-sky-50 text-sky-800 border-sky-200" }
+          { label: "Total Sales", value: `৳${reportData.totalSales.toLocaleString()}`, icon: "💰" },
+          { label: "Total Profit", value: `৳${reportData.totalProfit.toLocaleString()}`, icon: "📈" },
+          { label: "Top Team", value: reportData.topTeam, icon: "🏆" },
+          { label: "Total Teams", value: reportData.totalTeams, icon: "👥" },
+          { label: "Total Students", value: reportData.totalStudents, icon: "🎓" }
         ].map((card, i) => (
           <div 
             key={i} 
@@ -416,7 +398,7 @@ export default function CompetitionReportPage() {
         </div>
       </div>
 
-      {/* Individual Leaderboard Table Container */}
+      {/* Individual Leaderboard */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm mb-8 overflow-hidden">
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
           <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
@@ -470,10 +452,8 @@ export default function CompetitionReportPage() {
         </div>
       </div>
 
-      {/* Charts Section - Responsive Grid */}
+      {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Team Ranking Bar Chart */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
             <span>📊</span> Top Teams Ranking (Score)
@@ -491,7 +471,6 @@ export default function CompetitionReportPage() {
           </div>
         </div>
 
-        {/* Top 10 Individuals Bar Chart */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
             <span>🌟</span> Top 10 Individuals (Score)
@@ -508,59 +487,8 @@ export default function CompetitionReportPage() {
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Team-wise Sales Share */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
-            <span>🥧</span> Team Sales Distribution
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={reportData.teamLeaderboard} dataKey="sales" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={80}>
-                  {reportData.teamLeaderboard.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip formatter={(val: any) => `৳${Number(val).toLocaleString()}`} contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                <Legend wrapperStyle={{ color: '#475569', fontSize: '12px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Daily & Cumulative Sales */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
-            <span>📈</span> Daily & Cumulative Sales Trend
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={reportData.dailyChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 12}} />
-                <YAxis stroke="#64748b" />
-                <RechartsTooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
-                <Legend wrapperStyle={{ color: '#475569', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="dailySales" stroke="#0284C7" strokeWidth={2.5} name="Daily Sales" />
-                <Line type="monotone" dataKey="cumulative" stroke="#10B981" strokeWidth={2.5} name="Cumulative" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
       </div>
 
-      {showBulkEntry && (
-        <BulkDataGrid 
-          competition={competition} 
-          onClose={() => setShowBulkEntry(false)}
-          onSuccess={() => {
-            setShowBulkEntry(false);
-            fetchData();
-          }}
-        />
-      )}
     </div>
   );
 }

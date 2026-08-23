@@ -24,6 +24,7 @@ export default function SubmitCompetitionForm() {
   const [rollNumber, setRollNumber] = useState("");
   const [studentName, setStudentName] = useState("");
   const [teamName, setTeamName] = useState("");
+  const [absentRolls, setAbsentRolls] = useState<string[]>([]);
   const [formData, setFormData] = useState<Record<string, any>>({});
 
   useEffect(() => {
@@ -81,6 +82,22 @@ export default function SubmitCompetitionForm() {
         setTeamName(matchingGroup.groupName);
       }
     }
+  };
+
+  const addAbsentRollSlot = () => {
+    setAbsentRolls(prev => [...prev, ""]);
+  };
+
+  const updateAbsentRollSlot = (index: number, roll: string) => {
+    setAbsentRolls(prev => {
+      const next = [...prev];
+      next[index] = roll;
+      return next;
+    });
+  };
+
+  const removeAbsentRollSlot = (index: number) => {
+    setAbsentRolls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleFieldChange = (fieldId: string, value: any) => {
@@ -150,6 +167,12 @@ export default function SubmitCompetitionForm() {
       }
     }
 
+    const cleanAbsentRolls = absentRolls.filter(r => r && r.trim() !== "");
+    const finalData = {
+      ...formData,
+      ...(subType === "team" && cleanAbsentRolls.length > 0 ? { absentRolls: cleanAbsentRolls } : {})
+    };
+
     try {
       const res = await fetch(`/api/competitions/${id}/submit`, {
         method: "POST",
@@ -159,7 +182,7 @@ export default function SubmitCompetitionForm() {
           teamName: subType === "team" ? teamName : null,
           rollNumber,
           studentName,
-          data: formData
+          data: finalData
         })
       });
 
@@ -169,6 +192,7 @@ export default function SubmitCompetitionForm() {
         setRollNumber("");
         setStudentName("");
         setTeamName("");
+        setAbsentRolls([]);
       } else {
         const d = await res.json();
         toast.error(d.error || "Submission failed");
@@ -204,16 +228,16 @@ export default function SubmitCompetitionForm() {
       {/* Default Theme Form Card Wrapper */}
       <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden relative">
 
-        {/* Card Header Banner (Portal Blue/Emerald Header) */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-900 p-6 sm:p-8 text-white relative">
-          <span className="inline-block bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2">
-            Batch: {competition.batchName}
+        {/* Card Header Banner (Portal Emerald Header) */}
+        <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 p-6 sm:p-8 text-white relative flex flex-col items-center text-center">
+          <span className="inline-block bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider mb-2 shadow-sm">
+            BATCH: {competition.batchName}
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight text-center drop-shadow-md">
             {competition.title}
           </h1>
           {competition.description && (
-            <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+            <p className="mt-2 text-sm text-slate-200 leading-relaxed text-center max-w-lg">
               {competition.description}
             </p>
           )}
@@ -320,13 +344,61 @@ export default function SubmitCompetitionForm() {
             </div>
           )}
 
+          {/* Absent Team Members Selector (TEAM SUBMISSIONS ONLY) */}
+          {subType === "team" && (
+            <div className="bg-amber-50/60 border border-amber-200/80 p-4 rounded-xl space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="block text-xs font-bold text-amber-900 uppercase tracking-wider">
+                  Absent Team Members / টিমের মধ্যে কেউ অনুপস্থিত থাকলে তার রোল নম্বর সিলেক্ট করুন (Optional)
+                </label>
+                <button
+                  type="button"
+                  onClick={addAbsentRollSlot}
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-md shadow-sm transition"
+                >
+                  + Add Absent Roll
+                </button>
+              </div>
+
+              {absentRolls.length === 0 ? (
+                <p className="text-xs text-amber-800 italic">
+                  No absent member added. Click "+ Add Absent Roll" above if anyone in your team is absent today.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {absentRolls.map((absRoll, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select
+                        value={absRoll}
+                        onChange={(e) => updateAbsentRollSlot(idx, e.target.value)}
+                        className="flex-1 bg-white border border-amber-300 text-slate-900 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                      >
+                        <option value="">-- Select Absent Student Roll --</option>
+                        {students.map((s) => (
+                          <option key={s.roll} value={s.roll}>
+                            {s.roll} - {s.name}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => removeAbsentRollSlot(idx)}
+                        className="text-red-600 hover:text-red-800 text-sm font-bold bg-white px-2.5 py-2 rounded-lg border border-red-200 hover:bg-red-50 transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="border-t border-slate-200 my-6"></div>
 
           {/* Dynamic Schema Fields */}
           <div className="space-y-5">
             {competition.schema.map((field: any) => {
-              const isSummaryField = field.id === "field_summary" || field.label.toLowerCase().includes("summary") || field.label.toLowerCase().includes("experience");
-
               return (
                 <div key={field.id} className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -338,6 +410,7 @@ export default function SubmitCompetitionForm() {
                       type={field.validation === 'number' ? 'number' : 'text'}
                       className="w-full bg-white text-slate-900 border border-slate-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition-all text-sm placeholder:text-slate-400 font-medium"
                       value={formData[field.id] !== undefined ? formData[field.id] : ''}
+                      placeholder={field.placeholder || ''}
                       onChange={e => handleFieldChange(field.id, e.target.value)}
                       onWheel={(e) => field.validation === 'number' && (e.target as HTMLElement).blur()}
                       required={field.required}
@@ -345,21 +418,14 @@ export default function SubmitCompetitionForm() {
                   )}
 
                   {field.type === 'long_text' && (
-                    <div>
-                      <textarea 
-                        className="w-full bg-white text-slate-900 border border-slate-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition-all text-sm placeholder:text-slate-400 font-medium"
-                        rows={4}
-                        value={formData[field.id] || ''}
-                        onChange={e => handleFieldChange(field.id, e.target.value)}
-                        required={field.required}
-                        placeholder={isSummaryField ? "Describe your learning experience today..." : ""}
-                      />
-                      {isSummaryField && (
-                        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 p-2.5 rounded-lg mt-1.5 font-medium leading-relaxed">
-                          📌 (টিমের মধ্যে কেউ অনুপস্থিত থাকলে তার রোল নম্বর বা নাম লিখে দিন / If any team member is absent, please mention their roll number or name here)
-                        </p>
-                      )}
-                    </div>
+                    <textarea 
+                      className="w-full bg-white text-slate-900 border border-slate-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition-all text-sm placeholder:text-slate-400 font-medium"
+                      rows={4}
+                      value={formData[field.id] || ''}
+                      placeholder={field.placeholder || 'Describe your learning experience today...'}
+                      onChange={e => handleFieldChange(field.id, e.target.value)}
+                      required={field.required}
+                    />
                   )}
 
                   {field.type === 'dropdown' && (
@@ -449,6 +515,7 @@ export default function SubmitCompetitionForm() {
                                     type={sub.validation === 'number' ? 'number' : 'text'}
                                     className="w-full bg-white text-slate-900 border border-slate-300 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
                                     value={item[sub.id] || ''}
+                                    placeholder={sub.placeholder || ''}
                                     onChange={e => handleRepeaterChange(field.id, idx, sub.id, e.target.value)}
                                     onWheel={(e) => sub.validation === 'number' && (e.target as HTMLElement).blur()}
                                     required={sub.required}

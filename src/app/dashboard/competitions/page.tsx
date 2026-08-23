@@ -87,12 +87,26 @@ export default function CompetitionsPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(comp.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                    <Link href={`/dashboard/competitions/${comp.id}/report`} className="text-blue-600 hover:text-blue-900">
-                      Report
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                    <Link 
+                      href={`/dashboard/competitions/${comp.id}/report`} 
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm text-xs font-semibold transition inline-flex items-center gap-1"
+                    >
+                      <span>📊</span> Report
                     </Link>
-                    <Link href={`/competitions/${comp.id}/submit`} className="text-green-600 hover:text-green-900" target="_blank">
-                      Form Link
+                    <Link 
+                      href={`/competitions/${comp.id}/report`} 
+                      target="_blank"
+                      className="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg shadow-sm text-xs font-semibold transition inline-flex items-center gap-1"
+                    >
+                      <span>🌐</span> Public Report
+                    </Link>
+                    <Link 
+                      href={`/competitions/${comp.id}/submit`} 
+                      target="_blank"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg shadow-sm text-xs font-semibold transition inline-flex items-center gap-1"
+                    >
+                      <span>📝</span> Form Link
                     </Link>
                   </td>
                 </tr>

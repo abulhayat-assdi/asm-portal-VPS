@@ -12,8 +12,11 @@ export async function GET(
     try {
         await ensureCompetitionsTablesExist();
         const { id } = await context.params;
+        const { searchParams } = new URL(req.url);
+        const isPublic = searchParams.get("public") === "true" || req.headers.get("referer")?.includes("/competitions/");
         const user = await getSessionUser(req);
-        if (!user || !isTeacherOrAdmin(user)) {
+        
+        if (!isPublic && (!user || !isTeacherOrAdmin(user))) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 

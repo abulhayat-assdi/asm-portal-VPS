@@ -31,6 +31,10 @@ export default function CompetitionGroupsPage() {
   const [selectedRolls, setSelectedRolls] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Custom Delete Confirmation Modal State
+  const [deleteTargetGroup, setDeleteTargetGroup] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     fetchBatches();
   }, []);
@@ -160,29 +164,33 @@ export default function CompetitionGroupsPage() {
     }
   };
 
-  const handleDeleteGroup = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete group "${name}"?`)) return;
+  const confirmDeleteGroup = async () => {
+    if (!deleteTargetGroup) return;
 
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/competitions/groups?id=${id}`, {
+      const res = await fetch(`/api/competitions/groups?id=${deleteTargetGroup.id}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-        toast.success("Group deleted successfully");
+        toast.success(`Group "${deleteTargetGroup.name}" deleted successfully`);
+        setDeleteTargetGroup(null);
         fetchGroups(selectedBatch);
       } else {
         toast.error("Failed to delete group");
       }
     } catch (e) {
       toast.error("Error deleting group");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       
-      {/* Header */}
+      {/* Header with Navigation Link */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <div>
           <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
@@ -199,6 +207,13 @@ export default function CompetitionGroupsPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/competitions"
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-lg text-sm font-semibold transition flex items-center gap-1.5"
+          >
+            <span>←</span> Back to Competitions
+          </Link>
+
           <button
             onClick={handleOpenCreateModal}
             disabled={!selectedBatch}
@@ -295,7 +310,7 @@ export default function CompetitionGroupsPage() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteGroup(group.id, group.groupName)}
+                        onClick={() => setDeleteTargetGroup({ id: group.id, name: group.groupName })}
                         className="text-red-600 hover:text-red-900 font-semibold text-xs bg-red-50 px-3 py-1.5 rounded-md border border-red-200 transition"
                       >
                         Delete
@@ -400,6 +415,45 @@ export default function CompetitionGroupsPage() {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal for Deleting Group */}
+      {deleteTargetGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-xl font-bold">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Delete Group</h3>
+                <p className="text-xs text-slate-500">Confirm permanent deletion</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-700">
+              Are you sure you want to delete group <strong className="text-slate-900">"{deleteTargetGroup.name}"</strong>? This action cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetGroup(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteGroup}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold shadow-md transition"
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}
