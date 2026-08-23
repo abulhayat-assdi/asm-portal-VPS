@@ -231,21 +231,21 @@ export default function SubmitCompetitionForm() {
         {/* Card Header Banner (Vibrant Premium Emerald Banner) */}
         <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-8 sm:p-10 text-white relative flex flex-col items-center text-center shadow-sm">
           <span 
-            style={{ color: "#ffffff", backgroundColor: "rgba(255, 255, 255, 0.2)" }} 
-            className="inline-block border border-white/30 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-2 shadow-sm"
+            style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff", backgroundColor: "rgba(255, 255, 255, 0.2)" }} 
+            className="no-gradient inline-block border border-white/30 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-2 shadow-sm"
           >
             BATCH: {competition.batchName}
           </span>
           <h1 
-            style={{ color: "#ffffff" }} 
-            className="text-2xl sm:text-4xl font-black text-white tracking-tight text-center drop-shadow-md mt-1"
+            style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff", backgroundImage: "none" }} 
+            className="no-gradient text-2xl sm:text-4xl font-black text-white tracking-tight text-center drop-shadow-md mt-1"
           >
             {competition.title}
           </h1>
           {competition.description && (
             <p 
-              style={{ color: "#e6f4f1" }} 
-              className="mt-2.5 text-sm sm:text-base text-emerald-50 font-medium leading-relaxed text-center max-w-lg"
+              style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }} 
+              className="no-gradient mt-2.5 text-sm sm:text-base text-emerald-50 font-medium leading-relaxed text-center max-w-lg"
             >
               {competition.description}
             </p>
