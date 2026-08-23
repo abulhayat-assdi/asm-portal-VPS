@@ -12,9 +12,13 @@ export async function GET(
     try {
         await ensureCompetitionsTablesExist();
         const { id } = await context.params;
+        const { searchParams } = new URL(req.url);
+        const isPublic = searchParams.get("public") === "true" || req.headers.get("referer")?.includes("/competitions/");
         const user = await getSessionUser(req);
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        
+        // Public form access allowed for GET requests
+        if (!isPublic && !user) {
+            // Still allow fetching basic active competition info for public submission forms
         }
 
         const competition = await prisma.competition.findUnique({

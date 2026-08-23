@@ -228,16 +228,25 @@ export default function SubmitCompetitionForm() {
       {/* Default Theme Form Card Wrapper */}
       <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden relative">
 
-        {/* Card Header Banner (Portal Emerald Header) */}
-        <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 p-6 sm:p-8 text-white relative flex flex-col items-center text-center">
-          <span className="inline-block bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold px-4 py-1 rounded-full uppercase tracking-wider mb-2 shadow-sm">
+        {/* Card Header Banner (Vibrant Premium Emerald Banner) */}
+        <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-8 sm:p-10 text-white relative flex flex-col items-center text-center shadow-sm">
+          <span 
+            style={{ color: "#ffffff", backgroundColor: "rgba(255, 255, 255, 0.2)" }} 
+            className="inline-block border border-white/30 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-2 shadow-sm"
+          >
             BATCH: {competition.batchName}
           </span>
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight text-center drop-shadow-md">
+          <h1 
+            style={{ color: "#ffffff" }} 
+            className="text-2xl sm:text-4xl font-black text-white tracking-tight text-center drop-shadow-md mt-1"
+          >
             {competition.title}
           </h1>
           {competition.description && (
-            <p className="mt-2 text-sm text-slate-200 leading-relaxed text-center max-w-lg">
+            <p 
+              style={{ color: "#e6f4f1" }} 
+              className="mt-2.5 text-sm sm:text-base text-emerald-50 font-medium leading-relaxed text-center max-w-lg"
+            >
               {competition.description}
             </p>
           )}
@@ -247,32 +256,32 @@ export default function SubmitCompetitionForm() {
         <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6">
           
           {/* Submission Type Toggle Pills */}
-          <div className="bg-slate-100 p-4 rounded-xl border border-slate-200">
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">
+          <div className="bg-slate-100 p-3 sm:p-4 rounded-xl border border-slate-200">
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2.5">
               Submission Type
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setSubType("team")}
-                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border ${
+                className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap border ${
                   subType === "team"
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-md"
                     : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                <span>👥</span> Team-wise
+                <span>👥</span> <span>Team-wise</span>
               </button>
               <button
                 type="button"
                 onClick={() => setSubType("individual")}
-                className={`py-3 px-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 border ${
+                className={`py-2.5 sm:py-3 px-2 sm:px-4 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 whitespace-nowrap border ${
                   subType === "individual"
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-md"
                     : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                <span>👤</span> Individual
+                <span>👤</span> <span>Individual</span>
               </button>
             </div>
           </div>
@@ -346,32 +355,32 @@ export default function SubmitCompetitionForm() {
 
           {/* Absent Team Members Selector (TEAM SUBMISSIONS ONLY) */}
           {subType === "team" && (
-            <div className="bg-amber-50/60 border border-amber-200/80 p-4 rounded-xl space-y-3">
-              <div className="flex justify-between items-center">
-                <label className="block text-xs font-bold text-amber-900 uppercase tracking-wider">
-                  Absent Team Members / টিমের মধ্যে কেউ অনুপস্থিত থাকলে তার রোল নম্বর সিলেক্ট করুন (Optional)
+            <div className="bg-amber-50/70 border border-amber-200 p-3.5 sm:p-4 rounded-xl space-y-3">
+              <div className="flex justify-between items-center gap-2">
+                <label className="block text-xs font-bold text-amber-950 leading-snug flex-1">
+                  টিমের মধ্যে কেউ অনুপস্থিত থাকলে তার রোল নম্বর সিলেক্ট করুন (Optional)
                 </label>
                 <button
                   type="button"
                   onClick={addAbsentRollSlot}
-                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-md shadow-sm transition"
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1.5 rounded-md shadow-sm transition whitespace-nowrap flex-shrink-0"
                 >
-                  + Add Absent Roll
+                  + Add Roll
                 </button>
               </div>
 
               {absentRolls.length === 0 ? (
                 <p className="text-xs text-amber-800 italic">
-                  No absent member added. Click "+ Add Absent Roll" above if anyone in your team is absent today.
+                  No absent member added. Click "+ Add Roll" above if anyone in your team is absent today.
                 </p>
               ) : (
                 <div className="space-y-2">
                   {absentRolls.map((absRoll, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                    <div key={idx} className="flex items-center gap-2 w-full max-w-full">
                       <select
                         value={absRoll}
                         onChange={(e) => updateAbsentRollSlot(idx, e.target.value)}
-                        className="flex-1 bg-white border border-amber-300 text-slate-900 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium"
+                        className="flex-1 min-w-0 max-w-full bg-white border border-amber-300 text-slate-900 px-3 py-2 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none font-medium truncate"
                       >
                         <option value="">-- Select Absent Student Roll --</option>
                         {students.map((s) => (
@@ -383,7 +392,7 @@ export default function SubmitCompetitionForm() {
                       <button
                         type="button"
                         onClick={() => removeAbsentRollSlot(idx)}
-                        className="text-red-600 hover:text-red-800 text-sm font-bold bg-white px-2.5 py-2 rounded-lg border border-red-200 hover:bg-red-50 transition"
+                        className="text-red-600 hover:text-red-800 text-xs font-bold bg-white px-2.5 py-2 rounded-lg border border-red-200 hover:bg-red-50 transition flex-shrink-0"
                       >
                         ✕
                       </button>
@@ -420,7 +429,7 @@ export default function SubmitCompetitionForm() {
                   {field.type === 'long_text' && (
                     <textarea 
                       className="w-full bg-white text-slate-900 border border-slate-300 px-4 py-3 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none transition-all text-sm placeholder:text-slate-400 font-medium"
-                      rows={4}
+                      rows={6}
                       value={formData[field.id] || ''}
                       placeholder={field.placeholder || 'Describe your learning experience today...'}
                       onChange={e => handleFieldChange(field.id, e.target.value)}

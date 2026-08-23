@@ -174,7 +174,8 @@ export default function PublicCompetitionReportPage() {
 
     const wb = XLSX.utils.book_new();
 
-    const rawData = competition.submissions.map((sub: any) => {
+    // Helper to format submission rows
+    const formatSubmissionRow = (sub: any) => {
       const row: any = {
         "Submitted At": new Date(sub.submittedAt).toLocaleString(),
         "Type": sub.type,
@@ -185,23 +186,36 @@ export default function PublicCompetitionReportPage() {
       };
       
       competition.schema.forEach((field: any) => {
-        const val = sub.data[field.id];
+        const val = sub.data?.[field.id];
         if (field.type === 'repeater' && Array.isArray(val)) {
           row[field.label] = val.map((item: any, i: number) => {
             const parts = (field.subFields || []).map((sf: any) => `${sf.label}: ${item[sf.id] || 'N/A'}`);
             return `[${i + 1}] ${parts.join(', ')}`;
           }).join(' \n');
         } else {
-          row[field.label] = val;
+          row[field.label] = val !== undefined ? val : "";
         }
       });
 
       return row;
-    });
+    };
 
-    const wsRaw = XLSX.utils.json_to_sheet(rawData);
+    // 1. Team Submissions Sheet
+    const teamSubmissions = competition.submissions.filter((s: any) => s.type === "team").map(formatSubmissionRow);
+    const wsTeamSubs = XLSX.utils.json_to_sheet(teamSubmissions.length > 0 ? teamSubmissions : [{}]);
+    XLSX.utils.book_append_sheet(wb, wsTeamSubs, "Team Submissions");
+
+    // 2. Individual Submissions Sheet
+    const indSubmissions = competition.submissions.filter((s: any) => s.type === "individual").map(formatSubmissionRow);
+    const wsIndSubs = XLSX.utils.json_to_sheet(indSubmissions.length > 0 ? indSubmissions : [{}]);
+    XLSX.utils.book_append_sheet(wb, wsIndSubs, "Individual Submissions");
+
+    // 3. Raw Submissions Sheet
+    const rawData = competition.submissions.map(formatSubmissionRow);
+    const wsRaw = XLSX.utils.json_to_sheet(rawData.length > 0 ? rawData : [{}]);
     XLSX.utils.book_append_sheet(wb, wsRaw, "Raw Submissions");
 
+    // 4. Team Leaderboard
     const teamData = reportData.teamLeaderboard.map((team: any, idx: number) => ({
       "Rank": idx + 1,
       "Team Name": team.name,
@@ -219,6 +233,7 @@ export default function PublicCompetitionReportPage() {
     const wsTeams = XLSX.utils.json_to_sheet(teamData);
     XLSX.utils.book_append_sheet(wb, wsTeams, "Team Leaderboard");
 
+    // 5. Individual Leaderboard
     const indData = reportData.individualLeaderboard.map((ind: any, idx: number) => ({
       "Rank": idx + 1,
       "Roll Number": ind.roll,
