@@ -223,15 +223,36 @@ export default function BulkDataGrid({ competition, onClose, onSuccess }: BulkDa
     }
   };
 
+  const handleAddRow = (count: number = 1) => {
+    setGridData(prev => [
+      ...prev,
+      ...Array.from({ length: count }, () => ({}))
+    ]);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-[95vw] h-[90vh] flex flex-col">
-        <div className="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl shrink-0">
+        <div className="p-4 border-b flex flex-wrap justify-between items-center bg-gray-50 rounded-t-xl shrink-0 gap-3">
           <div>
             <h2 className="text-xl font-bold text-slate-800">Manage Responses & Results - {competition.title}</h2>
             <p className="text-xs text-gray-500">Edit existing responses, paste new rows from Excel, or delete rows.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <button 
+              type="button" 
+              onClick={() => handleAddRow(1)} 
+              className="px-3.5 py-2 bg-blue-50 border border-blue-200 text-blue-700 font-semibold rounded-md hover:bg-blue-100 text-sm transition flex items-center gap-1.5 shadow-sm"
+            >
+              <span>➕</span> Add Row
+            </button>
+            <button 
+              type="button" 
+              onClick={() => handleAddRow(5)} 
+              className="px-3.5 py-2 bg-blue-50 border border-blue-200 text-blue-700 font-semibold rounded-md hover:bg-blue-100 text-sm transition flex items-center gap-1.5 shadow-sm"
+            >
+              <span>➕</span> Add 5 Rows
+            </button>
             <button onClick={onClose} className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-100 text-sm font-semibold">Cancel</button>
             <button 
               onClick={handleSave} 
@@ -242,7 +263,7 @@ export default function BulkDataGrid({ competition, onClose, onSuccess }: BulkDa
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-auto p-2 bg-gray-50">
+        <div className="flex-1 overflow-auto p-2 bg-gray-50 flex flex-col justify-between">
           <table className="w-full border-collapse bg-white shadow-sm whitespace-nowrap">
             <thead className="sticky top-0 z-20">
               <tr className="bg-[#1e3a5f]">
@@ -284,6 +305,27 @@ export default function BulkDataGrid({ competition, onClose, onSuccess }: BulkDa
               ))}
             </tbody>
           </table>
+
+          {/* Bottom Table Add Row Controls */}
+          <div className="p-3 bg-white border-t flex justify-between items-center sticky bottom-0 z-10 mt-2 rounded-b-xl shadow-inner">
+            <span className="text-xs text-slate-500 font-medium">Total Rows: {gridData.length}</span>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={() => handleAddRow(1)} 
+                className="px-3 py-1.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 text-xs shadow transition flex items-center gap-1"
+              >
+                <span>➕</span> Add New Row
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleAddRow(5)} 
+                className="px-3 py-1.5 bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-800 text-xs shadow transition flex items-center gap-1"
+              >
+                <span>➕</span> Add 5 New Rows
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

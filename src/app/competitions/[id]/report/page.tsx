@@ -178,7 +178,7 @@ export default function PublicCompetitionReportPage() {
     const formatSubmissionRow = (sub: any) => {
       const row: any = {
         "Submitted At": new Date(sub.submittedAt).toLocaleString(),
-        "Type": sub.type,
+        "Type": sub.type || (sub.teamName ? "team" : "individual"),
         "Team Name": sub.teamName || "N/A",
         "Roll Number": sub.rollNumber,
         "Student Name": sub.studentName,
@@ -200,13 +200,15 @@ export default function PublicCompetitionReportPage() {
       return row;
     };
 
+    const isTeamSubmission = (s: any) => s.type === "team" || Boolean(s.teamName && s.teamName.trim() !== "");
+
     // 1. Team Submissions Sheet
-    const teamSubmissions = competition.submissions.filter((s: any) => s.type === "team").map(formatSubmissionRow);
+    const teamSubmissions = competition.submissions.filter((s: any) => isTeamSubmission(s)).map(formatSubmissionRow);
     const wsTeamSubs = XLSX.utils.json_to_sheet(teamSubmissions.length > 0 ? teamSubmissions : [{}]);
     XLSX.utils.book_append_sheet(wb, wsTeamSubs, "Team Submissions");
 
     // 2. Individual Submissions Sheet
-    const indSubmissions = competition.submissions.filter((s: any) => s.type === "individual").map(formatSubmissionRow);
+    const indSubmissions = competition.submissions.filter((s: any) => !isTeamSubmission(s)).map(formatSubmissionRow);
     const wsIndSubs = XLSX.utils.json_to_sheet(indSubmissions.length > 0 ? indSubmissions : [{}]);
     XLSX.utils.book_append_sheet(wb, wsIndSubs, "Individual Submissions");
 
