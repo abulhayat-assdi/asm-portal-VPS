@@ -1176,3 +1176,18 @@ model CompetitionSubmission {
   @@index([type])
   @@map("competition_submissions")
 }
+
+model CompetitionGroup {
+  id            String   @id @default(uuid())
+  competitionId String?  @map("competition_id")
+  batchName     String   @map("batch_name")
+  groupName     String   @map("group_name")
+  members       Json     @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([batchName])
+  @@index([competitionId])
+  @@map("competition_groups")
+}
+

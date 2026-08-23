@@ -61,6 +61,22 @@ export async function ensureCompetitionsTablesExist() {
             CREATE INDEX IF NOT EXISTS "competition_submissions_type_idx" ON "competition_submissions"("type");
         `);
 
+        await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "competition_groups" (
+                "id" TEXT NOT NULL PRIMARY KEY,
+                "competition_id" TEXT,
+                "batch_name" TEXT NOT NULL,
+                "group_name" TEXT NOT NULL,
+                "members" JSONB NOT NULL DEFAULT '[]',
+                "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        await prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS "competition_groups_batch_name_idx" ON "competition_groups"("batch_name");
+        `);
+
         dbCheckDone = true;
     } catch (err) {
         console.warn("[CompetitionsDB] Auto schema check warning:", err);

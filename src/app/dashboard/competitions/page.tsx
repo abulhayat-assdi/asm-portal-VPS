@@ -38,12 +38,20 @@ export default function CompetitionsPage() {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Competitions (Battle of Cups)</h1>
-        <Link
-          href="/dashboard/competitions/create"
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow transition"
-        >
-          + Create New
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/competitions/groups"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow transition text-sm font-semibold flex items-center gap-1.5"
+          >
+            <span>👥</span> Manage Groups / See Group List
+          </Link>
+          <Link
+            href="/dashboard/competitions/create"
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow transition text-sm font-semibold flex items-center gap-1.5"
+          >
+            <span>+</span> Create New
+          </Link>
+        </div>
       </div>
 
       {loading ? (

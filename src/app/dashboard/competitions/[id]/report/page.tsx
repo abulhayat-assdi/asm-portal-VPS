@@ -230,51 +230,49 @@ export default function CompetitionReportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 flex flex-col justify-center items-center text-white p-6">
-        <div className="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mb-4"></div>
-        <p className="text-emerald-300 font-medium tracking-wide text-lg">Loading Glassmorphic Dashboard...</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center text-slate-800 p-6">
+        <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-slate-600 font-medium tracking-wide text-sm">Loading Competition Dashboard...</p>
       </div>
     );
   }
 
   if (!competition || !reportData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 flex justify-center items-center text-slate-300 p-6">
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 p-8 rounded-2xl text-center max-w-md shadow-2xl">
-          <p className="text-xl font-semibold text-slate-200">Data not available</p>
-          <p className="text-sm text-slate-400 mt-2">The competition report could not be loaded or has no active data.</p>
+      <div className="min-h-screen bg-slate-50 flex justify-center items-center text-slate-700 p-6">
+        <div className="bg-white border border-slate-200 p-8 rounded-2xl text-center max-w-md shadow-md">
+          <p className="text-xl font-bold text-slate-800">Data not available</p>
+          <p className="text-sm text-slate-500 mt-2">The competition report could not be loaded or has no active data.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-100 p-4 sm:p-6 md:p-8 font-sans selection:bg-emerald-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-4 sm:p-6 md:p-8 font-sans">
       
-      {/* Glassmorphic Top Header Banner */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border border-emerald-500/20 p-5 sm:p-6 rounded-2xl shadow-2xl shadow-emerald-950/40 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold tracking-wider uppercase mb-2">
+      {/* Top Header Banner (Default Portal Light Theme) */}
+      <div className="bg-white border border-slate-200 p-5 sm:p-6 rounded-2xl shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold tracking-wider uppercase mb-2">
             <span>🏆 Live Leaderboard</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold bg-gradient-to-r from-white via-slate-100 to-emerald-300 bg-clip-text text-transparent tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
             {competition.title}
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1.5 flex flex-wrap items-center gap-3">
-            <span className="bg-slate-800/80 px-2.5 py-0.5 rounded-md border border-slate-700 text-slate-300 font-medium">Batch: {competition.batchName}</span>
-            <span className="text-slate-500">·</span>
-            <span>Last updated: <strong className="text-slate-300 font-semibold">{new Date().toLocaleTimeString()}</strong></span>
+          <p className="text-slate-500 text-xs sm:text-sm mt-1.5 flex flex-wrap items-center gap-3">
+            <span className="bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 text-slate-700 font-semibold">Batch: {competition.batchName}</span>
+            <span className="text-slate-400">·</span>
+            <span>Last updated: <strong className="text-slate-700 font-semibold">{new Date().toLocaleTimeString()}</strong></span>
           </p>
         </div>
         
-        {/* Action Controls - Mobile Responsive Wrap */}
-        <div className="relative z-10 flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        {/* Action Controls */}
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
           <select 
             value={viewType} 
             onChange={(e) => setViewType(e.target.value as any)}
-            className="bg-slate-950/90 text-slate-200 border border-slate-700/80 px-3.5 py-2.5 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 focus:outline-none shadow-inner w-full sm:w-auto transition-all"
+            className="bg-white text-slate-800 border border-slate-300 px-3.5 py-2.5 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 focus:outline-none shadow-sm w-full sm:w-auto transition-all"
           >
             <option value="total">Full Report</option>
             <option value="current">Current Report (Yesterday)</option>
@@ -282,60 +280,59 @@ export default function CompetitionReportPage() {
 
           <button 
             onClick={() => setShowBulkEntry(true)} 
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-950/50 hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
           >
             <span>📋</span> Bulk Entry
           </button>
 
           <button 
             onClick={handleDownloadExcel} 
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold px-4 py-2.5 rounded-xl shadow-lg shadow-blue-950/50 hover:shadow-blue-500/20 transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
           >
             <span>📥</span> Export Excel
           </button>
 
           <button 
             onClick={fetchData} 
-            className="bg-slate-800/90 hover:bg-slate-700/90 text-slate-200 border border-slate-700/80 px-4 py-2.5 rounded-xl shadow-md hover:text-white transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-xl shadow-sm font-semibold transition-all flex items-center justify-center gap-2 text-sm w-full sm:w-auto"
           >
-            <span className="text-emerald-400">↻</span> Refresh
+            <span className="text-emerald-600">↻</span> Refresh
           </button>
         </div>
       </div>
 
-      {/* Glassmorphic Stat Cards - Responsive Grid (2 cols mobile, 3 tablet, 5 desktop) */}
+      {/* Stat Cards - Responsive Grid (2 cols mobile, 3 tablet, 5 desktop) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 mb-8">
         {[
-          { label: "Total Sales", value: `৳${reportData.totalSales.toLocaleString()}`, icon: "💰", accent: "from-emerald-500/20 to-teal-500/10", border: "border-emerald-500/30" },
-          { label: "Total Profit", value: `৳${reportData.totalProfit.toLocaleString()}`, icon: "📈", accent: "from-teal-500/20 to-cyan-500/10", border: "border-teal-500/30" },
-          { label: "Top Team", value: reportData.topTeam, icon: "🏆", accent: "from-amber-500/20 to-yellow-500/10", border: "border-amber-500/30" },
-          { label: "Total Teams", value: reportData.totalTeams, icon: "👥", accent: "from-purple-500/20 to-indigo-500/10", border: "border-purple-500/30" },
-          { label: "Total Students", value: reportData.totalStudents, icon: "🎓", accent: "from-sky-500/20 to-blue-500/10", border: "border-sky-500/30" }
+          { label: "Total Sales", value: `৳${reportData.totalSales.toLocaleString()}`, icon: "💰", accent: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+          { label: "Total Profit", value: `৳${reportData.totalProfit.toLocaleString()}`, icon: "📈", accent: "bg-teal-50 text-teal-800 border-teal-200" },
+          { label: "Top Team", value: reportData.topTeam, icon: "🏆", accent: "bg-amber-50 text-amber-800 border-amber-200" },
+          { label: "Total Teams", value: reportData.totalTeams, icon: "👥", accent: "bg-purple-50 text-purple-800 border-purple-200" },
+          { label: "Total Students", value: reportData.totalStudents, icon: "🎓", accent: "bg-sky-50 text-sky-800 border-sky-200" }
         ].map((card, i) => (
           <div 
             key={i} 
-            className={`bg-slate-900/70 backdrop-blur-xl border ${card.border} p-4 sm:p-5 rounded-2xl shadow-xl transition-all duration-300 relative overflow-hidden group hover:-translate-y-1 hover:shadow-2xl`}
+            className="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden"
           >
-            <div className={`absolute -right-4 -bottom-4 w-20 h-20 bg-gradient-to-br ${card.accent} rounded-full blur-xl group-hover:scale-125 transition-all pointer-events-none`}></div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">{card.label}</span>
+              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">{card.label}</span>
               <span className="text-lg">{card.icon}</span>
             </div>
-            <p className="text-xl sm:text-2xl font-black text-white tracking-tight truncate mt-1">
+            <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight truncate mt-1">
               {card.value}
             </p>
           </div>
         ))}
       </div>
 
-      {/* Team Leaderboard Glass Table Container */}
-      <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-2xl mb-8 overflow-hidden">
-        <div className="bg-slate-950/80 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2.5">
-            <span className="p-1.5 bg-amber-500/10 rounded-lg border border-amber-500/20 text-amber-400 text-base">🏅</span>
+      {/* Team Leaderboard Table */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm mb-8 overflow-hidden">
+        <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
+            <span className="p-1.5 bg-amber-100 rounded-lg text-amber-700 text-base">🏅</span>
             Team Leaderboard
           </h2>
-          <span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+          <span className="text-xs font-semibold text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200">
             {reportData.teamLeaderboard.length} Teams
           </span>
         </div>
@@ -343,7 +340,7 @@ export default function CompetitionReportPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[850px]">
             <thead>
-              <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-950/90 border-b border-slate-800">
+              <tr className="text-xs font-bold text-slate-600 uppercase tracking-wider bg-slate-100 border-b border-slate-200">
                 <th className="px-5 py-3.5">Rank</th>
                 <th className="px-5 py-3.5">Team</th>
                 <th className="px-5 py-3.5 text-right">Cups Sold</th>
@@ -354,34 +351,34 @@ export default function CompetitionReportPage() {
                 <th className="px-5 py-3.5 text-right">Total Profit</th>
                 <th className="px-5 py-3.5 text-right">Score</th>
                 <th className="px-5 py-3.5 text-right">Days Active</th>
-                <th className="px-5 py-3.5 text-right text-red-400">Missing Reports</th>
+                <th className="px-5 py-3.5 text-right text-red-600">Missing Reports</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-sm">
+            <tbody className="divide-y divide-slate-200 text-sm">
               {reportData.teamLeaderboard.map((team: any, idx: number) => (
                 <tr 
                   key={team.name} 
-                  className={`transition-colors hover:bg-emerald-500/5 ${idx === 0 ? "bg-amber-500/10" : idx === 1 ? "bg-slate-400/5" : idx === 2 ? "bg-amber-700/10" : ""}`}
+                  className={`transition-colors hover:bg-slate-50 ${idx === 0 ? "bg-amber-50/60" : idx === 1 ? "bg-slate-50/80" : idx === 2 ? "bg-orange-50/40" : ""}`}
                 >
-                  <td className="px-5 py-4 font-bold text-slate-300">
-                    {idx === 0 ? <span className="text-xl">🥇</span> : idx === 1 ? <span className="text-xl">🥈</span> : idx === 2 ? <span className="text-xl">🥉</span> : <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs border border-slate-700">{idx + 1}</span>}
+                  <td className="px-5 py-4 font-bold text-slate-700">
+                    {idx === 0 ? <span className="text-xl">🥇</span> : idx === 1 ? <span className="text-xl">🥈</span> : idx === 2 ? <span className="text-xl">🥉</span> : <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-300">{idx + 1}</span>}
                   </td>
-                  <td className="px-5 py-4 font-semibold text-white">{team.name}</td>
-                  <td className="px-5 py-4 text-right text-slate-300">{team.cups}</td>
-                  <td className="px-5 py-4 text-right text-emerald-400 font-medium">৳{team.cupRevenue.toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right text-slate-300">{team.packets}</td>
-                  <td className="px-5 py-4 text-right text-teal-400 font-medium">৳{team.revenue.toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-bold text-emerald-300">৳{team.sales.toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-bold text-cyan-300">৳{team.profit.toLocaleString()}</td>
-                  <td className="px-5 py-4 text-right font-black text-amber-400 text-base">{team.score.toFixed(1)}</td>
-                  <td className="px-5 py-4 text-right text-slate-300">{team.daysActive}</td>
+                  <td className="px-5 py-4 font-bold text-slate-900">{team.name}</td>
+                  <td className="px-5 py-4 text-right text-slate-700 font-medium">{team.cups}</td>
+                  <td className="px-5 py-4 text-right text-emerald-700 font-semibold">৳{team.cupRevenue.toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right text-slate-700 font-medium">{team.packets}</td>
+                  <td className="px-5 py-4 text-right text-teal-700 font-semibold">৳{team.revenue.toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-black text-emerald-800 text-base">৳{team.sales.toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-black text-teal-800 text-base">৳{team.profit.toLocaleString()}</td>
+                  <td className="px-5 py-4 text-right font-black text-amber-600 text-base">{team.score.toFixed(1)}</td>
+                  <td className="px-5 py-4 text-right font-medium text-slate-700">{team.daysActive}</td>
                   <td className="px-5 py-4 text-right">
                     {team.missingDates.length > 0 ? (
-                      <span className="inline-block px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 max-w-xs">
+                      <span className="inline-block px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200 max-w-xs">
                         {team.missingDates.join(", ")}
                       </span>
                     ) : (
-                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">None</span>
+                      <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">None</span>
                     )}
                   </td>
                 </tr>
@@ -391,53 +388,53 @@ export default function CompetitionReportPage() {
         </div>
       </div>
 
-      {/* Individual Leaderboard Glass Table Container */}
-      <div className="bg-slate-900/70 backdrop-blur-xl border border-slate-800/90 rounded-2xl shadow-2xl mb-8 overflow-hidden">
-        <div className="bg-slate-950/80 px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2.5">
-            <span className="p-1.5 bg-blue-500/10 rounded-lg border border-blue-500/20 text-blue-400 text-base">👤</span>
+      {/* Individual Leaderboard Table Container */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm mb-8 overflow-hidden">
+        <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
+            <span className="p-1.5 bg-blue-100 rounded-lg text-blue-700 text-base">👤</span>
             Individual Leaderboard
           </h2>
-          <span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
+          <span className="text-xs font-semibold text-slate-600 bg-white px-3 py-1 rounded-full border border-slate-200">
             {reportData.individualLeaderboard.length} Students
           </span>
         </div>
         
         <div className="overflow-x-auto max-h-96">
           <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-800">
-              <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <thead className="sticky top-0 bg-slate-100 border-b border-slate-200 z-10">
+              <tr className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                 <th className="px-5 py-3.5">Rank</th>
                 <th className="px-5 py-3.5">Roll</th>
                 <th className="px-5 py-3.5">Name</th>
                 <th className="px-5 py-3.5">Team</th>
                 <th className="px-5 py-3.5 text-right">Cups Sold</th>
                 <th className="px-5 py-3.5 text-right">Packets Sold</th>
-                <th className="px-5 py-3.5 text-right text-red-400">Missing Reports</th>
+                <th className="px-5 py-3.5 text-right text-red-600">Missing Reports</th>
                 <th className="px-5 py-3.5 text-right">Score</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-sm">
+            <tbody className="divide-y divide-slate-200 text-sm">
               {reportData.individualLeaderboard.map((ind: any, idx: number) => (
-                <tr key={ind.roll} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="px-5 py-4 font-bold text-slate-400">
-                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 text-slate-300 font-semibold text-xs border border-slate-700">{idx + 1}</span>
+                <tr key={ind.roll} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-5 py-4 font-bold text-slate-500">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-300">{idx + 1}</span>
                   </td>
-                  <td className="px-5 py-4 text-emerald-400 font-mono font-medium">{ind.roll}</td>
-                  <td className="px-5 py-4 font-semibold text-white">{ind.name}</td>
-                  <td className="px-5 py-4 text-slate-400">{ind.team}</td>
-                  <td className="px-5 py-4 text-right text-slate-300">{ind.cups}</td>
-                  <td className="px-5 py-4 text-right text-slate-300">{ind.packets}</td>
+                  <td className="px-5 py-4 text-emerald-700 font-mono font-bold">{ind.roll}</td>
+                  <td className="px-5 py-4 font-bold text-slate-900">{ind.name}</td>
+                  <td className="px-5 py-4 text-slate-600 font-medium">{ind.team}</td>
+                  <td className="px-5 py-4 text-right text-slate-700 font-medium">{ind.cups}</td>
+                  <td className="px-5 py-4 text-right text-slate-700 font-medium">{ind.packets}</td>
                   <td className="px-5 py-4 text-right">
                     {ind.missingDates.length > 0 ? (
-                      <span className="inline-block px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 max-w-xs">
+                      <span className="inline-block px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200 max-w-xs">
                         {ind.missingDates.join(", ")}
                       </span>
                     ) : (
-                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">None</span>
+                      <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">None</span>
                     )}
                   </td>
-                  <td className="px-5 py-4 text-right font-black text-blue-400 text-base">{ind.score.toFixed(1)}</td>
+                  <td className="px-5 py-4 text-right font-black text-blue-700 text-base">{ind.score.toFixed(1)}</td>
                 </tr>
               ))}
             </tbody>
@@ -445,20 +442,21 @@ export default function CompetitionReportPage() {
         </div>
       </div>
 
-      {/* Glassmorphic Charts Section - Responsive Grid */}
+      {/* Charts Section - Responsive Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Team Ranking Bar Chart */}
-        <div className="bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-slate-800/90 shadow-xl">
-          <h3 className="font-bold text-slate-200 text-base mb-4 flex items-center gap-2">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
             <span>📊</span> Top Teams Ranking (Score)
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={reportData.teamLeaderboard.slice(0,5)}>
-                <XAxis dataKey="name" stroke="#94A3B8" tick={{fontSize: 12}} />
-                <YAxis stroke="#94A3B8" />
-                <RechartsTooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '12px', color: '#F8FAFC' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" stroke="#64748b" tick={{fontSize: 12}} />
+                <YAxis stroke="#64748b" />
+                <RechartsTooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                 <Bar dataKey="score" fill="#10B981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -466,16 +464,17 @@ export default function CompetitionReportPage() {
         </div>
 
         {/* Top 10 Individuals Bar Chart */}
-        <div className="bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-slate-800/90 shadow-xl">
-          <h3 className="font-bold text-slate-200 text-base mb-4 flex items-center gap-2">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
             <span>🌟</span> Top 10 Individuals (Score)
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={reportData.individualLeaderboard.slice(0,10)} layout="vertical">
-                <XAxis type="number" stroke="#94A3B8" />
-                <YAxis dataKey="name" type="category" width={100} stroke="#94A3B8" tick={{fontSize: 11}} />
-                <RechartsTooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '12px', color: '#F8FAFC' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis type="number" stroke="#64748b" />
+                <YAxis dataKey="name" type="category" width={100} stroke="#64748b" tick={{fontSize: 11}} />
+                <RechartsTooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
                 <Bar dataKey="score" fill="#3B82F6" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -483,8 +482,8 @@ export default function CompetitionReportPage() {
         </div>
 
         {/* Team-wise Sales Share */}
-        <div className="bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-slate-800/90 shadow-xl">
-          <h3 className="font-bold text-slate-200 text-base mb-4 flex items-center gap-2">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
             <span>🥧</span> Team Sales Distribution
           </h3>
           <div className="h-64">
@@ -495,27 +494,27 @@ export default function CompetitionReportPage() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <RechartsTooltip formatter={(val: any) => `৳${Number(val).toLocaleString()}`} contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '12px', color: '#F8FAFC' }} />
-                <Legend wrapperStyle={{ color: '#94A3B8', fontSize: '12px' }} />
+                <RechartsTooltip formatter={(val: any) => `৳${Number(val).toLocaleString()}`} contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                <Legend wrapperStyle={{ color: '#475569', fontSize: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Daily & Cumulative Sales */}
-        <div className="bg-slate-900/70 backdrop-blur-xl p-6 rounded-2xl border border-slate-800/90 shadow-xl">
-          <h3 className="font-bold text-slate-200 text-base mb-4 flex items-center gap-2">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 className="font-bold text-slate-800 text-base mb-4 flex items-center gap-2">
             <span>📈</span> Daily & Cumulative Sales Trend
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={reportData.dailyChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="date" stroke="#94A3B8" tick={{fontSize: 12}} />
-                <YAxis stroke="#94A3B8" />
-                <RechartsTooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', borderRadius: '12px', color: '#F8FAFC' }} />
-                <Legend wrapperStyle={{ color: '#94A3B8', fontSize: '12px' }} />
-                <Line type="monotone" dataKey="dailySales" stroke="#38BDF8" strokeWidth={2.5} name="Daily Sales" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="date" stroke="#64748b" tick={{fontSize: 12}} />
+                <YAxis stroke="#64748b" />
+                <RechartsTooltip contentStyle={{ backgroundColor: '#ffffff', borderColor: '#cbd5e1', borderRadius: '12px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                <Legend wrapperStyle={{ color: '#475569', fontSize: '12px' }} />
+                <Line type="monotone" dataKey="dailySales" stroke="#0284C7" strokeWidth={2.5} name="Daily Sales" />
                 <Line type="monotone" dataKey="cumulative" stroke="#10B981" strokeWidth={2.5} name="Cumulative" />
               </LineChart>
             </ResponsiveContainer>
